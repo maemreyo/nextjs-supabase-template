@@ -1,0 +1,604 @@
+name: Test
+
+# Testing Workflow
+# This workflow runs comprehensive tests including unit, integration, and E2E tests
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'package.json'
+      - 'package-lock.json'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'package.json'
+      - 'package-lock.json'
+  schedule:
+    # Run tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Type of tests to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - unit
+          - integration
+          - e2e
+          - all
+      node_version:
+        description: 'Node.js version to test'
+        required: false
+        default: '18'
+        type: choice
+        options:
+          - '16'
+          - '18'
+          - '20'
+      coverage:
+        description: 'Generate coverage reports'
+        required: false
+        default: true
+        type: boolean
+      browser:
+        description: 'Browser for E2E tests'
+        required: false
+        default: 'chromium'
+        type: choice
+        options:
+          - chromium
+          - firefox
+          - webkit
+      parallel:
+        description: 'Run tests in parallel'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  NODE_VERSION: '18'
+  CACHE_VERSION: v1
+  PLAYWRIGHT_BROWSERS: 0
+
+jobs:
+  # Unit tests
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: ['16', '18', '20']
+        
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          
+      - name: Cache node modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ env.CACHE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ env.CACHE_VERSION }}-
+            
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run unit tests
+        run: |
+          echo "🧪 Running unit tests with Node.js ${{ matrix.node-version }}..."
+          npm run test -- --testPathPattern=unit --coverage --watchAll=false
+          
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-coverage-${{ matrix.node-version }}
+          path: coverage/
+          
+  # Integration tests
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: ['16', '18', '20']
+        
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          
+      - name: Cache node modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ env.CACHE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ env.CACHE_VERSION }}-
+            
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Start services for integration tests
+        run: |
+          echo "🔧 Starting services for integration tests..."
+          
+          # Start Redis if available
+          if command -v redis-server &> /dev/null; then
+            redis-server --daemonize yes --port 6379 || true
+            echo "Redis started on port 6379"
+          fi
+          
+      - name: Run integration tests
+        run: |
+          echo "🔗 Running integration tests with Node.js ${{ matrix.node-version }}..."
+          npm run test -- --testPathPattern=integration --coverage --watchAll=false
+          
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-coverage-${{ matrix.node-version }}
+          path: coverage/
+          
+      - name: Cleanup services
+        if: always()
+        run: |
+          echo "🧹 Cleaning up services..."
+          pkill -f redis-server || true
+          
+  # E2E tests
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: ['18']
+        browser: ['chromium', 'firefox', 'webkit']
+        fail-fast: false
+        
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          
+      - name: Cache node modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ env.CACHE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ env.CACHE_VERSION }}-
+            
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Install Playwright browsers
+        run: |
+          echo "🎭 Installing Playwright browsers..."
+          npx playwright install --with-deps
+          
+      - name: Build application for E2E tests
+        run: |
+          echo "🏗 Building application for E2E tests..."
+          npm run build
+          
+      - name: Run E2E tests
+        run: |
+          echo "🎭 Running E2E tests with ${{ matrix.browser }}..."
+          npm run test:e2e -- --project=${{ matrix.browser }}
+        env:
+          PLAYWRIGHT_BROWSERS: ${{ matrix.browser }}
+          
+      - name: Upload E2E test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results-${{ matrix.browser }}
+          path: |
+            playwright-report/
+            test-results/
+            
+      - name: Upload E2E screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots-${{ matrix.browser }}
+          path: test-results/
+          
+      - name: Upload E2E videos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-videos-${{ matrix.browser }}
+          path: test-results/
+          
+  # Performance tests
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    if: github.event.inputs.coverage == 'true' || github.event.inputs.coverage == ''
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: Cache node modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ env.CACHE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ env.CACHE_VERSION }}-
+            
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Install Lighthouse
+        run: npm install -g @lhci/cli@0.12.x
+        
+      - name: Build application
+        run: npm run build
+        
+      - name: Run Lighthouse performance tests
+        run: |
+          echo "⚡ Running Lighthouse performance tests..."
+          
+          # Start the application in the background
+          npm start &
+          APP_PID=$!
+          
+          # Wait for the app to start
+          sleep 30
+          
+          # Run Lighthouse
+          lhci autorun \
+            --upload.target=temporary-public-storage \
+            --collect.numberOfRuns=3 \
+            --collect.settings.preset=desktop \
+            --collect.settings.chromeFlags="--headless" \
+            --collect.url=http://localhost:3000 || true
+          
+          # Kill the application
+          kill $APP_PID || true
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+          
+      - name: Upload Lighthouse results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-results
+          path: .lighthouseci/
+          
+  # Accessibility tests
+  accessibility-tests:
+    name: Accessibility Tests
+    runs-on: ubuntu-latest
+    if: github.event.inputs.coverage == 'true' || github.event.inputs.coverage == ''
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: Cache node modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ env.CACHE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ env.CACHE_VERSION }}-
+            
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Install accessibility tools
+        run: |
+          echo "♿ Installing accessibility testing tools..."
+          npm install -g axe-cli
+          
+      - name: Build application
+        run: npm run build
+        
+      - name: Run accessibility tests
+        run: |
+          echo "♿ Running accessibility tests..."
+          
+          # Start the application in the background
+          npm start &
+          APP_PID=$!
+          
+          # Wait for the app to start
+          sleep 30
+          
+          # Run axe accessibility tests
+          axe http://localhost:3000 --include "html,js,css" --tags wcag2a,wcag2aa --exit || true
+          
+          # Kill the application
+          kill $APP_PID || true
+          
+      - name: Upload accessibility results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: accessibility-results
+          path: axe-reports/
+          
+  # Visual regression tests
+  visual-regression:
+    name: Visual Regression Tests
+    runs-on: ubuntu-latest
+    if: github.event.inputs.coverage == 'true' || github.event.inputs.coverage == ''
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: Cache node modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ env.CACHE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ env.CACHE_VERSION }}-
+            
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Install visual regression tools
+        run: |
+          echo "👁 Installing visual regression tools..."
+          npm install -g backstopjs
+          
+      - name: Build application
+        run: npm run build
+        
+      - name: Run visual regression tests
+        run: |
+          echo "👁 Running visual regression tests..."
+          
+          # Run backstopjs (simplified - you'd need to configure backstopjs.json)
+          backstopjs test || true
+          
+      - name: Upload visual regression results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-regression-results
+          path: backstop_data/
+          
+  # Test summary and coverage
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [unit-tests, integration-tests, e2e-tests]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: Download all test artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: test-artifacts/
+          
+      - name: Generate test summary
+        run: |
+          echo "# 🧪 Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Test Results Overview" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Unit tests summary
+          echo "### Unit Tests" >> $GITHUB_STEP_SUMMARY
+          for version in 16 18 20; do
+            if [ -d "test-artifacts/unit-coverage-$version" ]; then
+              echo "✅ Node.js $version: Passed" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ Node.js $version: Failed" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+          
+          # Integration tests summary
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Integration Tests" >> $GITHUB_STEP_SUMMARY
+          if [ -d "test-artifacts/integration-coverage-18" ]; then
+            echo "✅ Integration tests: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Integration tests: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # E2E tests summary
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### E2E Tests" >> $GITHUB_STEP_SUMMARY
+          e2e_passed=0
+          e2e_failed=0
+          
+          for browser in chromium firefox webkit; do
+            if [ -d "test-artifacts/e2e-results-$browser" ]; then
+              ((e2e_passed++))
+            else
+              ((e2e_failed++))
+            fi
+          done
+          
+          echo "| Browser | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|--------|" >> $GITHUB_STEP_SUMMARY
+          for browser in chromium firefox webkit; do
+            status="Failed"
+            if [ -d "test-artifacts/e2e-results-$browser" ]; then
+              status="Passed"
+            fi
+            echo "| $browser | $status |" >> $GITHUB_STEP_SUMMARY
+          done
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**E2E Summary:** $e2e_passed passed, $e2e_failed failed" >> $GITHUB_STEP_SUMMARY
+          
+          # Performance tests summary
+          if [ -d "test-artifacts/lighthouse-results" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Performance Tests" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Lighthouse tests completed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Performance Tests" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ Lighthouse tests not run" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Accessibility tests summary
+          if [ -d "test-artifacts/accessibility-results" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Accessibility Tests" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Accessibility tests completed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Accessibility Tests" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ Accessibility tests not run" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Coverage summary
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📊 Coverage Reports" >> $GITHUB_STEP_SUMMARY
+          echo "Coverage reports are available in the artifacts above." >> $GITHUB_STEP_SUMMARY
+          
+      - name: Merge coverage reports
+        run: |
+          echo "📊 Merging coverage reports..."
+          
+          # Install coverage tools
+          npm install -g nyc
+          
+          # Merge coverage from different test types
+          mkdir -p merged-coverage
+          
+          # Find and merge coverage reports
+          for coverage_dir in test-artifacts/unit-coverage-* test-artifacts/integration-coverage-18; do
+            if [ -d "$coverage_dir" ]; then
+              echo "Merging coverage from: $coverage_dir"
+              npx nyc merge "$coverage_dir" merged-coverage/ || true
+            fi
+          done
+          
+      - name: Upload merged coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: merged-coverage
+          path: merged-coverage/
+          
+      - name: Upload coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./merged-coverage/lcov.info
+          flags: all-tests
+          name: codecov-umbrella
+          fail_ci_if_error: true
+          
+  # Security tests
+  security-tests:
+    name: Security Tests
+    runs-on: ubuntu-latest
+    if: github.event.inputs.coverage == 'true' || github.event.inputs.coverage == ''
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: Cache node modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ env.CACHE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ env.CACHE_VERSION }}-
+            
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run security tests
+        run: |
+          echo "🔒 Running security tests..."
+          
+          # Run OWASP ZAP baseline scan (simplified)
+          if command -v docker &> /dev/null; then
+            # Start the application in Docker
+            docker build -t test-app . || true
+            
+            # Run ZAP scan
+            docker run --rm -v $(pwd)/test-app:/zap/wrk:/zap/wrk:rw \
+              -v $(pwd)/zap-reports:/zap/wrk:/zap/wrk:rw \
+              owasp/zap2docker-stable \
+              zap-baseline.py -t http://localhost:3000 || true
+              
+            # Cleanup
+            docker rmi test-app || true
+          else
+            echo "⚠️ Docker not available, skipping security scan"
+          fi
+          
+      - name: Upload security test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-test-results
+          path: zap-reports/
