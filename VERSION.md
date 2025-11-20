@@ -379,8 +379,8 @@ Examples:
 
 ### Version-Related Questions
 - **Documentation**: [Version Documentation](./docs/)
-- **Issues**: [GitHub Issues](https://github.com/your-username/nextjs-supabase-template/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-username/nextjs-supabase-template/discussions)
+- **Issues**: [GitHub Issues](https://github.com/maemreyo/nextjs-supabase-template/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/maemreyo/nextjs-supabase-template/discussions)
 - **Email**: version-support@your-domain.com
 
 ### Reporting Version Issues

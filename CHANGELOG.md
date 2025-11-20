@@ -328,8 +328,8 @@ Template follows [Semantic Versioning](https://semver.org/):
 
 ### Getting Help
 - **Documentation**: [Comprehensive guides](./docs/)
-- **GitHub Issues**: [Report issues](https://github.com/your-username/nextjs-supabase-template/issues)
-- **Community Forum**: [Discussions](https://github.com/your-username/nextjs-supabase-template/discussions)
+- **GitHub Issues**: [Report issues](https://github.com/maemreyo/nextjs-supabase-template/issues)
+- **Community Forum**: [Discussions](https://github.com/maemreyo/nextjs-supabase-template/discussions)
 - **Email Support**: [Contact form](mailto:support@your-domain.com)
 
 ### Professional Support

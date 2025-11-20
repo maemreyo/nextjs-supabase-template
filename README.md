@@ -12,10 +12,10 @@
 
 [![Live Demo](https://img.shields.io/badge/Demo-Online-brightgreen?style=for-the-badge)](https://your-demo-url.com)
 [![Documentation](https://img.shields.io/badge/Documentation-Latest-blue?style=for-the-badge)](./docs)
-[![GitHub stars](https://img.shields.io/github/stars/your-username/nextjs-supabase-template?style=for-the-badge)](https://github.com/your-username/nextjs-supabase-template)
-[![GitHub forks](https://img.shields.io/github/forks/your-username/nextjs-supabase-template?style=for-the-badge)](https://github.com/your-username/nextjs-supabase-template)
-[![GitHub issues](https://img.shields.io/github/issues/your-username/nextjs-supabase-template?style=for-the-badge)](https://github.com/your-username/nextjs-supabase-template/issues)
-[![GitHub license](https://img.shields.io/github/license/your-username/nextjs-supabase-template?style=for-the-badge)](https://github.com/your-username/nextjs-supabase-template/blob/main/LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/your-username/nextjs-supabase-template?style=for-the-badge)](https://github.com/maemreyo/nextjs-supabase-template)
+[![GitHub forks](https://img.shields.io/github/forks/your-username/nextjs-supabase-template?style=for-the-badge)](https://github.com/maemreyo/nextjs-supabase-template)
+[![GitHub issues](https://img.shields.io/github/issues/your-username/nextjs-supabase-template?style=for-the-badge)](https://github.com/maemreyo/nextjs-supabase-template/issues)
+[![GitHub license](https://img.shields.io/github/license/your-username/nextjs-supabase-template?style=for-the-badge)](https://github.com/maemreyo/nextjs-supabase-template/blob/main/LICENSE)
 
 </div>
 
@@ -98,7 +98,7 @@
 
 ```bash
 # Clone repository
-git clone https://github.com/your-username/nextjs-supabase-template.git
+git clone https://github.com/maemreyo/nextjs-supabase-template.git
 cd nextjs-supabase-template
 
 # Install dependencies
@@ -581,10 +581,10 @@ Distributed under the **MIT License**. See [LICENSE](LICENSE) cho details.
 
 <div align="center">
 
-**[⭐ Star this repository](https://github.com/your-username/nextjs-supabase-template)** nếu nó giúp bạn!  
-**[🐛 Report issues](https://github.com/your-username/nextjs-supabase-template/issues)** để chúng tôi cải thiện  
+**[⭐ Star this repository](https://github.com/maemreyo/nextjs-supabase-template)** nếu nó giúp bạn!  
+**[🐛 Report issues](https://github.com/maemreyo/nextjs-supabase-template/issues)** để chúng tôi cải thiện  
 **[📖 Read documentation](./docs)** để hiểu thêm về template**
 
-Made với ❤️ bởi [Your Name](https://github.com/your-username)
+Made với ❤️ bởi [Your Name](https://github.com/maemreyo)
 
 </div>

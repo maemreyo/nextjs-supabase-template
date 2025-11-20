@@ -424,11 +424,11 @@ SUPABASE_SERVICE_ROLE_KEY=your-production-service-role-key
 #### Documentation
 - **[Comprehensive Documentation](./docs/)**: Full guides và references
 - **[API Reference](./docs/api-documentation.md)**: Detailed API documentation
-- **[Examples Repository](https://github.com/your-username/examples)**: Code examples
+- **[Examples Repository](https://github.com/maemreyo/examples)**: Code examples
 - **[Video Tutorials](https://youtube.com/playlist/your-playlist)**: Video guides
 
 #### Community Support
-- **[GitHub Discussions](https://github.com/your-username/nextjs-supabase-template/discussions)**: Community forum
+- **[GitHub Discussions](https://github.com/maemreyo/nextjs-supabase-template/discussions)**: Community forum
 - **[Discord Server](https://discord.gg/your-server)**: Real-time chat
 - **[Stack Overflow](https://stackoverflow.com/questions/tagged/nextjs-supabase-template)**: Q&A platform
 - **[Reddit Community](https://reddit.com/r/nextjs)**: Community discussions
@@ -443,10 +443,10 @@ SUPABASE_SERVICE_ROLE_KEY=your-production-service-role-key
 
 | Resource | Link | Description |
 |----------|-------|-------------|
-| **Template Repository** | [GitHub](https://github.com/your-username/nextjs-supabase-template) | Source code |
+| **Template Repository** | [GitHub](https://github.com/maemreyo/nextjs-supabase-template) | Source code |
 | **Live Demo** | [Demo](https://demo.your-domain.com) | Working demo |
 | **Documentation** | [Docs](https://docs.your-domain.com) | Full documentation |
-| **Roadmap** | [Roadmap](https://github.com/your-username/nextjs-supabase-template/projects) | Future plans |
+| **Roadmap** | [Roadmap](https://github.com/maemreyo/nextjs-supabase-template/projects) | Future plans |
 | **Changelog** | [Changelog](./CHANGELOG.md) | Version history |
 
 ## 📈 Success Metrics

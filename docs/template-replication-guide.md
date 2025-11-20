@@ -42,7 +42,7 @@ df -h
 
 ```bash
 # Clone template repository
-git clone https://github.com/your-username/nextjs-supabase-template.git my-new-project
+git clone https://github.com/maemreyo/nextjs-supabase-template.git my-new-project
 
 # Di chuyển vào project directory
 cd my-new-project
@@ -54,7 +54,7 @@ rm -rf .git
 git init
 
 # Set remote to your new repository
-git remote add origin https://github.com/your-username/my-new-project.git
+git remote add origin https://github.com/maemreyo/my-new-project.git
 git branch -M main
 ```
 
@@ -72,7 +72,7 @@ cd my-new-project
 
 ```bash
 # Download template as ZIP
-wget https://github.com/your-username/nextjs-supabase-template/archive/main.zip
+wget https://github.com/maemreyo/nextjs-supabase-template/archive/main.zip
 
 # Extract
 unzip main.zip
@@ -99,12 +99,12 @@ git commit -m "Initial commit from template"
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/my-new-project.git"
+    "url": "https://github.com/maemreyo/my-new-project.git"
   },
   "bugs": {
-    "url": "https://github.com/your-username/my-new-project/issues"
+    "url": "https://github.com/maemreyo/my-new-project/issues"
   },
-  "homepage": "https://github.com/your-username/my-new-project#readme"
+  "homepage": "https://github.com/maemreyo/my-new-project#readme"
 }
 ```
 
@@ -1086,7 +1086,7 @@ touch src/types/editor.ts
 - [Tailwind CSS Documentation](https://tailwindcss.com/docs)
 
 ### Community
-- [GitHub Issues](https://github.com/your-username/nextjs-supabase-template/issues)
+- [GitHub Issues](https://github.com/maemreyo/nextjs-supabase-template/issues)
 - [Discord Community](https://discord.gg/your-server)
 - [Stack Overflow](https://stackoverflow.com/questions/tagged/nextjs-supabase)
 
