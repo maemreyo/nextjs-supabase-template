@@ -1,0 +1,216 @@
+/* Custom styles for Word Analysis components */
+
+/* Frequency level badge colors */
+.frequency-badge-common {
+  @apply bg-green-100 text-green-800 border-green-200 hover:bg-green-200;
+}
+
+.frequency-badge-uncommon {
+  @apply bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200;
+}
+
+.frequency-badge-rare {
+  @apply bg-red-100 text-red-800 border-red-200 hover:bg-red-200;
+}
+
+/* Collocation item hover effects */
+.collocation-item {
+  @apply transition-all duration-200 hover:shadow-sm hover:scale-[1.01];
+}
+
+.collocation-item:hover {
+  @apply bg-blue-50 border-blue-200;
+}
+
+/* Synonym item hover effects */
+.synonym-item {
+  @apply transition-colors duration-150;
+}
+
+.synonym-item:hover {
+  @apply bg-green-50 border-green-200;
+}
+
+/* Antonym item hover effects */
+.antonym-item {
+  @apply transition-colors duration-150;
+}
+
+.antonym-item:hover {
+  @apply bg-red-50 border-red-200;
+}
+
+/* Word analysis card styles */
+.word-analysis-card {
+  @apply transition-all duration-200 ease-in-out;
+}
+
+.word-analysis-card:hover {
+  @apply shadow-lg transform scale-[1.01];
+}
+
+/* Example sentence styles */
+.example-sentence {
+  @apply border-l-4 border-blue-500 bg-blue-50 p-3 rounded;
+}
+
+.example-translation {
+  @apply bg-blue-100 p-3 rounded text-blue-900;
+}
+
+/* Inference strategy styles */
+.inference-strategy {
+  @apply bg-amber-50 border-amber-200 p-4;
+}
+
+/* Usage example styles */
+.usage-example {
+  @apply bg-gray-50 p-2 rounded border-l-2 border-blue-300;
+}
+
+/* Responsive design utilities */
+@media (max-width: 768px) {
+  .word-analysis-grid {
+    @apply grid-cols-1 gap-4;
+  }
+  
+  .synonym-antonym-grid {
+    @apply grid-cols-1;
+  }
+  
+  .collocation-list {
+    @apply max-h-80;
+  }
+}
+
+@media (min-width: 768px) {
+  .word-analysis-grid {
+    @apply grid-cols-2 gap-6;
+  }
+  
+  .synonym-antonym-grid {
+    @apply grid-cols-2;
+  }
+  
+  .collocation-list {
+    @apply max-h-96;
+  }
+}
+
+/* Loading skeleton animations */
+.skeleton-pulse {
+  @apply animate-pulse bg-gray-200 rounded;
+}
+
+.skeleton-line {
+  @apply h-4 mb-2 bg-gray-200 rounded;
+}
+
+.skeleton-line-short {
+  @apply h-4 w-2/3 mb-2 bg-gray-200 rounded;
+}
+
+.skeleton-line-medium {
+  @apply h-4 w-4/5 mb-2 bg-gray-200 rounded;
+}
+
+/* Scrollbar styling for overflow containers */
+.custom-scrollbar::-webkit-scrollbar {
+  @apply w-2;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-gray-100 rounded;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400;
+}
+
+/* Focus styles for accessibility */
+.collocation-item:focus {
+  @apply outline-none ring-2 ring-blue-500 ring-offset-2;
+}
+
+.synonym-item:focus {
+  @apply outline-none ring-2 ring-green-500 ring-offset-2;
+}
+
+.antonym-item:focus {
+  @apply outline-none ring-2 ring-red-500 ring-offset-2;
+}
+
+/* Animation for new items */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .frequency-badge-common {
+    @apply bg-green-900 text-green-100 border-green-700 hover:bg-green-800;
+  }
+  
+  .frequency-badge-uncommon {
+    @apply bg-yellow-900 text-yellow-100 border-yellow-700 hover:bg-yellow-800;
+  }
+  
+  .frequency-badge-rare {
+    @apply bg-red-900 text-red-100 border-red-700 hover:bg-red-800;
+  }
+  
+  .collocation-item:hover {
+    @apply bg-blue-900 border-blue-700;
+  }
+  
+  .synonym-item:hover {
+    @apply bg-green-900 border-green-700;
+  }
+  
+  .antonym-item:hover {
+    @apply bg-red-900 border-red-700;
+  }
+  
+  .example-sentence {
+    @apply bg-blue-900 border-blue-700;
+  }
+  
+  .example-translation {
+    @apply bg-blue-800 text-blue-100;
+  }
+  
+  .inference-strategy {
+    @apply bg-amber-900 border-amber-700;
+  }
+  
+  .usage-example {
+    @apply bg-gray-800 border-blue-700;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-gray-800;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-gray-600;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-500;
+  }
+}
