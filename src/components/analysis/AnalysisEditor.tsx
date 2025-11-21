@@ -1,13 +1,10 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import {
   BookOpen,
-  FileText,
-  FilePlus,
   Zap,
   Loader2,
   MousePointer,
@@ -37,34 +34,27 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { useSessionStore } from '@/stores/session-store';
 import { useVocabularyStore } from '@/stores/vocabulary-store';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-/**
- * Component editor cải tiến với rich text editing và UX tốt hơn
- */
 export function AnalysisEditor({ 
   onTextSelect, 
   onAnalyze,
   initialText = "",
   className = ""
 }: AnalysisEditorProps) {
-  // Text content and selection states
-  const [content, setContent] = useState(initialText);
   const [selectedText, setSelectedText] = useState('');
   const [selectionType, setSelectionType] = useState<'word' | 'phrase' | 'sentence' | 'paragraph'>('word');
   const [analysisType, setAnalysisType] = useState<'word' | 'sentence' | 'paragraph'>('word');
   
-  // UI states
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<WordAnalysis | SentenceAnalysis | ParagraphAnalysis | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [autoAnalysisEnabled, setAutoAnalysisEnabled] = useState(true);
   
-  // Session and vocabulary dialog states
   const [saveToSessionDialogOpen, setSaveToSessionDialogOpen] = useState(false);
   const [addToVocabularyDialogOpen, setAddToVocabularyDialogOpen] = useState(false);
   const [sessionTitle, setSessionTitle] = useState('');
@@ -76,7 +66,6 @@ export function AnalysisEditor({
     difficulty_level: 1
   });
   
-  // Rich text editor states
   const [activeFormats, setActiveFormats] = useState({
     bold: false,
     italic: false,
@@ -84,73 +73,54 @@ export function AnalysisEditor({
     strikeThrough: false,
   });
   
-  // Menu positions
   const [bubbleMenuPosition, setBubbleMenuPosition] = useState({ x: 0, y: 0, show: false });
   const [analysisPanelOpen, setAnalysisPanelOpen] = useState(false);
+  const [textStats, setTextStats] = useState({ characters: 0, words: 0, sentences: 0, paragraphs: 0 });
   
-  // Refs
   const editorRef = useRef<HTMLDivElement>(null);
   const analysisTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const selectionRef = useRef<{ range: Range | null; text: string }>({ range: null, text: '' });
+  const isInitializedRef = useRef(false);
 
-  // Session and vocabulary stores
   const { sessions, createSession, addAnalysisToSession } = useSessionStore();
   const { createWord } = useVocabularyStore();
 
-  // Highlight colors
-  const highlightColors = [
-    '#fef08a', // yellow
-    '#bbf7d0', // green
-    '#bfdbfe', // blue
-    '#fecaca', // red
-    '#e9d5ff', // purple
-  ];
+  const highlightColors = ['#fef08a', '#bbf7d0', '#bfdbfe', '#fecaca', '#e9d5ff'];
 
-  // Debounced analysis function
+  // Update text stats
+  const updateTextStats = useCallback(() => {
+    if (!editorRef.current) return;
+    const textContent = editorRef.current.innerText || '';
+    const words = textContent.split(/\s+/).filter(w => w.length > 0);
+    const sentences = textContent.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const paragraphs = textContent.split(/\n\n+/).filter(p => p.trim().length > 0);
+    
+    setTextStats({
+      characters: textContent.length,
+      words: words.length,
+      sentences: sentences.length,
+      paragraphs: Math.max(1, paragraphs.length)
+    });
+  }, []);
+
+  // Debounced analysis
   const debouncedAnalysis = useCallback((textToAnalyze: string, type: 'word' | 'sentence' | 'paragraph') => {
-    if (analysisTimeoutRef.current) {
-      clearTimeout(analysisTimeoutRef.current);
-    }
+    if (analysisTimeoutRef.current) clearTimeout(analysisTimeoutRef.current);
     
     analysisTimeoutRef.current = setTimeout(async () => {
       if (autoAnalysisEnabled && textToAnalyze.trim()) {
         setIsAnalyzing(true);
         setError(null);
-        
         try {
           const result = await onAnalyze?.(textToAnalyze, type);
-          if (result) {
-            setAnalysisResult(result);
-          }
+          if (result) setAnalysisResult(result);
         } catch (err) {
           setError(err instanceof Error ? err.message : 'Phân tích thất bại');
         } finally {
           setIsAnalyzing(false);
         }
       }
-    }, 800); // 800ms debounce
+    }, 800);
   }, [autoAnalysisEnabled, onAnalyze]);
-
-  // Save and restore selection
-  const saveSelection = useCallback(() => {
-    const sel = window.getSelection();
-    if (sel && sel.rangeCount > 0) {
-      const range = sel.getRangeAt(0);
-      selectionRef.current = {
-        range: range.cloneRange(),
-        text: sel.toString()
-      };
-    }
-  }, []);
-
-  const restoreSelection = useCallback(() => {
-    const sel = window.getSelection();
-    if (sel && selectionRef.current.range && editorRef.current && editorRef.current.contains(selectionRef.current.range.startContainer)) {
-      sel.removeAllRanges();
-      sel.addRange(selectionRef.current.range);
-    }
-  }, []);
 
   // Detect selection type
   const detectSelectionType = useCallback((text: string): 'word' | 'phrase' | 'sentence' | 'paragraph' => {
@@ -165,11 +135,43 @@ export function AnalysisEditor({
     return 'word';
   }, []);
 
-  // Smart text expansion functions
-  const expandToWord = useCallback(() => {
-    // Save current selection before expansion
-    saveSelection();
+  // Handle text selection - simplified, no restoration
+  const handleTextSelection = useCallback(() => {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
     
+    const text = sel.toString().trim();
+    
+    if (text.length > 0 && editorRef.current?.contains(sel.anchorNode)) {
+      const range = sel.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      
+      setSelectedText(text);
+      const detectedType = detectSelectionType(text);
+      setSelectionType(detectedType);
+      
+      let newAnalysisType: 'word' | 'sentence' | 'paragraph';
+      if (detectedType === 'word') newAnalysisType = 'word';
+      else if (detectedType === 'phrase' || detectedType === 'sentence') newAnalysisType = 'sentence';
+      else newAnalysisType = 'paragraph';
+      
+      setAnalysisType(newAnalysisType);
+      setBubbleMenuPosition({
+        x: rect.left + rect.width / 2,
+        y: rect.top - 10,
+        show: true
+      });
+      
+      onTextSelect?.(text, newAnalysisType);
+      debouncedAnalysis(text, newAnalysisType);
+    } else {
+      setBubbleMenuPosition({ x: 0, y: 0, show: false });
+      setSelectedText('');
+    }
+  }, [detectSelectionType, onTextSelect, debouncedAnalysis]);
+
+  // Smart expansion functions
+  const expandToWord = useCallback(() => {
     const sel = window.getSelection();
     if (!sel || !sel.rangeCount) return;
     
@@ -185,15 +187,11 @@ export function AnalysisEditor({
     sel.removeAllRanges();
     sel.addRange(range);
     
-    // Save new selection after expansion
-    saveSelection();
-    handleTextSelection();
-  }, [saveSelection]);
+    // Delay to let browser settle
+    setTimeout(handleTextSelection, 10);
+  }, [handleTextSelection]);
 
   const expandToSentence = useCallback(() => {
-    // Save current selection before expansion
-    saveSelection();
-    
     const sel = window.getSelection();
     if (!sel || !sel.rangeCount) return;
     
@@ -210,100 +208,38 @@ export function AnalysisEditor({
     sel.removeAllRanges();
     sel.addRange(range);
     
-    // Save new selection after expansion
-    saveSelection();
-    handleTextSelection();
-  }, [saveSelection]);
+    setTimeout(handleTextSelection, 10);
+  }, [handleTextSelection]);
 
   const expandToParagraph = useCallback(() => {
-    // Save current selection before expansion
-    saveSelection();
-    
     const sel = window.getSelection();
     if (!sel || !sel.rangeCount) return;
     
     let node = sel.anchorNode;
-    while (node && node.nodeName !== 'P' && node.nodeName !== 'DIV' && node.parentNode) {
+    while (node && node.nodeName !== 'P' && node.nodeName !== 'DIV' && node.parentNode && node !== editorRef.current) {
       node = node.parentNode;
     }
     
-    if (node && (node.nodeName === 'P' || node.nodeName === 'DIV')) {
+    if (node && node !== editorRef.current) {
       const range = document.createRange();
       range.selectNodeContents(node);
       sel.removeAllRanges();
       sel.addRange(range);
-      
-      // Save new selection after expansion
-      saveSelection();
-      handleTextSelection();
+      setTimeout(handleTextSelection, 10);
     }
-  }, [saveSelection]);
+  }, [handleTextSelection]);
 
-  // Handle text selection with improvements
-  const handleTextSelection = useCallback(() => {
-    const sel = window.getSelection();
-    if (!sel) return;
-    
-    const text = sel.toString().trim();
-    
-    if (text.length > 0) {
-      const range = sel.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
-      
-      // Save selection before state updates
-      saveSelection();
-      
-      setSelectedText(text);
-      const detectedType = detectSelectionType(text);
-      setSelectionType(detectedType);
-      
-      // Map to analysis type
-      let newAnalysisType: 'word' | 'sentence' | 'paragraph';
-      if (detectedType === 'word') {
-        newAnalysisType = 'word';
-      } else if (detectedType === 'phrase' || detectedType === 'sentence') {
-        newAnalysisType = 'sentence';
-      } else {
-        newAnalysisType = 'paragraph';
-      }
-      
-      setAnalysisType(newAnalysisType);
-      setBubbleMenuPosition({
-        x: rect.left + rect.width / 2,
-        y: rect.top - 10,
-        show: true
-      });
-      
-      onTextSelect?.(text, newAnalysisType);
-      
-      // Auto-analyze if enabled
-      debouncedAnalysis(text, newAnalysisType);
-    } else {
-      setBubbleMenuPosition({ x: 0, y: 0, show: false });
-      setSelectedText('');
-    }
-  }, [detectSelectionType, onTextSelect, debouncedAnalysis, saveSelection]);
-
-  // Rich text formatting functions
-  const formatText = useCallback((cmd: string, val: string | undefined = undefined) => {
-    // Save selection before formatting
-    saveSelection();
-    
+  // Rich text formatting - prevent default focus behavior
+  const formatText = useCallback((cmd: string, val?: string) => {
     document.execCommand(cmd, false, val);
-    editorRef.current?.focus();
-    
-    // Update formats without causing re-render
-    const newFormats = {
+    // Don't call focus - let selection remain
+    setActiveFormats({
       bold: document.queryCommandState('bold'),
       italic: document.queryCommandState('italic'),
       underline: document.queryCommandState('underline'),
       strikeThrough: document.queryCommandState('strikeThrough'),
-    };
-    setActiveFormats(newFormats);
-    
-    // Restore selection after formatting
-    setTimeout(restoreSelection, 0);
-  }, [saveSelection, restoreSelection]);
+    });
+  }, []);
 
   const updateActiveFormats = useCallback(() => {
     setActiveFormats({
@@ -315,22 +251,13 @@ export function AnalysisEditor({
   }, []);
 
   const handleHighlight = useCallback((color: string) => {
-    // Save selection before highlighting
-    saveSelection();
-    
     document.execCommand('hiliteColor', false, color);
     setBubbleMenuPosition(prev => ({ ...prev, show: false }));
-    
-    // Restore selection after highlighting
-    setTimeout(restoreSelection, 0);
-  }, [saveSelection, restoreSelection]);
+  }, []);
 
   // Handle analysis
   const handleAnalyze = useCallback(async () => {
-    // Save selection before analysis
-    saveSelection();
-    
-    const textToAnalyze = selectedText || content;
+    const textToAnalyze = selectedText || editorRef.current?.innerText || '';
     if (!textToAnalyze.trim()) return;
 
     setIsAnalyzing(true);
@@ -339,119 +266,68 @@ export function AnalysisEditor({
     
     try {
       const result = await onAnalyze?.(textToAnalyze, analysisType);
-      if (result) {
-        setAnalysisResult(result);
-      }
+      if (result) setAnalysisResult(result);
       setBubbleMenuPosition(prev => ({ ...prev, show: false }));
-      
-      // Restore selection after analysis completes
-      setTimeout(restoreSelection, 0);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Phân tích thất bại');
     } finally {
       setIsAnalyzing(false);
     }
-  }, [selectedText, content, analysisType, onAnalyze, saveSelection, restoreSelection]);
+  }, [selectedText, analysisType, onAnalyze]);
 
-  // Handle content change
-  const handleContentChange = useCallback((e: React.FormEvent<HTMLDivElement>) => {
-    // Save selection before content update
-    saveSelection();
-    
-    const newContent = e.currentTarget.innerHTML;
-    setContent(newContent);
+  // Handle content change - just update stats, don't mess with selection
+  const handleContentChange = useCallback(() => {
+    updateTextStats();
     updateActiveFormats();
-    
-    // Restore selection after content update
-    setTimeout(restoreSelection, 0);
-  }, [updateActiveFormats, saveSelection, restoreSelection]);
+  }, [updateTextStats, updateActiveFormats]);
 
-  // Get text statistics - memoized to prevent unnecessary recalculations
-  const getTextStats = useMemo(() => {
-    const textContent = content.replace(/<[^>]*>/g, ''); // Strip HTML tags
-    const words = textContent.split(/\s+/).filter(w => w.length > 0);
-    const sentences = textContent.split(/[.!?]+/).filter(s => s.trim().length > 0);
-    const paragraphs = textContent.split(/\n\n+/).filter(p => p.trim().length > 0);
-    
-    return {
-      characters: textContent.length,
-      words: words.length,
-      sentences: sentences.length,
-      paragraphs: paragraphs.length
-    };
-  }, [content]);
+  // Initialize content once
+  useEffect(() => {
+    if (editorRef.current && !isInitializedRef.current && initialText) {
+      editorRef.current.innerHTML = initialText;
+      isInitializedRef.current = true;
+      updateTextStats();
+    }
+  }, [initialText, updateTextStats]);
 
   // Setup event listeners
   useEffect(() => {
-    const onMouseUp = () => {
-      // Save selection immediately on mouse up
-      saveSelection();
-      // Handle text selection after a short delay
-      setTimeout(handleTextSelection, 10);
-    };
-    
-    const onSelectStart = () => {
-      saveSelection();
-    };
-    
-    const onKeyDown = (e: KeyboardEvent) => {
-      // Save selection on keyboard navigation
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown' ||
-          e.key === 'Home' || e.key === 'End' || e.key === 'PageUp' || e.key === 'PageDown') {
-        saveSelection();
+    const handleMouseUp = (e: MouseEvent) => {
+      // Only handle if selection is in editor
+      const sel = window.getSelection();
+      if (sel && editorRef.current?.contains(sel.anchorNode)) {
+        // Small delay to let browser finalize selection
+        setTimeout(handleTextSelection, 10);
       }
     };
     
-    const onSelectionChange = () => {
-      // Save selection whenever it changes
-      saveSelection();
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.shiftKey && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) {
+        setTimeout(handleTextSelection, 10);
+      }
+    };
+
+    // Click outside to hide bubble menu
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('[data-bubble-menu]') && !editorRef.current?.contains(target)) {
+        setBubbleMenuPosition(prev => ({ ...prev, show: false }));
+      }
     };
     
-    document.addEventListener('mouseup', onMouseUp);
-    document.addEventListener('selectstart', onSelectStart);
-    document.addEventListener('keydown', onKeyDown);
-    document.addEventListener('selectionchange', onSelectionChange);
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('keyup', handleKeyUp);
+    document.addEventListener('mousedown', handleClickOutside);
     
     return () => {
-      document.removeEventListener('mouseup', onMouseUp);
-      document.removeEventListener('selectstart', onSelectStart);
-      document.removeEventListener('keydown', onKeyDown);
-      document.removeEventListener('selectionchange', onSelectionChange);
-      if (analysisTimeoutRef.current) {
-        clearTimeout(analysisTimeoutRef.current);
-      }
-      if (tooltipTimeoutRef.current) {
-        clearTimeout(tooltipTimeoutRef.current);
-      }
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('keyup', handleKeyUp);
+      document.removeEventListener('mousedown', handleClickOutside);
+      if (analysisTimeoutRef.current) clearTimeout(analysisTimeoutRef.current);
     };
-  }, [handleTextSelection, saveSelection]);
+  }, [handleTextSelection]);
 
-  // Initialize content - only run once
-  useEffect(() => {
-    if (editorRef.current && content !== editorRef.current.innerHTML) {
-      // Save selection before updating content
-      saveSelection();
-      editorRef.current.innerHTML = content;
-      // Restore selection after content update
-      setTimeout(restoreSelection, 0);
-    }
-  }, []);
-
-  // Restore selection after component updates
-  useEffect(() => {
-    // Only restore selection if we have a saved one and it's valid
-    if (selectionRef.current.range && editorRef.current) {
-      // Check if the selection is still valid within the editor
-      const startContainer = selectionRef.current.range.startContainer;
-      if (editorRef.current.contains(startContainer)) {
-        setTimeout(restoreSelection, 0);
-      }
-    }
-  }, [content, restoreSelection]);
-
-  const textStats = getTextStats;
-
-  // Toolbar button component
+  // Toolbar button
   const ToolBtn = ({ onClick, active, disabled, children, title }: {
     onClick: () => void;
     active?: boolean;
@@ -462,14 +338,11 @@ export function AnalysisEditor({
     <Button
       variant="ghost"
       size="sm"
+      onMouseDown={(e) => e.preventDefault()} // Prevent focus loss
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className={cn(
-        "p-2 h-8 w-8",
-        active && "bg-muted",
-        disabled && "opacity-40"
-      )}
+      className={cn("p-2 h-8 w-8", active && "bg-muted", disabled && "opacity-40")}
     >
       {children}
     </Button>
@@ -480,34 +353,17 @@ export function AnalysisEditor({
       <Card className="flex-1 flex flex-col">
         {/* Toolbar */}
         <div className="border-b p-2 flex items-center gap-1 flex-wrap">
-          {/* Text formatting */}
           <div className="flex items-center gap-0.5 border-r pr-2 mr-2">
-            <ToolBtn 
-              onClick={() => formatText('bold')} 
-              active={activeFormats.bold} 
-              title="Bold"
-            >
+            <ToolBtn onClick={() => formatText('bold')} active={activeFormats.bold} title="Bold">
               <Bold size={16} />
             </ToolBtn>
-            <ToolBtn 
-              onClick={() => formatText('italic')} 
-              active={activeFormats.italic} 
-              title="Italic"
-            >
+            <ToolBtn onClick={() => formatText('italic')} active={activeFormats.italic} title="Italic">
               <Italic size={16} />
             </ToolBtn>
-            <ToolBtn 
-              onClick={() => formatText('underline')} 
-              active={activeFormats.underline} 
-              title="Underline"
-            >
+            <ToolBtn onClick={() => formatText('underline')} active={activeFormats.underline} title="Underline">
               <Underline size={16} />
             </ToolBtn>
-            <ToolBtn 
-              onClick={() => formatText('strikeThrough')} 
-              active={activeFormats.strikeThrough} 
-              title="Strike"
-            >
+            <ToolBtn onClick={() => formatText('strikeThrough')} active={activeFormats.strikeThrough} title="Strike">
               <Strikethrough size={16} />
             </ToolBtn>
             <ToolBtn onClick={() => formatText('removeFormat')} title="Clear">
@@ -515,7 +371,6 @@ export function AnalysisEditor({
             </ToolBtn>
           </div>
 
-          {/* Lists and structure */}
           <div className="flex items-center gap-0.5 border-r pr-2 mr-2">
             <ToolBtn onClick={() => formatText('insertUnorderedList')} title="Bullet list">
               <List size={16} />
@@ -531,7 +386,6 @@ export function AnalysisEditor({
             </ToolBtn>
           </div>
 
-          {/* Undo/Redo */}
           <div className="flex items-center gap-0.5 border-r pr-2 mr-2">
             <ToolBtn onClick={() => formatText('undo')} title="Undo">
               <Undo size={16} />
@@ -541,39 +395,23 @@ export function AnalysisEditor({
             </ToolBtn>
           </div>
 
-          {/* Smart expansion */}
           <div className="flex items-center gap-1 border-r pr-2 mr-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={expandToWord}
-              className="text-xs px-2 py-1 h-7"
-            >
+            <Button variant="outline" size="sm" onMouseDown={(e) => e.preventDefault()} onClick={expandToWord} className="text-xs px-2 py-1 h-7">
               Word
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={expandToSentence}
-              className="text-xs px-2 py-1 h-7"
-            >
+            <Button variant="outline" size="sm" onMouseDown={(e) => e.preventDefault()} onClick={expandToSentence} className="text-xs px-2 py-1 h-7">
               Sentence
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={expandToParagraph}
-              className="text-xs px-2 py-1 h-7"
-            >
+            <Button variant="outline" size="sm" onMouseDown={(e) => e.preventDefault()} onClick={expandToParagraph} className="text-xs px-2 py-1 h-7">
               Paragraph
             </Button>
           </div>
 
-          {/* Highlight colors */}
           <div className="flex items-center gap-1 border-r pr-2 mr-2">
             {highlightColors.map(color => (
               <button
                 key={color}
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => handleHighlight(color)}
                 className="w-5 h-5 rounded border border-gray-300 hover:scale-110 transition-transform"
                 style={{ backgroundColor: color }}
@@ -582,7 +420,6 @@ export function AnalysisEditor({
             ))}
           </div>
 
-          {/* Controls */}
           <div className="ml-auto flex items-center gap-2">
             {selectedText && (
               <Badge variant="outline" className="text-xs bg-primary/10 border-primary/30">
@@ -594,11 +431,9 @@ export function AnalysisEditor({
             <Button
               variant="outline"
               size="sm"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => setAutoAnalysisEnabled(!autoAnalysisEnabled)}
-              className={cn(
-                "text-xs h-7",
-                autoAnalysisEnabled ? "bg-primary/10 border-primary/30" : ""
-              )}
+              className={cn("text-xs h-7", autoAnalysisEnabled ? "bg-primary/10 border-primary/30" : "")}
             >
               <Sparkles className="h-3 w-3 mr-1" />
               Auto: {autoAnalysisEnabled ? "ON" : "OFF"}
@@ -617,10 +452,7 @@ export function AnalysisEditor({
                 onInput={handleContentChange}
                 onKeyUp={updateActiveFormats}
                 onClick={updateActiveFormats}
-                onMouseDown={saveSelection}
-                onFocus={saveSelection}
                 suppressContentEditableWarning
-                dangerouslySetInnerHTML={{ __html: content }}
               />
             </div>
           </div>
@@ -633,21 +465,14 @@ export function AnalysisEditor({
                   <MessageSquare size={16} className="text-primary" />
                   Analysis
                 </h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setAnalysisPanelOpen(false)}
-                  className="h-6 w-6 p-0"
-                >
+                <Button variant="ghost" size="sm" onClick={() => setAnalysisPanelOpen(false)} className="h-6 w-6 p-0">
                   <X size={14} />
                 </Button>
               </div>
               
               <ScrollArea className="flex-1 h-full">
                 <div className="p-4">
-                  <Badge variant="secondary" className="text-xs mb-3">
-                    {analysisType}
-                  </Badge>
+                  <Badge variant="secondary" className="text-xs mb-3">{analysisType}</Badge>
                   
                   <div className="p-3 bg-muted rounded border mb-4">
                     <p className="font-medium text-sm">
@@ -657,7 +482,6 @@ export function AnalysisEditor({
                     </p>
                   </div>
 
-                  {/* Word Analysis Display */}
                   {analysisType === 'word' && analysisResult && 'meta' in analysisResult && (
                     <div className="space-y-3 text-sm">
                       <div>
@@ -679,14 +503,11 @@ export function AnalysisEditor({
                     </div>
                   )}
 
-                  {/* Sentence Analysis Display */}
                   {analysisType === 'sentence' && analysisResult && 'meta' in analysisResult && (
                     <div className="space-y-3 text-sm">
                       <div>
                         <h4 className="text-xs text-muted-foreground mb-1">Complexity</h4>
-                        <Badge variant="outline" className="text-xs">
-                          {(analysisResult as SentenceAnalysis).meta.complexity_level}
-                        </Badge>
+                        <Badge variant="outline" className="text-xs">{(analysisResult as SentenceAnalysis).meta.complexity_level}</Badge>
                       </div>
                       <div>
                         <h4 className="text-xs text-muted-foreground mb-1">Main Idea</h4>
@@ -694,9 +515,7 @@ export function AnalysisEditor({
                       </div>
                       <div>
                         <h4 className="text-xs text-muted-foreground mb-1">Sentiment</h4>
-                        <Badge variant="outline" className="text-xs">
-                          {(analysisResult as SentenceAnalysis).semantics.sentiment}
-                        </Badge>
+                        <Badge variant="outline" className="text-xs">{(analysisResult as SentenceAnalysis).semantics.sentiment}</Badge>
                       </div>
                       <div>
                         <h4 className="text-xs text-muted-foreground mb-1">Translation</h4>
@@ -705,20 +524,15 @@ export function AnalysisEditor({
                     </div>
                   )}
 
-                  {/* Paragraph Analysis Display */}
                   {analysisType === 'paragraph' && analysisResult && 'meta' in analysisResult && (
                     <div className="space-y-3 text-sm">
                       <div>
                         <h4 className="text-xs text-muted-foreground mb-1">Type</h4>
-                        <Badge variant="outline" className="text-xs">
-                          {(analysisResult as ParagraphAnalysis).meta.type}
-                        </Badge>
+                        <Badge variant="outline" className="text-xs">{(analysisResult as ParagraphAnalysis).meta.type}</Badge>
                       </div>
                       <div>
                         <h4 className="text-xs text-muted-foreground mb-1">Tone</h4>
-                        <Badge variant="outline" className="text-xs">
-                          {(analysisResult as ParagraphAnalysis).meta.tone}
-                        </Badge>
+                        <Badge variant="outline" className="text-xs">{(analysisResult as ParagraphAnalysis).meta.tone}</Badge>
                       </div>
                       <div>
                         <h4 className="text-xs text-muted-foreground mb-1">Main Topic</h4>
@@ -728,9 +542,7 @@ export function AnalysisEditor({
                         <h4 className="text-xs text-muted-foreground mb-1">Keywords</h4>
                         <div className="flex flex-wrap gap-1">
                           {(analysisResult as ParagraphAnalysis).content_analysis.keywords.map((keyword, i) => (
-                            <Badge key={i} variant="secondary" className="text-xs">
-                              {keyword}
-                            </Badge>
+                            <Badge key={i} variant="secondary" className="text-xs">{keyword}</Badge>
                           ))}
                         </div>
                       </div>
@@ -739,14 +551,7 @@ export function AnalysisEditor({
 
                   <Separator className="my-4" />
                   
-                  <Button
-                    className="w-full"
-                    size="sm"
-                    onClick={() => {
-                      // Open add to vocabulary dialog
-                      setAddToVocabularyDialogOpen(true);
-                    }}
-                  >
+                  <Button className="w-full" size="sm" onClick={() => setAddToVocabularyDialogOpen(true)}>
                     <BookOpen size={14} className="mr-2" />
                     Add to Vocabulary
                   </Button>
@@ -762,21 +567,11 @@ export function AnalysisEditor({
             {textStats.characters} ký tự • {textStats.words} từ • {textStats.sentences} câu • {textStats.paragraphs} đoạn
           </div>
           
-          <Button
-            onClick={handleAnalyze}
-            disabled={!content.trim() || isAnalyzing}
-            size="sm"
-          >
+          <Button onClick={handleAnalyze} disabled={isAnalyzing} size="sm">
             {isAnalyzing ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Đang phân tích...
-              </>
+              <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Đang phân tích...</>
             ) : (
-              <>
-                <Zap className="h-4 w-4 mr-2" />
-                Phân tích
-              </>
+              <><Zap className="h-4 w-4 mr-2" />Phân tích</>
             )}
           </Button>
         </div>
@@ -791,20 +586,12 @@ export function AnalysisEditor({
           <div className="space-y-4 p-6">
             <div className="space-y-2">
               <Label htmlFor="session-title">Session Title</Label>
-              <Input
-                id="session-title"
-                placeholder="Enter session title..."
-                value={sessionTitle}
-                onChange={(e) => setSessionTitle(e.target.value)}
-                className="w-full"
-              />
+              <Input id="session-title" placeholder="Enter session title..." value={sessionTitle} onChange={(e) => setSessionTitle(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="session-type">Session Type</Label>
-              <Select value={analysisType} onValueChange={(value) => setAnalysisType(value as 'word' | 'sentence' | 'paragraph')}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select session type" />
-                </SelectTrigger>
+              <Select value={analysisType} onValueChange={(v) => setAnalysisType(v as 'word' | 'sentence' | 'paragraph')}>
+                <SelectTrigger><SelectValue placeholder="Select session type" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="word">Word Analysis</SelectItem>
                   <SelectItem value="sentence">Sentence Analysis</SelectItem>
@@ -815,36 +602,26 @@ export function AnalysisEditor({
             <div className="space-y-2">
               <Label htmlFor="existing-session">Or add to existing session</Label>
               <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select existing session" />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Select existing session" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">Create new session</SelectItem>
                   {sessions.filter(s => s.session_type === analysisType).map((session) => (
-                    <SelectItem key={session.id} value={session.id}>
-                      {session.title}
-                    </SelectItem>
+                    <SelectItem key={session.id} value={session.id}>{session.title}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setSaveToSessionDialogOpen(false)}
-            >
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={() => setSaveToSessionDialogOpen(false)}>Cancel</Button>
             <Button
               onClick={async () => {
                 try {
                   if (selectedSessionId) {
-                    // Add to existing session
                     await addAnalysisToSession(selectedSessionId, {
                       session_id: selectedSessionId,
                       analysis_type: analysisType,
-                      analysis_id: '', // WordAnalysis doesn't have id field
+                      analysis_id: '',
                       analysis_title: analysisType === 'word'
                         ? (analysisResult as WordAnalysis)?.meta?.word || 'Analysis'
                         : analysisType === 'sentence'
@@ -854,18 +631,16 @@ export function AnalysisEditor({
                       analysis_data: analysisResult
                     });
                   } else {
-                    // Create new session
                     const newSession = await createSession({
                       title: sessionTitle || `${analysisType} Analysis`,
                       description: `Analysis of: ${selectedText}`,
                       session_type: analysisType
                     });
-                    
                     if (newSession) {
                       await addAnalysisToSession(newSession.id, {
                         session_id: newSession.id,
                         analysis_type: analysisType,
-                        analysis_id: '', // WordAnalysis doesn't have id field
+                        analysis_id: '',
                         analysis_title: analysisType === 'word'
                           ? (analysisResult as WordAnalysis)?.meta?.word || 'Analysis'
                           : analysisType === 'sentence'
@@ -876,7 +651,6 @@ export function AnalysisEditor({
                       });
                     }
                   }
-                  
                   setSaveToSessionDialogOpen(false);
                   setSessionTitle('');
                   setSelectedSessionId('');
@@ -903,40 +677,20 @@ export function AnalysisEditor({
           <div className="space-y-4 p-6">
             <div className="space-y-2">
               <Label htmlFor="vocabulary-word">Word</Label>
-              <Input
-                id="vocabulary-word"
-                value={vocabularyData.word}
-                onChange={(e) => setVocabularyData(prev => ({ ...prev, word: e.target.value }))}
-                className="w-full"
-                placeholder="Enter word..."
-              />
+              <Input id="vocabulary-word" value={vocabularyData.word} onChange={(e) => setVocabularyData(prev => ({ ...prev, word: e.target.value }))} placeholder="Enter word..." />
             </div>
             <div className="space-y-2">
               <Label htmlFor="vocabulary-definition">Definition</Label>
-              <Input
-                id="vocabulary-definition"
-                value={vocabularyData.definition_en}
-                onChange={(e) => setVocabularyData(prev => ({ ...prev, definition_en: e.target.value }))}
-                className="w-full"
-                placeholder="Enter definition..."
-              />
+              <Input id="vocabulary-definition" value={vocabularyData.definition_en} onChange={(e) => setVocabularyData(prev => ({ ...prev, definition_en: e.target.value }))} placeholder="Enter definition..." />
             </div>
             <div className="space-y-2">
               <Label htmlFor="vocabulary-vietnamese">Vietnamese Translation</Label>
-              <Input
-                id="vocabulary-vietnamese"
-                value={vocabularyData.definition_vi}
-                onChange={(e) => setVocabularyData(prev => ({ ...prev, definition_vi: e.target.value }))}
-                className="w-full"
-                placeholder="Enter Vietnamese translation..."
-              />
+              <Input id="vocabulary-vietnamese" value={vocabularyData.definition_vi} onChange={(e) => setVocabularyData(prev => ({ ...prev, definition_vi: e.target.value }))} placeholder="Enter Vietnamese translation..." />
             </div>
             <div className="space-y-2">
               <Label htmlFor="vocabulary-difficulty">Difficulty Level</Label>
-              <Select value={vocabularyData.difficulty_level.toString()} onValueChange={(value) => setVocabularyData(prev => ({ ...prev, difficulty_level: parseInt(value) }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select difficulty" />
-                </SelectTrigger>
+              <Select value={vocabularyData.difficulty_level.toString()} onValueChange={(v) => setVocabularyData(prev => ({ ...prev, difficulty_level: parseInt(v) }))}>
+                <SelectTrigger><SelectValue placeholder="Select difficulty" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="1">Easy</SelectItem>
                   <SelectItem value="2">Medium</SelectItem>
@@ -947,29 +701,17 @@ export function AnalysisEditor({
             </div>
           </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setAddToVocabularyDialogOpen(false)}
-            >
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={() => setAddToVocabularyDialogOpen(false)}>Cancel</Button>
             <Button
               onClick={async () => {
                 try {
-                  const wordData = {
+                  await createWord({
                     ...vocabularyData,
                     source_type: 'analysis' as const,
-                    source_reference: '' // WordAnalysis doesn't have id field
-                  };
-                  
-                  await createWord(wordData);
-                  setAddToVocabularyDialogOpen(false);
-                  setVocabularyData({
-                    word: '',
-                    definition_en: '',
-                    definition_vi: '',
-                    difficulty_level: 1
+                    source_reference: ''
                   });
+                  setAddToVocabularyDialogOpen(false);
+                  setVocabularyData({ word: '', definition_en: '', definition_vi: '', difficulty_level: 1 });
                 } catch (error) {
                   console.error('Failed to add to vocabulary:', error);
                   setError('Failed to add to vocabulary');
@@ -987,31 +729,19 @@ export function AnalysisEditor({
       {/* Bubble Menu */}
       {bubbleMenuPosition.show && (
         <div
+          data-bubble-menu
           className="fixed bg-background rounded-lg shadow-lg border border-border p-2 flex items-center gap-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200"
-          style={{ 
-            left: bubbleMenuPosition.x, 
-            top: bubbleMenuPosition.y, 
-            transform: 'translate(-50%, -100%)' 
-          }}
+          style={{ left: bubbleMenuPosition.x, top: bubbleMenuPosition.y, transform: 'translate(-50%, -100%)' }}
         >
-          <Badge variant="secondary" className="text-xs px-2 border-r">
-            {selectionType}
-          </Badge>
-          <Button
-            size="sm"
-            onClick={handleAnalyze}
-            className="h-7 px-2 text-xs"
-          >
-            <BookMarked size={12} className="mr-1" />
-            Analyze
+          <Badge variant="secondary" className="text-xs px-2 border-r">{selectionType}</Badge>
+          <Button size="sm" onMouseDown={(e) => e.preventDefault()} onClick={handleAnalyze} className="h-7 px-2 text-xs">
+            <BookMarked size={12} className="mr-1" />Analyze
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => {
-              // Pronounce functionality could be implemented here
-              console.log('Pronounce:', selectedText);
-            }}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => console.log('Pronounce:', selectedText)}
             className="h-7 w-7 p-0"
             title="Pronounce"
           >
@@ -1020,6 +750,7 @@ export function AnalysisEditor({
           <Button
             variant="ghost"
             size="sm"
+            onMouseDown={(e) => e.preventDefault()}
             onClick={() => handleHighlight('#fef08a')}
             className="h-7 w-7 p-0"
             title="Highlight"
