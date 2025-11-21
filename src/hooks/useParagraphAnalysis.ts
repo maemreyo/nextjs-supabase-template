@@ -87,10 +87,10 @@ export function useParagraphAnalysisMutation() {
 
   return useMutation({
     mutationFn: async (params: AnalyzeParagraphRequest): Promise<ParagraphAnalysis> => {
-      // Lấy access token cho mutation
-      const { useSupabase } = await import('@/components/providers/supabase-provider');
-      const { getAccessToken } = useSupabase();
-      const accessToken = await getAccessToken();
+      // FIX: Sử dụng supabase client trực tiếp thay vì hook
+      const { supabase } = await import('@/lib/supabase/client');
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
       
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -142,10 +142,10 @@ export function usePrefetchParagraphAnalysis() {
     queryClient.prefetchQuery({
       queryKey: paragraphAnalysisKeys.detail(paragraph),
       queryFn: async (): Promise<ParagraphAnalysis> => {
-        // Lấy access token cho prefetch
-        const { useSupabase } = await import('@/components/providers/supabase-provider');
-        const { getAccessToken } = useSupabase();
-        const accessToken = await getAccessToken();
+        // FIX: Sử dụng supabase client trực tiếp thay vì hook
+        const { supabase } = await import('@/lib/supabase/client');
+        const { data: { session } } = await supabase.auth.getSession();
+        const accessToken = session?.access_token;
         
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',

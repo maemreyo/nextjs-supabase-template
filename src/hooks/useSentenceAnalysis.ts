@@ -27,10 +27,10 @@ export function useSentenceAnalysis(
       // DEBUG: Log để kiểm tra authentication state
       console.log('DEBUG: useSentenceAnalysis - Starting API call for sentence:', sentence.substring(0, 50) + '...');
       
-      // DEBUG: Kiểm tra xem có access token không
-      const { useSupabase } = await import('@/components/providers/supabase-provider');
-      const { getAccessToken } = useSupabase();
-      const accessToken = await getAccessToken();
+      // FIX: Sử dụng supabase client trực tiếp thay vì hook
+      const { supabase } = await import('@/lib/supabase/client');
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
       console.log('DEBUG: useSentenceAnalysis - Access token exists:', !!accessToken);
       
       const headers: Record<string, string> = {
@@ -89,10 +89,10 @@ export function useSentenceAnalysisMutation() {
 
   return useMutation({
     mutationFn: async (params: AnalyzeSentenceRequest): Promise<SentenceAnalysis> => {
-      // Lấy access token cho mutation
-      const { useSupabase } = await import('@/components/providers/supabase-provider');
-      const { getAccessToken } = useSupabase();
-      const accessToken = await getAccessToken();
+      // FIX: Sử dụng supabase client trực tiếp thay vì hook
+      const { supabase } = await import('@/lib/supabase/client');
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
       
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -144,10 +144,10 @@ export function usePrefetchSentenceAnalysis() {
     queryClient.prefetchQuery({
       queryKey: sentenceAnalysisKeys.detail(sentence, paragraphContext),
       queryFn: async (): Promise<SentenceAnalysis> => {
-        // Lấy access token cho prefetch
-        const { useSupabase } = await import('@/components/providers/supabase-provider');
-        const { getAccessToken } = useSupabase();
-        const accessToken = await getAccessToken();
+        // FIX: Sử dụng supabase client trực tiếp thay vì hook
+        const { supabase } = await import('@/lib/supabase/client');
+        const { data: { session } } = await supabase.auth.getSession();
+        const accessToken = session?.access_token;
         
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
