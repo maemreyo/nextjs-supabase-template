@@ -25,9 +25,9 @@ export function WordAnalysisDisplay({
   
   if (error) {
     return (
-      <Card className="p-6 border-red-200 bg-red-50">
+      <Card className="p-6 border-destructive/50 bg-destructive/10 text-destructive">
         <div className="text-center">
-          <p className="text-red-600">Lỗi khi tải phân tích từ: {error}</p>
+          <p className="text-destructive">Lỗi khi tải phân tích từ: {error}</p>
         </div>
       </Card>
     );
@@ -38,7 +38,7 @@ export function WordAnalysisDisplay({
       {/* Word Meta Section */}
       <Card className="p-4">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xl font-bold">{analysis.meta.word}</h3>
+          <h3 className="text-xl font-bold text-foreground">{analysis.meta.word}</h3>
           <Button variant="ghost" size="sm">
             <Volume2 className="h-4 w-4" />
           </Button>
@@ -51,7 +51,7 @@ export function WordAnalysisDisplay({
             <Badge>{analysis.meta.tone}</Badge>
           </div>
           
-          <div className="text-sm text-gray-600 font-mono bg-gray-50 p-2 rounded">
+          <div className="text-sm text-muted-foreground font-mono bg-muted p-2 rounded">
             {analysis.meta.ipa}
           </div>
         </div>
@@ -59,42 +59,42 @@ export function WordAnalysisDisplay({
 
       {/* Word Definitions Section */}
       <Card className="p-4">
-        <h4 className="font-semibold mb-3">Định nghĩa</h4>
+        <h4 className="font-semibold mb-3 text-foreground">Định nghĩa</h4>
         
         <div className="space-y-3">
           <div>
-            <h5 className="text-sm font-medium text-gray-600 mb-1">Nghĩa gốc</h5>
-            <p className="text-sm">{analysis.definitions.root_meaning}</p>
+            <h5 className="text-sm font-medium text-muted-foreground mb-1">Nghĩa gốc</h5>
+            <p className="text-sm text-foreground">{analysis.definitions.root_meaning}</p>
           </div>
           
           <div>
-            <h5 className="text-sm font-medium text-gray-600 mb-1">Nghĩa trong ngữ cảnh</h5>
-            <p className="text-sm bg-blue-50 p-2 rounded">{analysis.definitions.context_meaning}</p>
+            <h5 className="text-sm font-medium text-muted-foreground mb-1">Nghĩa trong ngữ cảnh</h5>
+            <p className="text-sm bg-primary/10 p-2 rounded text-foreground">{analysis.definitions.context_meaning}</p>
           </div>
           
           <div>
-            <h5 className="text-sm font-medium text-gray-600 mb-1">Dịch nghĩa</h5>
-            <p className="text-sm font-medium">{analysis.definitions.vietnamese_translation}</p>
+            <h5 className="text-sm font-medium text-muted-foreground mb-1">Dịch nghĩa</h5>
+            <p className="text-sm font-medium text-foreground">{analysis.definitions.vietnamese_translation}</p>
           </div>
         </div>
       </Card>
 
       {/* Inference Strategy Section */}
-      <Card className="p-4 bg-amber-50 border-amber-200">
-        <h4 className="font-semibold mb-3 flex items-center gap-2">
-          <Lightbulb className="h-4 w-4 text-amber-600" />
+      <Card className="p-4 bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800">
+        <h4 className="font-semibold mb-3 flex items-center gap-2 text-foreground">
+          <Lightbulb className="h-4 w-4 text-amber-600 dark:text-amber-400" />
           Chiến lược suy luận
         </h4>
         
         <div className="space-y-2">
           <div>
-            <h5 className="text-sm font-medium mb-1">Dấu hiệu nhận biết:</h5>
-            <p className="text-sm">{analysis.inference_strategy.clues}</p>
+            <h5 className="text-sm font-medium mb-1 text-foreground">Dấu hiệu nhận biết:</h5>
+            <p className="text-sm text-foreground">{analysis.inference_strategy.clues}</p>
           </div>
           
           <div>
-            <h5 className="text-sm font-medium mb-1">Cách suy luận:</h5>
-            <p className="text-sm">{analysis.inference_strategy.reasoning}</p>
+            <h5 className="text-sm font-medium mb-1 text-foreground">Cách suy luận:</h5>
+            <p className="text-sm text-foreground">{analysis.inference_strategy.reasoning}</p>
           </div>
         </div>
       </Card>
@@ -124,15 +124,15 @@ export function WordAnalysisDisplay({
 function WordAnalysisSkeleton() {
   return (
     <div className="space-y-4 animate-pulse">
-      <div className="h-6 bg-gray-200 rounded w-1/3"></div>
+      <div className="h-6 bg-muted rounded w-1/3"></div>
       
-      <div className="h-4 bg-gray-200 rounded w-full"></div>
-      <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-      <div className="h-20 bg-gray-200 rounded w-full"></div>
+      <div className="h-4 bg-muted rounded w-full"></div>
+      <div className="h-4 bg-muted rounded w-2/3"></div>
+      <div className="h-20 bg-muted rounded w-full"></div>
       
-      <div className="h-4 bg-gray-200 rounded w-full"></div>
-      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-      <div className="h-32 bg-gray-200 rounded w-full"></div>
+      <div className="h-4 bg-muted rounded w-full"></div>
+      <div className="h-4 bg-muted rounded w-3/4"></div>
+      <div className="h-32 bg-muted rounded w-full"></div>
     </div>
   );
 }

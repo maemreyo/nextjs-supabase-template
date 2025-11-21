@@ -22,8 +22,8 @@ export function RewriteSuggestions({
 
   return (
     <Card className={`p-4 ${className}`}>
-      <h4 className="font-semibold mb-3 flex items-center gap-2">
-        <Edit3 className="h-4 w-4 text-blue-600" />
+      <h4 className="font-semibold mb-3 flex items-center gap-2 text-foreground">
+        <Edit3 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
         Gợi ý viết lại
       </h4>
       
@@ -39,18 +39,18 @@ export function RewriteSuggestions({
         {suggestions.map((suggestion) => (
           <TabsContent key={suggestion.style} value={suggestion.style} className="mt-3">
             <div className="space-y-3">
-              <div className="bg-gray-50 p-3 rounded border-l-4 border-blue-500">
-                <p className="text-sm italic text-gray-700">"{suggestion.text}"</p>
+              <div className="bg-muted p-3 rounded border-l-4 border-primary">
+                <p className="text-sm italic text-foreground">"{suggestion.text}"</p>
               </div>
               
-              <div className="text-sm text-gray-600">
-                <p className="font-medium mb-1">Thay đổi:</p>
-                <p className="text-xs bg-yellow-50 p-2 rounded">{suggestion.change_log}</p>
+              <div className="text-sm text-muted-foreground">
+                <p className="font-medium mb-1 text-foreground">Thay đổi:</p>
+                <p className="text-xs bg-yellow-50 dark:bg-yellow-950/20 p-2 rounded text-foreground">{suggestion.change_log}</p>
               </div>
               
               {onApply && (
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   onClick={() => onApply(suggestion.text)}
                   className="mt-2"
                   variant="outline"

@@ -83,7 +83,7 @@ export function AnalysisEditor({
     <div className={`space-y-4 ${className}`}>
       <Card className="p-4">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold">Văn bản phân tích</h3>
+          <h3 className="text-lg font-semibold text-foreground">Văn bản phân tích</h3>
           <div className="flex items-center gap-2">
             {selectedText && (
               <Badge variant="outline" className="text-xs">
@@ -105,7 +105,7 @@ export function AnalysisEditor({
         />
 
         <div className="flex items-center justify-between mt-3">
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-muted-foreground">
             {text.length} ký tự • {text.split(/\s+/).filter(w => w.length > 0).length} từ • {getSentences(text).length} câu • {getParagraphs(text).length} đoạn
           </div>
           
@@ -130,14 +130,14 @@ export function AnalysisEditor({
       </Card>
 
       {selectedText && (
-        <Card className="p-4 bg-blue-50 border-blue-200">
+        <Card className="p-4 bg-primary/5 border-primary/20">
           <div className="flex items-center justify-between mb-3">
-            <h4 className="font-semibold">Văn bản đã chọn</h4>
+            <h4 className="font-semibold text-foreground">Văn bản đã chọn</h4>
             <Badge variant="outline">{selectedText.length} ký tự</Badge>
           </div>
           
-          <div className="bg-white p-3 rounded border-l-4 border-blue-500 mb-3">
-            <p className="text-sm italic">"{selectedText}"</p>
+          <div className="bg-background p-3 rounded border-l-4 border-primary mb-3">
+            <p className="text-sm italic text-foreground">"{selectedText}"</p>
           </div>
 
           <Tabs value={analysisType} onValueChange={(value) => setAnalysisType(value as any)}>
@@ -159,19 +159,19 @@ export function AnalysisEditor({
             </TabsList>
             
             <TabsContent value="word" className="mt-3">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 Phân tích chi tiết từ vựng bao gồm định nghĩa, đồng nghĩa, trái nghĩa, và cách dùng trong ngữ cảnh.
               </p>
             </TabsContent>
             
             <TabsContent value="sentence" className="mt-3">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 Phân tích cấu trúc ngữ pháp, ý nghĩa, và các gợi ý viết lại câu để cải thiện.
               </p>
             </TabsContent>
             
             <TabsContent value="paragraph" className="mt-3">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 Phân tích toàn diện đoạn văn về cấu trúc, mạch lạc, phong cách và các góp ý cải thiện.
               </p>
             </TabsContent>

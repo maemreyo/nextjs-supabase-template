@@ -162,24 +162,24 @@ function AnalysisPageContent() {
     : paragraphAnalysis.isLoading;
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">AI Semantic Analysis Editor</h1>
-        <p className="text-gray-600">
+    <div className="container mx-auto px-4 py-6 sm:px-6 lg:px-8 max-w-7xl">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground mb-2">AI Semantic Analysis Editor</h1>
+        <p className="text-muted-foreground text-lg">
           Phân tích chi tiết từ, câu và đoạn văn bằng AI để hiểu sâu sắc thái ngữ nghĩa và cải thiện kỹ năng viết.
         </p>
       </div>
 
       {lastError && (
-        <Alert className="mb-6 border-red-200 bg-red-50">
+        <Alert className="mb-6 border-destructive/50 bg-destructive/10 text-destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>{lastError}</AlertDescription>
         </Alert>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
         {/* Main Editor */}
-        <div className="lg:col-span-2">
+        <div className="xl:col-span-8">
           <AnalysisEditor
             onTextSelect={handleTextSelect}
             onAnalyze={handleAnalyze}
@@ -188,9 +188,9 @@ function AnalysisPageContent() {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-4">
+        <div className="xl:col-span-4 space-y-4">
           {/* Analysis Tabs */}
-          <Card className="p-4">
+          <Card className="p-4 sticky top-6">
             <Tabs value={activeTab} onValueChange={(value) => handleTabChange(value as any)}>
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="word" className="flex items-center gap-2">
@@ -215,7 +215,7 @@ function AnalysisPageContent() {
           {selectedText && (
             <Card className="p-4">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold">Kết quả phân tích</h3>
+                <h3 className="font-semibold text-foreground">Kết quả phân tích</h3>
                 <Badge variant="outline" className="text-xs">
                   {activeTab === 'word' ? 'Từ' : activeTab === 'sentence' ? 'Câu' : 'Đoạn'}
                 </Badge>
@@ -224,19 +224,19 @@ function AnalysisPageContent() {
               {currentLoading && (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                  <span className="text-sm text-gray-600">Đang phân tích...</span>
+                  <span className="text-sm text-muted-foreground">Đang phân tích...</span>
                 </div>
               )}
 
               {currentError && (
-                <Alert className="border-red-200 bg-red-50">
+                <Alert className="border-destructive/50 bg-destructive/10 text-destructive">
                   <AlertTriangle className="h-4 w-4" />
                   <AlertDescription>{currentError instanceof Error ? currentError.message : String(currentError)}</AlertDescription>
                 </Alert>
               )}
 
               {currentAnalysis && !currentLoading && !currentError && (
-                <div className="max-h-[600px] overflow-y-auto">
+                <div className="max-h-[600px] overflow-y-auto custom-scrollbar">
                   {activeTab === 'word' && (
                     <WordAnalysisDisplay
                       analysis={currentAnalysis as WordAnalysis}
@@ -265,7 +265,7 @@ function AnalysisPageContent() {
 
           {/* Quick Actions */}
           <Card className="p-4">
-            <h3 className="font-semibold mb-3 flex items-center gap-2">
+            <h3 className="font-semibold mb-3 flex items-center gap-2 text-foreground">
               <Zap className="h-4 w-4" />
               Thao tác nhanh
             </h3>
@@ -303,7 +303,7 @@ function AnalysisPageContent() {
                 {recentHistory.map((item) => (
                   <div 
                     key={item.id}
-                    className="p-2 border rounded cursor-pointer hover:bg-gray-50"
+                    className="p-2 border rounded cursor-pointer hover:bg-accent/50 transition-colors"
                     onClick={() => {
                       setSelectedText(item.input);
                       setAnalysisType(item.type);
@@ -317,11 +317,11 @@ function AnalysisPageContent() {
                       <Badge variant="outline" className="text-xs">
                         {item.type === 'word' ? 'Từ' : item.type === 'sentence' ? 'Câu' : 'Đoạn'}
                       </Badge>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-muted-foreground">
                         {new Date(item.timestamp).toLocaleString('vi-VN')}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-700 truncate">
+                    <p className="text-sm text-foreground truncate">
                       "{item.input.substring(0, 50)}{item.input.length > 50 ? '...' : ''}"
                     </p>
                   </div>

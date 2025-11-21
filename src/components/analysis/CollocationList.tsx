@@ -37,41 +37,41 @@ export function CollocationList({
   const getFrequencyBadgeColor = (level: string) => {
     switch (level) {
       case 'common':
-        return 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200';
+        return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 border-green-200 dark:border-green-800 hover:bg-green-200 dark:hover:bg-green-800/50';
       case 'uncommon':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200';
+        return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 border-yellow-200 dark:border-yellow-800 hover:bg-yellow-200 dark:hover:bg-yellow-800/50';
       case 'rare':
-        return 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200';
+        return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 border-red-200 dark:border-red-800 hover:bg-red-200 dark:hover:bg-red-800/50';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200';
+        return 'bg-gray-100 dark:bg-gray-800/30 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700/50';
     }
   };
 
   return (
     <Card className={`p-4 ${className}`}>
-      <h4 className="font-semibold mb-3 text-blue-700 flex items-center justify-between">
+      <h4 className="font-semibold mb-3 text-blue-700 dark:text-blue-400 flex items-center justify-between">
         <span>Cách dùng kết hợp (Collocations)</span>
         <Badge variant="outline" className="text-xs">
           {collocations.length} items
         </Badge>
       </h4>
       
-      <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+      <div className="space-y-3 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
         {displayCollocations.map((collocation, index) => (
-          <div 
+          <div
             key={index}
-            className="border rounded-lg p-3 hover:bg-blue-50 cursor-pointer transition-all duration-200 hover:shadow-sm"
+            className="border rounded-lg p-3 hover:bg-blue-50 dark:hover:bg-blue-950/20 cursor-pointer transition-all duration-200 hover:shadow-sm"
             onClick={() => onCollocationClick?.(collocation)}
           >
             <div className="flex items-start justify-between mb-2">
               <div className="flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-medium text-blue-800 text-sm">
+                  <span className="font-medium text-blue-800 dark:text-blue-400 text-sm">
                     {collocation.phrase}
                   </span>
                   
                   {showFrequencyLevel && (
-                    <Badge 
+                    <Badge
                       variant={getFrequencyBadgeVariant(collocation.frequency_level)}
                       className={`text-xs ${getFrequencyBadgeColor(collocation.frequency_level)}`}
                     >
@@ -81,9 +81,9 @@ export function CollocationList({
                 </div>
               </div>
               
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 className="h-6 w-6 p-0 ml-2 flex-shrink-0"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -96,13 +96,13 @@ export function CollocationList({
             </div>
             
             <div className="space-y-1">
-              <p className="text-sm text-gray-700">
+              <p className="text-sm text-foreground">
                 {collocation.meaning}
               </p>
               
               {collocation.usage_example && (
-                <div className="bg-gray-50 p-2 rounded border-l-2 border-blue-300">
-                  <p className="text-xs italic text-gray-600">
+                <div className="bg-muted p-2 rounded border-l-2 border-blue-300 dark:border-blue-600">
+                  <p className="text-xs italic text-muted-foreground">
                     "{collocation.usage_example}"
                   </p>
                 </div>
