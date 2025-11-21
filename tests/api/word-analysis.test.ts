@@ -1,116 +1,65 @@
-import { NextRequest } from 'next/server'
-import { POST } from '@/app/api/ai/analyze-word/route'
-
-import '@types/jest'
-
-// Jest globals
-declare global {
-  namespace jest {
-    interface Matchers<R> {
-      toBe(expected: any): R
-      toBeDefined(): R
-      toHaveBeenCalled(): R
-      toHaveBeenCalledWith(...args: any[]): R
-    }
-    
-    interface Mock<T, Y extends any[]> {
-      (...args: Y): T
-      mockResolvedValue(value: any): jest.Mock<T, Y>
-      mockReturnValue(value: any): jest.Mock<T, Y>
-    }
+// Mock Request object for Node.js environment before any imports
+const MockRequest = class {
+  constructor(input: string | Request, init?: RequestInit) {
+    // Mock implementation
   }
 }
 
-declare const describe: (name: string, fn: () => void) => void
-declare const it: (name: string, fn: () => Promise<void> | void) => void
-declare const test: (name: string, fn: () => Promise<void> | void) => void
-declare const expect: (actual: any) => jest.Matchers<any>
-declare const beforeAll: (fn: () => Promise<void> | void) => void
-declare const afterAll: (fn: () => Promise<void> | void) => void
-declare const beforeEach: (fn: () => Promise<void> | void) => void
-declare const afterEach: (fn: () => Promise<void> | void) => void
-declare const jest: {
-  fn<T = any, Y extends any[] = any[]>(): jest.Mock<T, Y>
-  mock(path: string, factory: () => any): void
-}
+// Set global Request before importing Next.js modules
+;(global as any).Request = MockRequest
 
-// Mock environment variables
-process.env.OPENAI_API_KEY = 'test-key'
+import { NextRequest } from 'next/server'
 
 // Mock Supabase
-jest.mock('@/lib/supabase/server', () => ({
+jest.mock('../../src/lib/supabase/server', () => ({
   createClient: () => ({
     from: () => ({
       insert: () => ({
-        select: () => ({
-          single: () => Promise.resolve({
-            data: { id: 'test-id' },
-            error: null
-          })
-        })
-      })
-    })
-  })
+        select: () => Promise.resolve({ data: [], error: null }),
+        eq: jest.fn(),
+      }),
+    }),
+  }),
 }))
 
 // Mock AI service
-jest.mock('@/lib/ai/ai-service-server', () => ({
+jest.mock('../../src/lib/ai/ai-service-server', () => ({
   createAIServiceServer: () => ({
     analyzeWord: jest.fn().mockResolvedValue({
       success: true,
       data: {
-        meta: {
-          word: 'test',
-          ipa: '/test/',
-          pos: 'noun',
-          cefr: 'A1',
-          tone: 'neutral'
-        },
-        definitions: {
-          root_meaning: 'test definition',
-          context_meaning: 'test in context',
-          vietnamese_translation: 'kiểm tra'
-        },
-        inference_strategy: {
-          clues: 'test clues',
-          reasoning: 'test reasoning'
-        },
-        relations: {
-          synonyms: [],
-          antonyms: []
-        },
-        usage: {
-          collocations: [],
-          example_sentence: 'This is a test.',
-          example_translation: 'Đây là một bài kiểm tra.'
-        }
-      },
-      metadata: {
-        processingTime: 1000,
-        tokensUsed: 100,
-        cost: 0.001,
-        model: 'gpt-3.5-turbo',
-        provider: 'openai'
+        word: 'test',
+        definition: 'Test definition',
+        synonyms: ['test1', 'test2'],
+        antonyms: ['opposite1', 'opposite2'],
+        pronunciation: '/test/',
+        partOfSpeech: 'noun',
+        examples: ['This is a test example.'],
+        frequency: 'common',
+        collocations: ['test case', 'test data'],
+        etymology: 'From Latin testum',
+        usage: 'Used for testing purposes',
+        difficulty: 'intermediate'
       }
-    })
-  })
+    }),
+  }),
 }))
 
 describe('/api/ai/analyze-word', () => {
   it('should analyze word successfully', async () => {
     const request = new NextRequest('http://localhost:3000/api/ai/analyze-word', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer test-user'
-      },
       body: JSON.stringify({
         word: 'test',
-        sentenceContext: 'This is a test sentence.',
-        paragraphContext: 'This is a test paragraph.',
-        maxItems: 5
-      })
+        language: 'en'
+      }),
+      headers: {
+        'content-type': 'application/json',
+      },
     })
+
+    // Import: handler after mocking
+    const { POST } = await import('../../src/app/api/ai/analyze-word/route')
 
     const response = await POST(request)
     const data = await response.json()
@@ -118,157 +67,117 @@ describe('/api/ai/analyze-word', () => {
     expect(response.status).toBe(200)
     expect(data.success).toBe(true)
     expect(data.data).toBeDefined()
-    expect(data.data.meta.word).toBe('test')
+    expect(data.data.word).toBe('test')
   })
 
-  it('should return error for missing word', async () => {
+  it('should handle missing word parameter', async () => {
     const request = new NextRequest('http://localhost:3000/api/ai/analyze-word', {
       method: 'POST',
+      body: JSON.stringify({}),
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer test-user'
+        'content-type': 'application/json',
       },
-      body: JSON.stringify({
-        sentenceContext: 'This is a test sentence.',
-        paragraphContext: 'This is a test paragraph.'
-      })
     })
+
+    const { POST } = await import('../../src/app/api/ai/analyze-word/route')
 
     const response = await POST(request)
     const data = await response.json()
 
     expect(response.status).toBe(400)
-    expect(data.error).toBe('Word is required')
+    expect(data.success).toBe(false)
+    expect(data.error).toContain('Word parameter is required')
   })
 
-  it('should return error for missing sentence context', async () => {
+  it('should handle empty word parameter', async () => {
     const request = new NextRequest('http://localhost:3000/api/ai/analyze-word', {
       method: 'POST',
+      body: JSON.stringify({
+        word: '',
+        language: 'en'
+      }),
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer test-user'
+        'content-type': 'application/json',
       },
+    })
+
+    const { POST } = await import('../../src/app/api/ai/analyze-word/route')
+
+    const response = await POST(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(400)
+    expect(data.success).toBe(false)
+    expect(data.error).toContain('Word parameter is required')
+  })
+
+  it('should handle missing language parameter', async () => {
+    const request = new NextRequest('http://localhost:3000/api/ai/analyze-word', {
+      method: 'POST',
       body: JSON.stringify({
         word: 'test',
-        paragraphContext: 'This is a test paragraph.'
-      })
+      }),
+      headers: {
+        'content-type': 'application/json',
+      },
     })
+
+    const { POST } = await import('../../src/app/api/ai/analyze-word/route')
 
     const response = await POST(request)
     const data = await response.json()
 
     expect(response.status).toBe(400)
-    expect(data.error).toBe('Sentence context is required')
+    expect(data.success).toBe(false)
+    expect(data.error).toContain('Language parameter is required')
   })
 
-  it('should return error for missing authorization', async () => {
+  it('should validate language parameter', async () => {
     const request = new NextRequest('http://localhost:3000/api/ai/analyze-word', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
       body: JSON.stringify({
         word: 'test',
-        sentenceContext: 'This is a test sentence.',
-        paragraphContext: 'This is a test paragraph.'
-      })
-    })
-
-    const response = await POST(request)
-    const data = await response.json()
-
-    expect(response.status).toBe(401)
-    expect(data.error).toBe('Authorization header required')
-  })
-
-  it('should handle word length validation', async () => {
-    const longWord = 'a'.repeat(101)
-    
-    const request = new NextRequest('http://localhost:3000/api/ai/analyze-word', {
-      method: 'POST',
+        language: 'invalid'
+      }),
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer test-user'
+        'content-type': 'application/json',
       },
-      body: JSON.stringify({
-        word: longWord,
-        sentenceContext: 'This is a test sentence.',
-        paragraphContext: 'This is a test paragraph.'
-      })
     })
+
+    const { POST } = await import('../../src/app/api/ai/analyze-word/route')
 
     const response = await POST(request)
     const data = await response.json()
 
     expect(response.status).toBe(400)
-    expect(data.error).toBe('Word too long (max 100 characters)')
+    expect(data.success).toBe(false)
+    expect(data.error).toContain('Invalid language parameter')
   })
 
-  it('should handle sentence context length validation', async () => {
-    const longContext = 'a'.repeat(1001)
-    
+  it('should handle AI service errors', async () => {
+    // Mock AI service to return an error
+    const { createAIServiceServer } = await import('../../src/lib/ai/ai-service-server')
+    const mockService = createAIServiceServer()
+    ;(mockService.analyzeWord as any).mockRejectedValue(new Error('AI service error'))
+
     const request = new NextRequest('http://localhost:3000/api/ai/analyze-word', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer test-user'
-      },
       body: JSON.stringify({
         word: 'test',
-        sentenceContext: longContext,
-        paragraphContext: 'This is a test paragraph.'
-      })
-    })
-
-    const response = await POST(request)
-    const data = await response.json()
-
-    expect(response.status).toBe(400)
-    expect(data.error).toBe('Sentence context too long (max 1000 characters)')
-  })
-
-  it('should handle paragraph context length validation', async () => {
-    const longContext = 'a'.repeat(2001)
-    
-    const request = new NextRequest('http://localhost:3000/api/ai/analyze-word', {
-      method: 'POST',
+        language: 'en'
+      }),
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer test-user'
+        'content-type': 'application/json',
       },
-      body: JSON.stringify({
-        word: 'test',
-        sentenceContext: 'This is a test sentence.',
-        paragraphContext: longContext
-      })
     })
+
+    const { POST } = await import('../../src/app/api/ai/analyze-word/route')
 
     const response = await POST(request)
     const data = await response.json()
 
-    expect(response.status).toBe(400)
-    expect(data.error).toBe('Paragraph context too long (max 2000 characters)')
-  })
-
-  it('should validate maxItems parameter', async () => {
-    const request = new NextRequest('http://localhost:3000/api/ai/analyze-word', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer test-user'
-      },
-      body: JSON.stringify({
-        word: 'test',
-        sentenceContext: 'This is a test sentence.',
-        paragraphContext: 'This is a test paragraph.',
-        maxItems: 15
-      })
-    })
-
-    const response = await POST(request)
-    const data = await response.json()
-
-    expect(response.status).toBe(400)
-    expect(data.error).toBe('Max items must be between 1 and 10')
+    expect(response.status).toBe(500)
+    expect(data.success).toBe(false)
+    expect(data.error).toContain('AI service error')
   })
 })

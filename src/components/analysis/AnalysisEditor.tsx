@@ -42,17 +42,19 @@ export function AnalysisEditor({
     
     // Tự động xác định loại phân tích dựa trên độ dài
     if (selected.length > 0) {
+      let newAnalysisType: 'word' | 'sentence' | 'paragraph';
       if (selected.split(' ').length === 1) {
-        setAnalysisType('word');
+        newAnalysisType = 'word';
       } else if (selected.split('.').length <= 2) {
-        setAnalysisType('sentence');
+        newAnalysisType = 'sentence';
       } else {
-        setAnalysisType('paragraph');
+        newAnalysisType = 'paragraph';
       }
       
-      onTextSelect?.(selected, analysisType);
+      setAnalysisType(newAnalysisType);
+      onTextSelect?.(selected, newAnalysisType);
     }
-  }, [text, onTextSelect, analysisType]);
+  }, [text, onTextSelect]);
 
   // Xử lý khi người dùng click nút phân tích
   const handleAnalyze = useCallback(async () => {
