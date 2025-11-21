@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import type { AnalysisEditorProps, WordAnalysis, SentenceAnalysis, ParagraphAnalysis } from './types';
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { useSessionStore } from '@/stores/session-store';
 import { useVocabularyStore } from '@/stores/vocabulary-store';
@@ -83,8 +84,43 @@ export function AnalysisEditor({
 
   const { sessions, createSession, addAnalysisToSession } = useSessionStore();
   const { createWord } = useVocabularyStore();
+  const { theme, systemTheme } = useTheme();
+  
+  // Get the actual theme (accounting for system theme)
+  const currentTheme = theme === 'system' ? systemTheme : theme;
+  const isDarkTheme = currentTheme === 'dark';
 
   const highlightColors = ['#fef08a', '#bbf7d0', '#bfdbfe', '#fecaca', '#e9d5ff'];
+
+  // Function to clean text colors to match current theme
+  const cleanTextColors = useCallback((htmlContent: string) => {
+    if (!htmlContent) return htmlContent;
+    
+    // Create a temporary div to parse HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = htmlContent;
+    
+    // Remove all color styles and attributes to ensure text follows theme
+    const allElements = tempDiv.querySelectorAll('*');
+    allElements.forEach(element => {
+      const htmlElement = element as HTMLElement;
+      
+      // Remove color-related inline styles
+      if (htmlElement.style) {
+        htmlElement.style.color = '';
+        htmlElement.style.removeProperty('color');
+      }
+      
+      // Remove color attributes
+      htmlElement.removeAttribute('color');
+      
+      // Remove font color attributes
+      htmlElement.removeAttribute('text');
+      htmlElement.removeAttribute('fgcolor');
+    });
+    
+    return tempDiv.innerHTML;
+  }, []);
 
   // Update text stats
   const updateTextStats = useCallback(() => {
@@ -275,6 +311,55 @@ export function AnalysisEditor({
     }
   }, [selectedText, analysisType, onAnalyze]);
 
+  // Handle paste event to ensure text colors match theme
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    e.preventDefault();
+    
+    // Get plain text and HTML from clipboard
+    const text = e.clipboardData.getData('text/plain');
+    const html = e.clipboardData.getData('text/html');
+    
+    if (editorRef.current) {
+      // Get current selection
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        
+        // If we have HTML content, clean it and insert
+        if (html) {
+          const cleanedHtml = cleanTextColors(html);
+          
+          // Create a temporary div to hold cleaned HTML
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = cleanedHtml;
+          
+          // Extract and insert cleaned content
+          const fragment = document.createDocumentFragment();
+          while (tempDiv.firstChild) {
+            fragment.appendChild(tempDiv.firstChild);
+          }
+          
+          range.deleteContents();
+          range.insertNode(fragment);
+        } else {
+          // Insert plain text
+          const textNode = document.createTextNode(text);
+          range.deleteContents();
+          range.insertNode(textNode);
+        }
+        
+        // Move cursor to end of inserted content
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        
+        // Update stats and formats
+        updateTextStats();
+        updateActiveFormats();
+      }
+    }
+  }, [cleanTextColors, updateTextStats, updateActiveFormats]);
+
   // Handle content change - just update stats, don't mess with selection
   const handleContentChange = useCallback(() => {
     updateTextStats();
@@ -284,11 +369,13 @@ export function AnalysisEditor({
   // Initialize content once
   useEffect(() => {
     if (editorRef.current && !isInitializedRef.current && initialText) {
-      editorRef.current.innerHTML = initialText;
+      // Clean initial text colors to match theme
+      const cleanedInitialText = cleanTextColors(initialText);
+      editorRef.current.innerHTML = cleanedInitialText;
       isInitializedRef.current = true;
       updateTextStats();
     }
-  }, [initialText, updateTextStats]);
+  }, [initialText, updateTextStats, cleanTextColors]);
 
   // Setup event listeners
   useEffect(() => {
@@ -450,6 +537,7 @@ export function AnalysisEditor({
                 contentEditable
                 className="min-h-96 p-6 bg-background rounded border border-border focus:outline-none focus:ring-2 focus:ring-primary/50 prose max-w-none"
                 onInput={handleContentChange}
+                onPaste={handlePaste}
                 onKeyUp={updateActiveFormats}
                 onClick={updateActiveFormats}
                 suppressContentEditableWarning
