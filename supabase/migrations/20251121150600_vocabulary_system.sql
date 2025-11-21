@@ -657,10 +657,10 @@ GROUP BY vw.user_id;
 
 -- View for collection details with word statistics
 CREATE OR REPLACE VIEW collection_details AS
-SELECT 
+SELECT
   vc.*,
   COUNT(vwc.vocabulary_word_id) as actual_word_count,
-  COUNT(vwc.vocabulary_word_id) FILTER (WHERE vw.mastery_level >= 4) as mastered_count,
+  COUNT(vwc.vocabulary_word_id) FILTER (WHERE vw.mastery_level >= 4) as actual_mastered_count,
   COUNT(vwc.vocabulary_word_id) FILTER (WHERE vw.mastery_level BETWEEN 2 AND 3) as learning_count,
   COUNT(vwc.vocabulary_word_id) FILTER (WHERE vw.mastery_level <= 1) as new_count,
   AVG(vw.mastery_level) as average_mastery

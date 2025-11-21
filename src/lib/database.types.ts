@@ -294,6 +294,62 @@ export type Database = {
           },
         ]
       }
+      analysis_sessions: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          last_accessed_at: string | null
+          paragraph_analyses_count: number | null
+          sentence_analyses_count: number | null
+          session_type: string
+          status: string
+          title: string
+          total_analyses: number | null
+          updated_at: string | null
+          user_id: string | null
+          word_analyses_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          last_accessed_at?: string | null
+          paragraph_analyses_count?: number | null
+          sentence_analyses_count?: number | null
+          session_type: string
+          status?: string
+          title: string
+          total_analyses?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          word_analyses_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          last_accessed_at?: string | null
+          paragraph_analyses_count?: number | null
+          sentence_analyses_count?: number | null
+          session_type?: string
+          status?: string
+          title?: string
+          total_analyses?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          word_analyses_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "ai_usage_analytics"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           content: Json
@@ -684,6 +740,227 @@ export type Database = {
           },
         ]
       }
+      session_analyses: {
+        Row: {
+          analysis_data: Json | null
+          analysis_id: string
+          analysis_summary: string | null
+          analysis_title: string | null
+          analysis_type: string
+          created_at: string | null
+          id: string
+          position: number | null
+          session_id: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          analysis_data?: Json | null
+          analysis_id: string
+          analysis_summary?: string | null
+          analysis_title?: string | null
+          analysis_type: string
+          created_at?: string | null
+          id?: string
+          position?: number | null
+          session_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          analysis_data?: Json | null
+          analysis_id?: string
+          analysis_summary?: string | null
+          analysis_title?: string | null
+          analysis_type?: string
+          created_at?: string | null
+          id?: string
+          position?: number | null
+          session_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_analyses_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_analyses_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "session_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_analyses_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "ai_usage_analytics"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      session_settings: {
+        Row: {
+          analysis_depth: string | null
+          auto_save: boolean | null
+          compact_view: boolean | null
+          created_at: string | null
+          default_export_format: string | null
+          email_notifications: boolean | null
+          id: string
+          include_metadata: boolean | null
+          preferred_ai_model: string | null
+          preferred_ai_provider: string | null
+          session_id: string | null
+          session_reminders: boolean | null
+          show_summaries: boolean | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          analysis_depth?: string | null
+          auto_save?: boolean | null
+          compact_view?: boolean | null
+          created_at?: string | null
+          default_export_format?: string | null
+          email_notifications?: boolean | null
+          id?: string
+          include_metadata?: boolean | null
+          preferred_ai_model?: string | null
+          preferred_ai_provider?: string | null
+          session_id?: string | null
+          session_reminders?: boolean | null
+          show_summaries?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          analysis_depth?: string | null
+          auto_save?: boolean | null
+          compact_view?: boolean | null
+          created_at?: string | null
+          default_export_format?: string | null
+          email_notifications?: boolean | null
+          id?: string
+          include_metadata?: boolean | null
+          preferred_ai_model?: string | null
+          preferred_ai_provider?: string | null
+          session_id?: string | null
+          session_reminders?: boolean | null
+          show_summaries?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_settings_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "analysis_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_settings_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "session_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_settings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "ai_usage_analytics"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      session_tag_relations: {
+        Row: {
+          created_at: string | null
+          id: string
+          session_id: string | null
+          tag_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          session_id?: string | null
+          tag_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          session_id?: string | null
+          tag_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_tag_relations_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_tag_relations_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "session_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_tag_relations_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "session_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_tags: {
+        Row: {
+          created_at: string | null
+          id: string
+          tag_color: string | null
+          tag_description: string | null
+          tag_name: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          tag_color?: string | null
+          tag_description?: string | null
+          tag_name: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          tag_color?: string | null
+          tag_description?: string | null
+          tag_name?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_tags_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "ai_usage_analytics"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       user_ai_tiers: {
         Row: {
           assigned_at: string | null
@@ -734,6 +1011,650 @@ export type Database = {
             foreignKeyName: "user_ai_tiers_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
+            referencedRelation: "ai_usage_analytics"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      vocabulary_antonyms: {
+        Row: {
+          antonym_definition: string | null
+          antonym_ipa: string | null
+          antonym_translation: string | null
+          antonym_word: string
+          context_explanation: string | null
+          created_at: string | null
+          id: string
+          updated_at: string | null
+          user_id: string | null
+          vocabulary_word_id: string | null
+        }
+        Insert: {
+          antonym_definition?: string | null
+          antonym_ipa?: string | null
+          antonym_translation?: string | null
+          antonym_word: string
+          context_explanation?: string | null
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string | null
+          vocabulary_word_id?: string | null
+        }
+        Update: {
+          antonym_definition?: string | null
+          antonym_ipa?: string | null
+          antonym_translation?: string | null
+          antonym_word?: string
+          context_explanation?: string | null
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string | null
+          vocabulary_word_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vocabulary_antonyms_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "ai_usage_analytics"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "vocabulary_antonyms_vocabulary_word_id_fkey"
+            columns: ["vocabulary_word_id"]
+            isOneToOne: false
+            referencedRelation: "vocabulary_words"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vocabulary_antonyms_vocabulary_word_id_fkey"
+            columns: ["vocabulary_word_id"]
+            isOneToOne: false
+            referencedRelation: "words_for_review"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vocabulary_collections: {
+        Row: {
+          collection_type: string | null
+          color: string | null
+          created_at: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          is_default: boolean | null
+          is_public: boolean | null
+          mastered_count: number | null
+          name: string
+          practice_enabled: boolean | null
+          review_interval_days: number | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+          word_count: number | null
+        }
+        Insert: {
+          collection_type?: string | null
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_default?: boolean | null
+          is_public?: boolean | null
+          mastered_count?: number | null
+          name: string
+          practice_enabled?: boolean | null
+          review_interval_days?: number | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          word_count?: number | null
+        }
+        Update: {
+          collection_type?: string | null
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_default?: boolean | null
+          is_public?: boolean | null
+          mastered_count?: number | null
+          name?: string
+          practice_enabled?: boolean | null
+          review_interval_days?: number | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          word_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vocabulary_collections_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "ai_usage_analytics"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      vocabulary_collocations: {
+        Row: {
+          collocation_type: string | null
+          created_at: string | null
+          frequency_level: string | null
+          id: string
+          meaning: string | null
+          phrase: string
+          register_level: string | null
+          updated_at: string | null
+          usage_example: string | null
+          usage_translation: string | null
+          user_id: string | null
+          vocabulary_word_id: string | null
+        }
+        Insert: {
+          collocation_type?: string | null
+          created_at?: string | null
+          frequency_level?: string | null
+          id?: string
+          meaning?: string | null
+          phrase: string
+          register_level?: string | null
+          updated_at?: string | null
+          usage_example?: string | null
+          usage_translation?: string | null
+          user_id?: string | null
+          vocabulary_word_id?: string | null
+        }
+        Update: {
+          collocation_type?: string | null
+          created_at?: string | null
+          frequency_level?: string | null
+          id?: string
+          meaning?: string | null
+          phrase?: string
+          register_level?: string | null
+          updated_at?: string | null
+          usage_example?: string | null
+          usage_translation?: string | null
+          user_id?: string | null
+          vocabulary_word_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vocabulary_collocations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "ai_usage_analytics"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "vocabulary_collocations_vocabulary_word_id_fkey"
+            columns: ["vocabulary_word_id"]
+            isOneToOne: false
+            referencedRelation: "vocabulary_words"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vocabulary_collocations_vocabulary_word_id_fkey"
+            columns: ["vocabulary_word_id"]
+            isOneToOne: false
+            referencedRelation: "words_for_review"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vocabulary_contexts: {
+        Row: {
+          context_text: string
+          context_translation: string | null
+          context_type: string
+          created_at: string | null
+          id: string
+          notes: string | null
+          source_author: string | null
+          source_page_number: number | null
+          source_title: string | null
+          source_url: string | null
+          updated_at: string | null
+          user_id: string | null
+          vocabulary_word_id: string | null
+        }
+        Insert: {
+          context_text: string
+          context_translation?: string | null
+          context_type: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          source_author?: string | null
+          source_page_number?: number | null
+          source_title?: string | null
+          source_url?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          vocabulary_word_id?: string | null
+        }
+        Update: {
+          context_text?: string
+          context_translation?: string | null
+          context_type?: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          source_author?: string | null
+          source_page_number?: number | null
+          source_title?: string | null
+          source_url?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          vocabulary_word_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vocabulary_contexts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "ai_usage_analytics"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "vocabulary_contexts_vocabulary_word_id_fkey"
+            columns: ["vocabulary_word_id"]
+            isOneToOne: false
+            referencedRelation: "vocabulary_words"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vocabulary_contexts_vocabulary_word_id_fkey"
+            columns: ["vocabulary_word_id"]
+            isOneToOne: false
+            referencedRelation: "words_for_review"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vocabulary_practice_results: {
+        Row: {
+          correct_answer: string
+          created_at: string | null
+          id: string
+          is_correct: boolean
+          mastery_after: number | null
+          mastery_before: number | null
+          practice_session_id: string | null
+          question_text: string
+          question_type: string
+          response_time_ms: number | null
+          user_answer: string
+          user_id: string | null
+          vocabulary_word_id: string | null
+        }
+        Insert: {
+          correct_answer: string
+          created_at?: string | null
+          id?: string
+          is_correct: boolean
+          mastery_after?: number | null
+          mastery_before?: number | null
+          practice_session_id?: string | null
+          question_text: string
+          question_type: string
+          response_time_ms?: number | null
+          user_answer: string
+          user_id?: string | null
+          vocabulary_word_id?: string | null
+        }
+        Update: {
+          correct_answer?: string
+          created_at?: string | null
+          id?: string
+          is_correct?: boolean
+          mastery_after?: number | null
+          mastery_before?: number | null
+          practice_session_id?: string | null
+          question_text?: string
+          question_type?: string
+          response_time_ms?: number | null
+          user_answer?: string
+          user_id?: string | null
+          vocabulary_word_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vocabulary_practice_results_practice_session_id_fkey"
+            columns: ["practice_session_id"]
+            isOneToOne: false
+            referencedRelation: "vocabulary_practice_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vocabulary_practice_results_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "ai_usage_analytics"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "vocabulary_practice_results_vocabulary_word_id_fkey"
+            columns: ["vocabulary_word_id"]
+            isOneToOne: false
+            referencedRelation: "vocabulary_words"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vocabulary_practice_results_vocabulary_word_id_fkey"
+            columns: ["vocabulary_word_id"]
+            isOneToOne: false
+            referencedRelation: "words_for_review"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vocabulary_practice_sessions: {
+        Row: {
+          accuracy_percentage: number | null
+          collection_id: string | null
+          completed_at: string | null
+          correct_answers: number | null
+          created_at: string | null
+          difficulty_level: string | null
+          id: string
+          session_type: string
+          started_at: string | null
+          status: string | null
+          time_limit_seconds: number | null
+          time_spent_seconds: number | null
+          total_questions: number | null
+          user_id: string | null
+          word_count: number
+        }
+        Insert: {
+          accuracy_percentage?: number | null
+          collection_id?: string | null
+          completed_at?: string | null
+          correct_answers?: number | null
+          created_at?: string | null
+          difficulty_level?: string | null
+          id?: string
+          session_type: string
+          started_at?: string | null
+          status?: string | null
+          time_limit_seconds?: number | null
+          time_spent_seconds?: number | null
+          total_questions?: number | null
+          user_id?: string | null
+          word_count: number
+        }
+        Update: {
+          accuracy_percentage?: number | null
+          collection_id?: string | null
+          completed_at?: string | null
+          correct_answers?: number | null
+          created_at?: string | null
+          difficulty_level?: string | null
+          id?: string
+          session_type?: string
+          started_at?: string | null
+          status?: string | null
+          time_limit_seconds?: number | null
+          time_spent_seconds?: number | null
+          total_questions?: number | null
+          user_id?: string | null
+          word_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vocabulary_practice_sessions_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collection_details"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vocabulary_practice_sessions_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "vocabulary_collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vocabulary_practice_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "ai_usage_analytics"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      vocabulary_synonyms: {
+        Row: {
+          context_difference: string | null
+          created_at: string | null
+          frequency_level: string | null
+          id: string
+          synonym_definition: string | null
+          synonym_ipa: string | null
+          synonym_translation: string | null
+          synonym_word: string
+          updated_at: string | null
+          user_id: string | null
+          vocabulary_word_id: string | null
+        }
+        Insert: {
+          context_difference?: string | null
+          created_at?: string | null
+          frequency_level?: string | null
+          id?: string
+          synonym_definition?: string | null
+          synonym_ipa?: string | null
+          synonym_translation?: string | null
+          synonym_word: string
+          updated_at?: string | null
+          user_id?: string | null
+          vocabulary_word_id?: string | null
+        }
+        Update: {
+          context_difference?: string | null
+          created_at?: string | null
+          frequency_level?: string | null
+          id?: string
+          synonym_definition?: string | null
+          synonym_ipa?: string | null
+          synonym_translation?: string | null
+          synonym_word?: string
+          updated_at?: string | null
+          user_id?: string | null
+          vocabulary_word_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vocabulary_synonyms_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "ai_usage_analytics"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "vocabulary_synonyms_vocabulary_word_id_fkey"
+            columns: ["vocabulary_word_id"]
+            isOneToOne: false
+            referencedRelation: "vocabulary_words"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vocabulary_synonyms_vocabulary_word_id_fkey"
+            columns: ["vocabulary_word_id"]
+            isOneToOne: false
+            referencedRelation: "words_for_review"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vocabulary_word_collections: {
+        Row: {
+          added_at: string | null
+          added_manually: boolean | null
+          collection_id: string | null
+          id: string
+          user_id: string | null
+          vocabulary_word_id: string | null
+        }
+        Insert: {
+          added_at?: string | null
+          added_manually?: boolean | null
+          collection_id?: string | null
+          id?: string
+          user_id?: string | null
+          vocabulary_word_id?: string | null
+        }
+        Update: {
+          added_at?: string | null
+          added_manually?: boolean | null
+          collection_id?: string | null
+          id?: string
+          user_id?: string | null
+          vocabulary_word_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vocabulary_word_collections_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collection_details"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vocabulary_word_collections_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "vocabulary_collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vocabulary_word_collections_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "ai_usage_analytics"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "vocabulary_word_collections_vocabulary_word_id_fkey"
+            columns: ["vocabulary_word_id"]
+            isOneToOne: false
+            referencedRelation: "vocabulary_words"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vocabulary_word_collections_vocabulary_word_id_fkey"
+            columns: ["vocabulary_word_id"]
+            isOneToOne: false
+            referencedRelation: "words_for_review"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vocabulary_words: {
+        Row: {
+          audio_url: string | null
+          cefr_level: string | null
+          context_notes: string | null
+          correct_count: number | null
+          created_at: string | null
+          definition_en: string | null
+          definition_vi: string | null
+          difficulty_level: number | null
+          etymology: string | null
+          example_sentence: string | null
+          example_translation: string | null
+          id: string
+          image_url: string | null
+          ipa: string | null
+          last_reviewed_at: string | null
+          mastery_level: number | null
+          next_review_at: string | null
+          origin: string | null
+          part_of_speech: string | null
+          personal_notes: string | null
+          review_count: number | null
+          source_reference: string | null
+          source_type: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+          vietnamese_translation: string | null
+          word: string
+        }
+        Insert: {
+          audio_url?: string | null
+          cefr_level?: string | null
+          context_notes?: string | null
+          correct_count?: number | null
+          created_at?: string | null
+          definition_en?: string | null
+          definition_vi?: string | null
+          difficulty_level?: number | null
+          etymology?: string | null
+          example_sentence?: string | null
+          example_translation?: string | null
+          id?: string
+          image_url?: string | null
+          ipa?: string | null
+          last_reviewed_at?: string | null
+          mastery_level?: number | null
+          next_review_at?: string | null
+          origin?: string | null
+          part_of_speech?: string | null
+          personal_notes?: string | null
+          review_count?: number | null
+          source_reference?: string | null
+          source_type?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          vietnamese_translation?: string | null
+          word: string
+        }
+        Update: {
+          audio_url?: string | null
+          cefr_level?: string | null
+          context_notes?: string | null
+          correct_count?: number | null
+          created_at?: string | null
+          definition_en?: string | null
+          definition_vi?: string | null
+          difficulty_level?: number | null
+          etymology?: string | null
+          example_sentence?: string | null
+          example_translation?: string | null
+          id?: string
+          image_url?: string | null
+          ipa?: string | null
+          last_reviewed_at?: string | null
+          mastery_level?: number | null
+          next_review_at?: string | null
+          origin?: string | null
+          part_of_speech?: string | null
+          personal_notes?: string | null
+          review_count?: number | null
+          source_reference?: string | null
+          source_type?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          vietnamese_translation?: string | null
+          word?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vocabulary_words_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "ai_usage_analytics"
             referencedColumns: ["user_id"]
           },
@@ -937,428 +1858,6 @@ export type Database = {
           },
         ]
       }
-      analysis_sessions: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          id: string
-          last_accessed_at: string | null
-          paragraph_analyses_count: number
-          sentence_analyses_count: number
-          session_type: string
-          status: string
-          title: string
-          total_analyses: number
-          updated_at: string | null
-          user_id: string
-          word_analyses_count: number
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          last_accessed_at?: string | null
-          paragraph_analyses_count?: number
-          sentence_analyses_count?: number
-          session_type: string
-          status?: string
-          title: string
-          total_analyses?: number
-          updated_at?: string | null
-          user_id?: string
-          word_analyses_count?: number
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          last_accessed_at?: string | null
-          paragraph_analyses_count?: number
-          sentence_analyses_count?: number
-          session_type?: string
-          status?: string
-          title?: string
-          total_analyses?: number
-          updated_at?: string | null
-          user_id?: string
-          word_analyses_count?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "analysis_sessions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "ai_usage_analytics"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
-      session_analyses: {
-        Row: {
-          analysis_data: Json | null
-          analysis_id: string
-          analysis_summary: string | null
-          analysis_title: string | null
-          analysis_type: string
-          created_at: string | null
-          id: string
-          position: number
-          session_id: string
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          analysis_data?: Json | null
-          analysis_id: string
-          analysis_summary?: string | null
-          analysis_title?: string | null
-          analysis_type: string
-          created_at?: string | null
-          id?: string
-          position?: number
-          session_id: string
-          updated_at?: string | null
-          user_id?: string
-        }
-        Update: {
-          analysis_data?: Json | null
-          analysis_id?: string
-          analysis_summary?: string | null
-          analysis_title?: string | null
-          analysis_type?: string
-          created_at?: string | null
-          id?: string
-          position?: number
-          session_id?: string
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "session_analyses_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "analysis_sessions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "session_analyses_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "ai_usage_analytics"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
-      session_settings: {
-        Row: {
-          analysis_depth: string
-          auto_save: boolean
-          compact_view: boolean
-          created_at: string | null
-          default_export_format: string
-          email_notifications: boolean
-          id: string
-          include_metadata: boolean
-          preferred_ai_model: string | null
-          preferred_ai_provider: string | null
-          session_id: string
-          session_reminders: boolean
-          show_summaries: boolean
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          analysis_depth?: string
-          auto_save?: boolean
-          compact_view?: boolean
-          created_at?: string | null
-          default_export_format?: string
-          email_notifications?: boolean
-          id?: string
-          include_metadata?: boolean
-          preferred_ai_model?: string | null
-          preferred_ai_provider?: string | null
-          session_id: string
-          session_reminders?: boolean
-          show_summaries?: boolean
-          updated_at?: string | null
-          user_id?: string
-        }
-        Update: {
-          analysis_depth?: string
-          auto_save?: boolean
-          compact_view?: boolean
-          created_at?: string | null
-          default_export_format?: string
-          email_notifications?: boolean
-          id?: string
-          include_metadata?: boolean
-          preferred_ai_model?: string | null
-          preferred_ai_provider?: string | null
-          session_id?: string
-          session_reminders?: boolean
-          show_summaries?: boolean
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "session_settings_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "analysis_sessions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "session_settings_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "ai_usage_analytics"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
-      session_tags: {
-        Row: {
-          created_at: string | null
-          id: string
-          tag_color: string
-          tag_description: string | null
-          tag_name: string
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          tag_color?: string
-          tag_description?: string | null
-          tag_name: string
-          updated_at?: string | null
-          user_id?: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          tag_color?: string
-          tag_description?: string | null
-          tag_name?: string
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "session_tags_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "ai_usage_analytics"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
-      session_tag_relations: {
-        Row: {
-          created_at: string | null
-          id: string
-          session_id: string
-          tag_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          session_id: string
-          tag_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          session_id?: string
-          tag_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "session_tag_relations_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "analysis_sessions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "session_tag_relations_tag_id_fkey"
-            columns: ["tag_id"]
-            isOneToOne: false
-            referencedRelation: "session_tags"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      vocabulary_words: {
-        Row: {
-          audio_url: string | null
-          cefr_level: string | null
-          context_notes: string | null
-          correct_count: number
-          created_at: string | null
-          definition_en: string | null
-          definition_vi: string | null
-          difficulty_level: number
-          etymology: string | null
-          example_sentence: string | null
-          example_translation: string | null
-          id: string
-          image_url: string | null
-          ipa: string | null
-          last_reviewed_at: string | null
-          mastery_level: number
-          next_review_at: string | null
-          origin: string | null
-          part_of_speech: string | null
-          personal_notes: string | null
-          review_count: number
-          source_reference: string | null
-          source_type: string
-          status: string
-          updated_at: string | null
-          user_id: string
-          vietnamese_translation: string | null
-          word: string
-        }
-        Insert: {
-          audio_url?: string | null
-          cefr_level?: string | null
-          context_notes?: string | null
-          correct_count?: number
-          created_at?: string | null
-          definition_en?: string | null
-          definition_vi?: string | null
-          difficulty_level?: number
-          etymology?: string | null
-          example_sentence?: string | null
-          example_translation?: string | null
-          id?: string
-          image_url?: string | null
-          ipa?: string | null
-          last_reviewed_at?: string | null
-          mastery_level?: number
-          next_review_at?: string | null
-          origin?: string | null
-          part_of_speech?: string | null
-          personal_notes?: string | null
-          review_count?: number
-          source_reference?: string | null
-          source_type?: string
-          status?: string
-          updated_at?: string | null
-          user_id?: string
-          vietnamese_translation?: string | null
-          word: string
-        }
-        Update: {
-          audio_url?: string | null
-          cefr_level?: string | null
-          context_notes?: string | null
-          correct_count?: number
-          created_at?: string | null
-          definition_en?: string | null
-          definition_vi?: string | null
-          difficulty_level?: number
-          etymology?: string | null
-          example_sentence?: string | null
-          example_translation?: string | null
-          id?: string
-          image_url?: string | null
-          ipa?: string | null
-          last_reviewed_at?: string | null
-          mastery_level?: number
-          next_review_at?: string | null
-          origin?: string | null
-          part_of_speech?: string | null
-          personal_notes?: string | null
-          review_count?: number
-          source_reference?: string | null
-          source_type?: string
-          status?: string
-          updated_at?: string | null
-          user_id?: string
-          vietnamese_translation?: string | null
-          word?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "vocabulary_words_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "ai_usage_analytics"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
-      vocabulary_collections: {
-        Row: {
-          color: string
-          collection_type: string
-          created_at: string | null
-          description: string | null
-          icon: string
-          id: string
-          is_default: boolean
-          is_public: boolean
-          mastered_count: number
-          name: string
-          practice_enabled: boolean
-          review_interval_days: number
-          status: string
-          updated_at: string | null
-          user_id: string
-          word_count: number
-        }
-        Insert: {
-          color?: string
-          collection_type?: string
-          created_at?: string | null
-          description?: string | null
-          icon?: string
-          id?: string
-          is_default?: boolean
-          is_public?: boolean
-          mastered_count?: number
-          name: string
-          practice_enabled?: boolean
-          review_interval_days?: number
-          status?: string
-          updated_at?: string | null
-          user_id?: string
-          word_count?: number
-        }
-        Update: {
-          color?: string
-          collection_type?: string
-          created_at?: string | null
-          description?: string | null
-          icon?: string
-          id?: string
-          is_default?: boolean
-          is_public?: boolean
-          mastered_count?: number
-          name?: string
-          practice_enabled?: boolean
-          review_interval_days?: number
-          status?: string
-          updated_at?: string | null
-          user_id?: string
-          word_count?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "vocabulary_collections_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "ai_usage_analytics"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
     }
     Views: {
       ai_provider_analytics: {
@@ -1423,9 +1922,182 @@ export type Database = {
         }
         Relationships: []
       }
+      collection_details: {
+        Row: {
+          actual_mastered_count: number | null
+          actual_word_count: number | null
+          average_mastery: number | null
+          collection_type: string | null
+          color: string | null
+          created_at: string | null
+          description: string | null
+          icon: string | null
+          id: string | null
+          is_default: boolean | null
+          is_public: boolean | null
+          learning_count: number | null
+          mastered_count: number | null
+          name: string | null
+          new_count: number | null
+          practice_enabled: boolean | null
+          review_interval_days: number | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+          word_count: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vocabulary_collections_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "ai_usage_analytics"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      recent_analyses: {
+        Row: {
+          analysis_data: Json | null
+          analysis_id: string | null
+          analysis_summary: string | null
+          analysis_title: string | null
+          analysis_type: string | null
+          created_at: string | null
+          id: string | null
+          position: number | null
+          session_id: string | null
+          session_status: string | null
+          session_title: string | null
+          session_type: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_analyses_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_analyses_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "session_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_analyses_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "ai_usage_analytics"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      session_summary: {
+        Row: {
+          actual_analyses_count: number | null
+          actual_paragraph_count: number | null
+          actual_sentence_count: number | null
+          actual_word_count: number | null
+          created_at: string | null
+          description: string | null
+          id: string | null
+          last_accessed_at: string | null
+          paragraph_analyses_count: number | null
+          sentence_analyses_count: number | null
+          session_type: string | null
+          status: string | null
+          tags: string[] | null
+          title: string | null
+          total_analyses: number | null
+          updated_at: string | null
+          user_id: string | null
+          word_analyses_count: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "ai_usage_analytics"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      vocabulary_statistics: {
+        Row: {
+          average_mastery: number | null
+          cefr_levels_covered: number | null
+          learning_words: number | null
+          mastered_words: number | null
+          new_words: number | null
+          total_words: number | null
+          user_id: string | null
+          words_for_review: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vocabulary_words_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "ai_usage_analytics"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      words_for_review: {
+        Row: {
+          audio_url: string | null
+          cefr_level: string | null
+          collection_name: string | null
+          context_notes: string | null
+          correct_count: number | null
+          created_at: string | null
+          definition_en: string | null
+          definition_vi: string | null
+          difficulty_level: number | null
+          etymology: string | null
+          example_sentence: string | null
+          example_translation: string | null
+          id: string | null
+          image_url: string | null
+          ipa: string | null
+          last_reviewed_at: string | null
+          mastery_level: number | null
+          next_review_at: string | null
+          origin: string | null
+          part_of_speech: string | null
+          personal_notes: string | null
+          review_count: number | null
+          source_reference: string | null
+          source_type: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+          vietnamese_translation: string | null
+          word: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vocabulary_words_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "ai_usage_analytics"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
     }
     Functions: {
       aggregate_provider_performance: { Args: never; Returns: undefined }
+      calculate_next_review_date: {
+        Args: { current_mastery_level: number; is_correct: boolean }
+        Returns: string
+      }
       cleanup_ai_cache: { Args: never; Returns: undefined }
       cleanup_old_usage_logs: { Args: never; Returns: undefined }
     }

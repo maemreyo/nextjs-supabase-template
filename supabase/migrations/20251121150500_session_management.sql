@@ -404,15 +404,8 @@ ORDER BY sa.created_at DESC;
 -- STEP 10: INSERT DEFAULT DATA
 -- ========================================
 
--- Insert default tags for common categories
-INSERT INTO session_tags (user_id, tag_name, tag_color, tag_description) VALUES
-  -- This will be replaced with actual user_id when users create their first session
-  (gen_random_uuid(), 'Study', '#10B981', 'Study and learning materials'),
-  (gen_random_uuid(), 'Work', '#F59E0B', 'Work-related analyses'),
-  (gen_random_uuid(), 'Personal', '#8B5CF6', 'Personal projects and interests'),
-  (gen_random_uuid(), 'Research', '#EF4444', 'Research and academic work'),
-  (gen_random_uuid(), 'Practice', '#3B82F6', 'Language practice exercises')
-ON CONFLICT (user_id, tag_name) DO NOTHING;
+-- Note: Default tags will be created when users create their first session
+-- This is handled by the application logic, not in migrations
 
 -- Grant permissions
 GRANT SELECT ON session_summary TO authenticated;

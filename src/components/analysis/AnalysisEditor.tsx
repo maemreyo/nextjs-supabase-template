@@ -33,7 +33,7 @@ import {
   FolderOpen
 } from 'lucide-react';
 import type { AnalysisEditorProps, WordAnalysis, SentenceAnalysis, ParagraphAnalysis } from './types';
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { useSessionStore } from '@/stores/session-store';
 import { useVocabularyStore } from '@/stores/vocabulary-store';
@@ -92,6 +92,7 @@ export function AnalysisEditor({
   const editorRef = useRef<HTMLDivElement>(null);
   const analysisTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const selectionRef = useRef<{ range: Range | null; text: string }>({ range: null, text: '' });
 
   // Session and vocabulary stores
   const { sessions, createSession, addAnalysisToSession } = useSessionStore();
@@ -131,6 +132,26 @@ export function AnalysisEditor({
     }, 800); // 800ms debounce
   }, [autoAnalysisEnabled, onAnalyze]);
 
+  // Save and restore selection
+  const saveSelection = useCallback(() => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      const range = sel.getRangeAt(0);
+      selectionRef.current = {
+        range: range.cloneRange(),
+        text: sel.toString()
+      };
+    }
+  }, []);
+
+  const restoreSelection = useCallback(() => {
+    const sel = window.getSelection();
+    if (sel && selectionRef.current.range && editorRef.current && editorRef.current.contains(selectionRef.current.range.startContainer)) {
+      sel.removeAllRanges();
+      sel.addRange(selectionRef.current.range);
+    }
+  }, []);
+
   // Detect selection type
   const detectSelectionType = useCallback((text: string): 'word' | 'phrase' | 'sentence' | 'paragraph' => {
     const trimmed = text.trim();
@@ -146,6 +167,9 @@ export function AnalysisEditor({
 
   // Smart text expansion functions
   const expandToWord = useCallback(() => {
+    // Save current selection before expansion
+    saveSelection();
+    
     const sel = window.getSelection();
     if (!sel || !sel.rangeCount) return;
     
@@ -161,10 +185,15 @@ export function AnalysisEditor({
     sel.removeAllRanges();
     sel.addRange(range);
     
+    // Save new selection after expansion
+    saveSelection();
     handleTextSelection();
-  }, []);
+  }, [saveSelection]);
 
   const expandToSentence = useCallback(() => {
+    // Save current selection before expansion
+    saveSelection();
+    
     const sel = window.getSelection();
     if (!sel || !sel.rangeCount) return;
     
@@ -181,10 +210,15 @@ export function AnalysisEditor({
     sel.removeAllRanges();
     sel.addRange(range);
     
+    // Save new selection after expansion
+    saveSelection();
     handleTextSelection();
-  }, []);
+  }, [saveSelection]);
 
   const expandToParagraph = useCallback(() => {
+    // Save current selection before expansion
+    saveSelection();
+    
     const sel = window.getSelection();
     if (!sel || !sel.rangeCount) return;
     
@@ -198,9 +232,12 @@ export function AnalysisEditor({
       range.selectNodeContents(node);
       sel.removeAllRanges();
       sel.addRange(range);
+      
+      // Save new selection after expansion
+      saveSelection();
       handleTextSelection();
     }
-  }, []);
+  }, [saveSelection]);
 
   // Handle text selection with improvements
   const handleTextSelection = useCallback(() => {
@@ -212,6 +249,9 @@ export function AnalysisEditor({
     if (text.length > 0) {
       const range = sel.getRangeAt(0);
       const rect = range.getBoundingClientRect();
+      
+      // Save selection before state updates
+      saveSelection();
       
       setSelectedText(text);
       const detectedType = detectSelectionType(text);
@@ -228,10 +268,10 @@ export function AnalysisEditor({
       }
       
       setAnalysisType(newAnalysisType);
-      setBubbleMenuPosition({ 
-        x: rect.left + rect.width / 2, 
-        y: rect.top - 10, 
-        show: true 
+      setBubbleMenuPosition({
+        x: rect.left + rect.width / 2,
+        y: rect.top - 10,
+        show: true
       });
       
       onTextSelect?.(text, newAnalysisType);
@@ -242,14 +282,28 @@ export function AnalysisEditor({
       setBubbleMenuPosition({ x: 0, y: 0, show: false });
       setSelectedText('');
     }
-  }, [detectSelectionType, onTextSelect, debouncedAnalysis]);
+  }, [detectSelectionType, onTextSelect, debouncedAnalysis, saveSelection]);
 
   // Rich text formatting functions
   const formatText = useCallback((cmd: string, val: string | undefined = undefined) => {
+    // Save selection before formatting
+    saveSelection();
+    
     document.execCommand(cmd, false, val);
     editorRef.current?.focus();
-    updateActiveFormats();
-  }, []);
+    
+    // Update formats without causing re-render
+    const newFormats = {
+      bold: document.queryCommandState('bold'),
+      italic: document.queryCommandState('italic'),
+      underline: document.queryCommandState('underline'),
+      strikeThrough: document.queryCommandState('strikeThrough'),
+    };
+    setActiveFormats(newFormats);
+    
+    // Restore selection after formatting
+    setTimeout(restoreSelection, 0);
+  }, [saveSelection, restoreSelection]);
 
   const updateActiveFormats = useCallback(() => {
     setActiveFormats({
@@ -261,12 +315,21 @@ export function AnalysisEditor({
   }, []);
 
   const handleHighlight = useCallback((color: string) => {
+    // Save selection before highlighting
+    saveSelection();
+    
     document.execCommand('hiliteColor', false, color);
     setBubbleMenuPosition(prev => ({ ...prev, show: false }));
-  }, []);
+    
+    // Restore selection after highlighting
+    setTimeout(restoreSelection, 0);
+  }, [saveSelection, restoreSelection]);
 
   // Handle analysis
   const handleAnalyze = useCallback(async () => {
+    // Save selection before analysis
+    saveSelection();
+    
     const textToAnalyze = selectedText || content;
     if (!textToAnalyze.trim()) return;
 
@@ -280,22 +343,31 @@ export function AnalysisEditor({
         setAnalysisResult(result);
       }
       setBubbleMenuPosition(prev => ({ ...prev, show: false }));
+      
+      // Restore selection after analysis completes
+      setTimeout(restoreSelection, 0);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Phân tích thất bại');
     } finally {
       setIsAnalyzing(false);
     }
-  }, [selectedText, content, analysisType, onAnalyze]);
+  }, [selectedText, content, analysisType, onAnalyze, saveSelection, restoreSelection]);
 
   // Handle content change
   const handleContentChange = useCallback((e: React.FormEvent<HTMLDivElement>) => {
+    // Save selection before content update
+    saveSelection();
+    
     const newContent = e.currentTarget.innerHTML;
     setContent(newContent);
     updateActiveFormats();
-  }, [updateActiveFormats]);
+    
+    // Restore selection after content update
+    setTimeout(restoreSelection, 0);
+  }, [updateActiveFormats, saveSelection, restoreSelection]);
 
-  // Get text statistics
-  const getTextStats = useCallback(() => {
+  // Get text statistics - memoized to prevent unnecessary recalculations
+  const getTextStats = useMemo(() => {
     const textContent = content.replace(/<[^>]*>/g, ''); // Strip HTML tags
     const words = textContent.split(/\s+/).filter(w => w.length > 0);
     const sentences = textContent.split(/[.!?]+/).filter(s => s.trim().length > 0);
@@ -311,11 +383,40 @@ export function AnalysisEditor({
 
   // Setup event listeners
   useEffect(() => {
-    const onMouseUp = () => setTimeout(handleTextSelection, 10);
+    const onMouseUp = () => {
+      // Save selection immediately on mouse up
+      saveSelection();
+      // Handle text selection after a short delay
+      setTimeout(handleTextSelection, 10);
+    };
+    
+    const onSelectStart = () => {
+      saveSelection();
+    };
+    
+    const onKeyDown = (e: KeyboardEvent) => {
+      // Save selection on keyboard navigation
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown' ||
+          e.key === 'Home' || e.key === 'End' || e.key === 'PageUp' || e.key === 'PageDown') {
+        saveSelection();
+      }
+    };
+    
+    const onSelectionChange = () => {
+      // Save selection whenever it changes
+      saveSelection();
+    };
+    
     document.addEventListener('mouseup', onMouseUp);
+    document.addEventListener('selectstart', onSelectStart);
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('selectionchange', onSelectionChange);
     
     return () => {
       document.removeEventListener('mouseup', onMouseUp);
+      document.removeEventListener('selectstart', onSelectStart);
+      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('selectionchange', onSelectionChange);
       if (analysisTimeoutRef.current) {
         clearTimeout(analysisTimeoutRef.current);
       }
@@ -323,16 +424,32 @@ export function AnalysisEditor({
         clearTimeout(tooltipTimeoutRef.current);
       }
     };
-  }, [handleTextSelection]);
+  }, [handleTextSelection, saveSelection]);
 
-  // Initialize content
+  // Initialize content - only run once
   useEffect(() => {
     if (editorRef.current && content !== editorRef.current.innerHTML) {
+      // Save selection before updating content
+      saveSelection();
       editorRef.current.innerHTML = content;
+      // Restore selection after content update
+      setTimeout(restoreSelection, 0);
     }
   }, []);
 
-  const textStats = getTextStats();
+  // Restore selection after component updates
+  useEffect(() => {
+    // Only restore selection if we have a saved one and it's valid
+    if (selectionRef.current.range && editorRef.current) {
+      // Check if the selection is still valid within the editor
+      const startContainer = selectionRef.current.range.startContainer;
+      if (editorRef.current.contains(startContainer)) {
+        setTimeout(restoreSelection, 0);
+      }
+    }
+  }, [content, restoreSelection]);
+
+  const textStats = getTextStats;
 
   // Toolbar button component
   const ToolBtn = ({ onClick, active, disabled, children, title }: {
@@ -500,6 +617,8 @@ export function AnalysisEditor({
                 onInput={handleContentChange}
                 onKeyUp={updateActiveFormats}
                 onClick={updateActiveFormats}
+                onMouseDown={saveSelection}
+                onFocus={saveSelection}
                 suppressContentEditableWarning
                 dangerouslySetInnerHTML={{ __html: content }}
               />
@@ -723,9 +842,14 @@ export function AnalysisEditor({
                   if (selectedSessionId) {
                     // Add to existing session
                     await addAnalysisToSession(selectedSessionId, {
+                      session_id: selectedSessionId,
                       analysis_type: analysisType,
-                      analysis_id: analysisResult?.id || '',
-                      analysis_title: analysisResult?.meta?.word || analysisResult?.meta?.sentence || 'Analysis',
+                      analysis_id: '', // WordAnalysis doesn't have id field
+                      analysis_title: analysisType === 'word'
+                        ? (analysisResult as WordAnalysis)?.meta?.word || 'Analysis'
+                        : analysisType === 'sentence'
+                        ? (analysisResult as SentenceAnalysis)?.meta?.sentence || 'Analysis'
+                        : (analysisResult as ParagraphAnalysis)?.meta?.type || 'Analysis',
                       analysis_summary: selectedText,
                       analysis_data: analysisResult
                     });
@@ -739,9 +863,14 @@ export function AnalysisEditor({
                     
                     if (newSession) {
                       await addAnalysisToSession(newSession.id, {
+                        session_id: newSession.id,
                         analysis_type: analysisType,
-                        analysis_id: analysisResult?.id || '',
-                        analysis_title: analysisResult?.meta?.word || analysisResult?.meta?.sentence || 'Analysis',
+                        analysis_id: '', // WordAnalysis doesn't have id field
+                        analysis_title: analysisType === 'word'
+                          ? (analysisResult as WordAnalysis)?.meta?.word || 'Analysis'
+                          : analysisType === 'sentence'
+                          ? (analysisResult as SentenceAnalysis)?.meta?.sentence || 'Analysis'
+                          : (analysisResult as ParagraphAnalysis)?.meta?.type || 'Analysis',
                         analysis_summary: selectedText,
                         analysis_data: analysisResult
                       });
@@ -829,8 +958,8 @@ export function AnalysisEditor({
                 try {
                   const wordData = {
                     ...vocabularyData,
-                    source_type: 'analysis',
-                    source_reference: analysisResult?.id || ''
+                    source_type: 'analysis' as const,
+                    source_reference: '' // WordAnalysis doesn't have id field
                   };
                   
                   await createWord(wordData);
