@@ -35,9 +35,20 @@ export class AIService {
   private usageTracker: UsageTracker
 
   constructor(config: Partial<AIServiceConfig> = {}) {
+    // Get configuration from environment variables
+    const defaultProvider = process.env.AI_DEFAULT_PROVIDER || config.defaultProvider || 'gemini'
+    const defaultModel = process.env.AI_DEFAULT_MODEL || config.defaultModel || 'gemini-2.5-flash-lite'
+    
+    console.log('AI Service Initializing with:', {
+      defaultProvider,
+      defaultModel,
+      envProvider: process.env.AI_DEFAULT_PROVIDER,
+      envModel: process.env.AI_DEFAULT_MODEL
+    })
+    
     this.config = {
-      defaultProvider: config.defaultProvider || 'openai',
-      defaultModel: config.defaultModel || 'gpt-3.5-turbo',
+      defaultProvider,
+      defaultModel,
       providers: config.providers || {},
       usageTracking: {
         enabled: true,
@@ -63,7 +74,7 @@ export class AIService {
         costPerDay: 100,
         ...config.rateLimit
       },
-      fallbackProviders: config.fallbackProviders || ['anthropic', 'google'],
+      fallbackProviders: config.fallbackProviders || ['anthropic', 'openai'],
       errorReporting: config.errorReporting !== false
     }
 
@@ -272,7 +283,11 @@ export class AIService {
       // Remove sensitive data from cache key
       metadata: undefined
     }
-    return btoa(JSON.stringify(keyData))
+    // Fix for Unicode characters - use proper encoding
+    const jsonString = JSON.stringify(keyData)
+    const cacheKey = Buffer.from(jsonString, 'utf8').toString('base64')
+    console.log('Generated cache key for operation:', operation, 'key length:', cacheKey.length)
+    return cacheKey
   }
 
   private getFromCache(key: string): any {

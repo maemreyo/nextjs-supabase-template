@@ -339,7 +339,22 @@ export class AIServiceServer {
       // Check user permissions and usage limits
       await this.checkUserLimits(userId, 'word-analysis')
       
-      const analysis = await this.aiService.analyzeWord(request)
+      // Get the AI response to extract provider and model info
+      const prompt = require('./prompt-utils').buildWordAnalysisPrompt(request)
+      const aiResponse = await this.aiService.generateText({
+        prompt,
+        temperature: 0.3,
+        maxTokens: 4000,
+        metadata: {
+          operation: 'word-analysis',
+          word: request.word,
+          context: request.sentenceContext
+        }
+      })
+      
+      // Parse and validate response
+      const analysisResult = JSON.parse(aiResponse.text)
+      const analysis = require('./prompt-utils').validateWordAnalysis(analysisResult)
       
       // Save to database
       await this.saveWordAnalysis(userId, request, analysis)
@@ -349,10 +364,10 @@ export class AIServiceServer {
         data: analysis,
         metadata: {
           processingTime: Date.now() - startTime,
-          tokensUsed: 0, // Would be calculated from actual AI response
-          cost: 0, // Would be calculated from actual AI response
-          model: 'unknown', // Would come from actual AI response
-          provider: 'unknown' // Would come from actual AI response
+          tokensUsed: aiResponse.usage.totalTokens,
+          cost: aiResponse.cost,
+          model: aiResponse.model,
+          provider: aiResponse.provider
         }
       }
     } catch (error) {
@@ -373,7 +388,21 @@ export class AIServiceServer {
       // Check user permissions and usage limits
       await this.checkUserLimits(userId, 'sentence-analysis')
       
-      const analysis = await this.aiService.analyzeSentence(request)
+      // Get the AI response to extract provider and model info
+      const prompt = require('./prompt-utils').buildSentenceAnalysisPrompt(request)
+      const aiResponse = await this.aiService.generateText({
+        prompt,
+        temperature: 0.3,
+        maxTokens: 4000,
+        metadata: {
+          operation: 'sentence-analysis',
+          sentence: request.sentence
+        }
+      })
+      
+      // Parse and validate response
+      const analysisResult = JSON.parse(aiResponse.text)
+      const analysis = require('./prompt-utils').validateSentenceAnalysis(analysisResult)
       
       // Save to database
       await this.saveSentenceAnalysis(userId, request, analysis)
@@ -383,10 +412,10 @@ export class AIServiceServer {
         data: analysis,
         metadata: {
           processingTime: Date.now() - startTime,
-          tokensUsed: 0, // Would be calculated from actual AI response
-          cost: 0, // Would be calculated from actual AI response
-          model: 'unknown', // Would come from actual AI response
-          provider: 'unknown' // Would come from actual AI response
+          tokensUsed: aiResponse.usage.totalTokens,
+          cost: aiResponse.cost,
+          model: aiResponse.model,
+          provider: aiResponse.provider
         }
       }
     } catch (error) {
@@ -407,7 +436,21 @@ export class AIServiceServer {
       // Check user permissions and usage limits
       await this.checkUserLimits(userId, 'paragraph-analysis')
       
-      const analysis = await this.aiService.analyzeParagraph(request)
+      // Get the AI response to extract provider and model info
+      const prompt = require('./prompt-utils').buildParagraphAnalysisPrompt(request)
+      const aiResponse = await this.aiService.generateText({
+        prompt,
+        temperature: 0.3,
+        maxTokens: 6000,
+        metadata: {
+          operation: 'paragraph-analysis',
+          paragraphLength: request.paragraph.length
+        }
+      })
+      
+      // Parse and validate response
+      const analysisResult = JSON.parse(aiResponse.text)
+      const analysis = require('./prompt-utils').validateParagraphAnalysis(analysisResult)
       
       // Save to database
       await this.saveParagraphAnalysis(userId, request, analysis)
@@ -417,10 +460,10 @@ export class AIServiceServer {
         data: analysis,
         metadata: {
           processingTime: Date.now() - startTime,
-          tokensUsed: 0, // Would be calculated from actual AI response
-          cost: 0, // Would be calculated from actual AI response
-          model: 'unknown', // Would come from actual AI response
-          provider: 'unknown' // Would come from actual AI response
+          tokensUsed: aiResponse.usage.totalTokens,
+          cost: aiResponse.cost,
+          model: aiResponse.model,
+          provider: aiResponse.provider
         }
       }
     } catch (error) {

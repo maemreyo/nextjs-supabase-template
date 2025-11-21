@@ -20,28 +20,42 @@ export class ProviderRegistry {
     return ProviderRegistry.instance
   }
 
-  private async initializeProviders() {
+  private initializeProviders() {
     // Initialize providers with their configurations
     const openaiConfig = this.getProviderConfig('openai')
     const anthropicConfig = this.getProviderConfig('anthropic')
     const googleConfig = this.getProviderConfig('google')
     const cohereConfig = this.getProviderConfig('cohere')
 
+    console.log('Initializing AI Providers:', {
+      hasOpenAI: !!openaiConfig?.apiKey,
+      hasAnthropic: !!anthropicConfig?.apiKey,
+      hasGoogle: !!googleConfig?.apiKey,
+      hasCohere: !!cohereConfig?.apiKey,
+      googleConfig: googleConfig ? { ...googleConfig, apiKey: googleConfig.apiKey ? '***' : undefined } : undefined
+    })
+
     if (openaiConfig?.apiKey) {
       this.registerProvider('openai', new OpenAIProvider(openaiConfig))
+      console.log('OpenAI provider registered')
     }
 
     if (anthropicConfig?.apiKey) {
       this.registerProvider('anthropic', new AnthropicProvider(anthropicConfig))
+      console.log('Anthropic provider registered')
     }
 
     if (googleConfig?.apiKey) {
       this.registerProvider('google', new GoogleAIProvider(googleConfig))
+      console.log('Google AI provider registered')
     }
 
     if (cohereConfig?.apiKey) {
       this.registerProvider('cohere', new CohereProvider(cohereConfig))
+      console.log('Cohere provider registered')
     }
+
+    console.log('Available providers after initialization:', this.getAvailableProviders())
   }
 
   private getProviderConfig(provider: string) {
@@ -178,7 +192,7 @@ export class ProviderRegistry {
   }
 
   public getDefaultProvider(): string {
-    const defaultProvider = process.env.AI_DEFAULT_PROVIDER || 'openai'
+    const defaultProvider = process.env.AI_DEFAULT_PROVIDER || 'gemini'
     const availableProviders = this.getAvailableProviders()
     
     if (availableProviders.includes(defaultProvider)) {
@@ -201,7 +215,7 @@ export class ProviderRegistry {
     const providerDefaults: Record<string, string> = {
       openai: 'gpt-3.5-turbo',
       anthropic: 'claude-3-haiku-20240307',
-      google: 'gemini-pro',
+      google: 'gemini-2.5-flash-lite',
       cohere: 'command'
     }
 
