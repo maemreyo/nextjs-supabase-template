@@ -157,8 +157,8 @@ export function ImprovedAnalysisEditor({
   const highlightedText = getHighlightedText();
 
   return (
-    <div className={`space-y-4 ${className}`}>
-      <Card className="p-4">
+    <div className={`h-full flex flex-col ${className}`}>
+      <Card className="p-4 flex-1 flex flex-col">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-lg font-semibold text-foreground">Văn bản phân tích</h3>
           <div className="flex items-center gap-2">
@@ -179,12 +179,12 @@ export function ImprovedAnalysisEditor({
               )}
             >
               <Sparkles className="h-3 w-3 mr-1" />
-              Auto-analyze: {autoAnalysisEnabled ? "ON" : "OFF"}
+              Auto: {autoAnalysisEnabled ? "ON" : "OFF"}
             </Button>
           </div>
         </div>
 
-        <div className="relative">
+        <div className="relative flex-1 flex flex-col">
           <Textarea
             ref={textareaRef}
             value={text}
@@ -193,7 +193,7 @@ export function ImprovedAnalysisEditor({
             onMouseUp={handleTextSelection}
             onKeyUp={handleTextSelection}
             placeholder="Nhập hoặc dán văn bản cần phân tích vào đây..."
-            className="min-h-[200px] resize-none"
+            className="flex-1 resize-none min-h-[300px]"
           />
           
           {/* Selection tooltip */}

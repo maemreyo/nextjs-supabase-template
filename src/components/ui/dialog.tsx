@@ -38,7 +38,7 @@ function DialogOverlay({
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
       className={cn(
-        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
+        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50 backdrop-blur-sm",
         className
       )}
       {...props}
@@ -50,17 +50,43 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  size = "default",
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
+  size?: "default" | "large" | "xlarge" | "fullscreen"
 }) {
+  const getSizeClasses = () => {
+    switch (size) {
+      case "large":
+        return "sm:max-w-4xl lg:max-w-5xl xl:max-w-6xl max-h-[90vh]";
+      case "xlarge":
+        return "sm:max-w-6xl lg:max-w-7xl xl:max-w-7xl max-h-[95vh]";
+      case "fullscreen":
+        return "w-full h-full max-w-[100vw] max-h-[100vh] rounded-none m-0 top-0 left-0 translate-x-0 translate-y-0";
+      default:
+        return "sm:max-w-lg max-h-[90vh]";
+    }
+  };
+
+  const getPositionClasses = () => {
+    if (size === "fullscreen") {
+      return "top-0 left-0 translate-x-0 translate-y-0";
+    }
+    return "top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%]";
+  };
+
   return (
     <DialogPortal data-slot="dialog-portal">
-      <DialogOverlay />
+      <DialogOverlay className={size === "fullscreen" ? "backdrop-blur-sm" : ""} />
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg",
+          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed z-50 grid gap-4 border shadow-lg duration-200",
+          getSizeClasses(),
+          getPositionClasses(),
+          size !== "fullscreen" && "rounded-lg p-6",
+          size === "fullscreen" && "p-0",
           className
         )}
         {...props}
@@ -69,7 +95,10 @@ function DialogContent({
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
-            className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+            className={cn(
+              "ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+              size === "fullscreen" ? "top-4 right-4" : "top-4 right-4"
+            )}
           >
             <XIcon />
             <span className="sr-only">Close</span>

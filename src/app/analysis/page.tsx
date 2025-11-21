@@ -19,7 +19,11 @@ import {
   CheckCircle,
   XCircle,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  MousePointer,
+  Trash2,
+  RotateCcw,
+  Eye
 } from 'lucide-react';
 
 // Components
@@ -27,6 +31,8 @@ import { ImprovedAnalysisEditor } from '@/components/analysis/ImprovedAnalysisEd
 import { WordAnalysisDisplay } from '@/components/analysis/WordAnalysisDisplay';
 import { SentenceAnalysisDisplay } from '@/components/analysis/SentenceAnalysisDisplay';
 import { ParagraphAnalysisDisplay } from '@/components/analysis/ParagraphAnalysisDisplay';
+import { CompactResultCard } from '@/components/analysis/CompactResultCard';
+import { AnalysisResultDialog } from '@/components/analysis/AnalysisResultDialog';
 import AuthGuard from '@/components/auth/auth-guard';
 
 // Hooks
@@ -51,10 +57,10 @@ function ImprovedAnalysisPageContent() {
   const [analysisResult, setAnalysisResult] = useState<WordAnalysis | SentenceAnalysis | ParagraphAnalysis | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   
   // Sidebar collapsible sections state
   const [isAnalysisTypeOpen, setIsAnalysisTypeOpen] = useState(true);
-  const [isAnalysisResultsOpen, setIsAnalysisResultsOpen] = useState(true);
   const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(true);
   const [isHistoryOpen, setIsHistoryOpen] = useState(true);
 
@@ -198,16 +204,16 @@ function ImprovedAnalysisPageContent() {
   const currentLoading = isAnalyzing || currentMutation.isPending;
 
   return (
-    <div className="container mx-auto px-4 py-6 sm:px-6 lg:px-8 max-w-7xl">
-      <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground mb-2">AI Semantic Analysis Editor</h1>
-        <p className="text-muted-foreground text-base sm:text-lg">
+    <div className="container mx-auto px-4 py-4 sm:px-6 lg:px-8 max-w-7xl h-[calc(100vh-2rem)] flex flex-col">
+      <div className="mb-4 sm:mb-6 flex-shrink-0">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground mb-2">AI Semantic Analysis Editor</h1>
+        <p className="text-muted-foreground text-sm sm:text-base">
           Phân tích chi tiết từ, câu và đoạn văn bằng AI để hiểu sâu sắc thái ngữ nghĩa và cải thiện kỹ năng viết.
         </p>
       </div>
 
       {(error || lastError || currentMutation.error) && (
-        <Alert className="mb-4 sm:mb-6 border-destructive/50 bg-destructive/10 text-destructive">
+        <Alert className="mb-4 border-destructive/50 bg-destructive/10 text-destructive flex-shrink-0">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
             {error || lastError || (currentMutation.error instanceof Error ? currentMutation.error.message : 'Lỗi không xác định')}
@@ -215,9 +221,9 @@ function ImprovedAnalysisPageContent() {
         </Alert>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 min-h-0">
         {/* Main Editor - occupies 2/3 of space */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 min-h-0">
           <ImprovedAnalysisEditor
             onTextSelect={handleTextSelect}
             onAnalyze={handleAnalyze}
@@ -226,18 +232,24 @@ function ImprovedAnalysisPageContent() {
         </div>
 
         {/* Sidebar - occupies 1/3 of space */}
-        <div className="lg:col-span-1 space-y-3 lg:space-y-4">
+        <div className="lg:col-span-1 space-y-3 lg:space-y-4 overflow-y-auto">
           {/* Analysis Type Selector */}
-          <Card className="p-3 sm:p-4 sticky top-6">
+          <Card className="p-3 sm:p-4 sticky top-6" title="Chọn loại phân tích phù hợp với văn bản">
             <div
               className="flex items-center justify-between mb-3 cursor-pointer"
               onClick={() => setIsAnalysisTypeOpen(!isAnalysisTypeOpen)}
+              title={isAnalysisTypeOpen ? "Thu gọn" : "Mở rộng"}
             >
-              <h3 className="font-semibold text-foreground">Loại phân tích</h3>
+              <h3 className="font-semibold text-foreground flex items-center gap-2">
+                <BookOpen className="h-4 w-4" />
+                <span className="hidden sm:inline">Loại phân tích</span>
+                <span className="sm:hidden">Phân tích</span>
+              </h3>
               <div className="flex items-center gap-2">
                 {selectedText && (
-                  <Badge variant="outline" className="text-xs">
-                    {selectedText.length} ký tự
+                  <Badge variant="outline" className="text-xs" title={`${selectedText.length} ký tự đã chọn`}>
+                    <MousePointer className="h-3 w-3 mr-1" />
+                    {selectedText.length}
                   </Badge>
                 )}
                 {isAnalysisTypeOpen ? (
@@ -251,105 +263,47 @@ function ImprovedAnalysisPageContent() {
             {isAnalysisTypeOpen && (
               <Tabs value={activeTab} onValueChange={(value) => handleTabChange(value as any)}>
                 <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="word" className="flex items-center gap-2">
+                  <TabsTrigger value="word" className="flex items-center gap-2" title="Phân tích từ vựng">
                     <BookOpen className="h-4 w-4" />
-                    Từ
+                    <span className="hidden sm:inline">Từ</span>
                   </TabsTrigger>
                   
-                  <TabsTrigger value="sentence" className="flex items-center gap-2">
+                  <TabsTrigger value="sentence" className="flex items-center gap-2" title="Phân tích câu">
                     <FileText className="h-4 w-4" />
-                    Câu
+                    <span className="hidden sm:inline">Câu</span>
                   </TabsTrigger>
                   
-                  <TabsTrigger value="paragraph" className="flex items-center gap-2">
+                  <TabsTrigger value="paragraph" className="flex items-center gap-2" title="Phân tích đoạn văn">
                     <FilePlus className="h-4 w-4" />
-                    Đoạn
+                    <span className="hidden sm:inline">Đoạn</span>
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
             )}
           </Card>
 
-          {/* Analysis Results */}
+          {/* Compact Analysis Results */}
           {selectedText && (
-            <Card className="p-3 sm:p-4">
-              <div
-                className="flex items-center justify-between mb-3 cursor-pointer"
-                onClick={() => setIsAnalysisResultsOpen(!isAnalysisResultsOpen)}
-              >
-                <h3 className="font-semibold text-foreground">Kết quả phân tích</h3>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-xs">
-                    {activeTab === 'word' ? 'Từ' : activeTab === 'sentence' ? 'Câu' : 'Đoạn'}
-                  </Badge>
-                  {isAnalysisResultsOpen ? (
-                    <ChevronUp className="h-4 w-4" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4" />
-                  )}
-                </div>
-              </div>
-
-              {isAnalysisResultsOpen && (
-                <>
-                  {currentLoading && (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-center py-8">
-                        <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                        <span className="text-sm text-muted-foreground">Đang phân tích...</span>
-                      </div>
-                      <div className="space-y-2">
-                        <Skeleton className="h-4 w-full" />
-                        <Skeleton className="h-4 w-3/4" />
-                        <Skeleton className="h-4 w-1/2" />
-                      </div>
-                    </div>
-                  )}
-
-                  {analysisResult && !currentLoading && !error && (
-                    <div className="max-h-[400px] sm:max-h-[600px] overflow-y-auto custom-scrollbar animate-in fade-in duration-300">
-                      <div className="mb-3 p-2 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                        <span className="text-sm text-green-800">Phân tích hoàn tất</span>
-                      </div>
-                      
-                      {activeTab === 'word' && (
-                        <WordAnalysisDisplay
-                          analysis={analysisResult as WordAnalysis}
-                          onSynonymClick={(word) => console.log('Synonym clicked:', word)}
-                          onAntonymClick={(word) => console.log('Antonym clicked:', word)}
-                        />
-                      )}
-                      
-                      {activeTab === 'sentence' && (
-                        <SentenceAnalysisDisplay
-                          analysis={analysisResult as SentenceAnalysis}
-                          onRewriteApply={handleRewriteApply}
-                        />
-                      )}
-                      
-                      {activeTab === 'paragraph' && (
-                        <ParagraphAnalysisDisplay
-                          analysis={analysisResult as ParagraphAnalysis}
-                          onFeedbackApply={handleFeedbackApply}
-                        />
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
-            </Card>
+            <CompactResultCard
+              analysis={analysisResult}
+              analysisType={activeTab}
+              isLoading={currentLoading}
+              error={error}
+              onViewDetails={() => setIsDetailDialogOpen(true)}
+            />
           )}
 
           {/* Quick Actions */}
-          <Card className="p-3 sm:p-4">
+          <Card className="p-3 sm:p-4" title="Các thao tác nhanh">
             <div
               className="flex items-center justify-between mb-3 cursor-pointer"
               onClick={() => setIsQuickActionsOpen(!isQuickActionsOpen)}
+              title={isQuickActionsOpen ? "Thu gọn" : "Mở rộng"}
             >
               <h3 className="font-semibold flex items-center gap-2 text-foreground">
                 <Zap className="h-4 w-4" />
-                Thao tác nhanh
+                <span className="hidden sm:inline">Thao tác nhanh</span>
+                <span className="sm:hidden">Nhanh</span>
               </h3>
               {isQuickActionsOpen ? (
                 <ChevronUp className="h-4 w-4" />
@@ -369,8 +323,11 @@ function ImprovedAnalysisPageContent() {
                     setError(null);
                   }}
                   className="w-full justify-start"
+                  title="Xóa văn bản đã chọn"
                 >
-                  Xóa lựa chọn
+                  <MousePointer className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Xóa lựa chọn</span>
+                  <span className="sm:hidden">Xóa chọn</span>
                 </Button>
                 
                 <Button
@@ -378,8 +335,11 @@ function ImprovedAnalysisPageContent() {
                   size="sm"
                   onClick={handleClearAll}
                   className="w-full justify-start"
+                  title="Xóa tất cả dữ liệu"
                 >
-                  Xóa tất cả
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Xóa tất cả</span>
+                  <span className="sm:hidden">Xóa hết</span>
                 </Button>
               </div>
             )}
@@ -387,20 +347,27 @@ function ImprovedAnalysisPageContent() {
 
           {/* Recent History */}
           {recentHistory.length > 0 && (
-            <Card className="p-3 sm:p-4">
+            <Card className="p-3 sm:p-4" title="Lịch sử phân tích gần đây">
               <div
                 className="flex items-center justify-between mb-3 cursor-pointer"
                 onClick={() => setIsHistoryOpen(!isHistoryOpen)}
+                title={isHistoryOpen ? "Thu gọn" : "Mở rộng"}
               >
                 <h3 className="font-semibold flex items-center gap-2">
                   <History className="h-4 w-4" />
-                  Lịch sử phân tích
+                  <span className="hidden sm:inline">Lịch sử phân tích</span>
+                  <span className="sm:hidden">Lịch sử</span>
                 </h3>
-                {isHistoryOpen ? (
-                  <ChevronUp className="h-4 w-4" />
-                ) : (
-                  <ChevronDown className="h-4 w-4" />
-                )}
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs" title={`${recentHistory.length} mục`}>
+                    {recentHistory.length}
+                  </Badge>
+                  {isHistoryOpen ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </div>
               </div>
               
               {isHistoryOpen && (
@@ -415,13 +382,14 @@ function ImprovedAnalysisPageContent() {
                         setActiveTab(item.type);
                         setAnalysisResult(item.result);
                       }}
+                      title={`Phân tích lại: ${item.input.substring(0, 100)}${item.input.length > 100 ? '...' : ''}`}
                     >
                       <div className="flex items-center justify-between mb-1">
                         <Badge variant="outline" className="text-xs">
                           {item.type === 'word' ? 'Từ' : item.type === 'sentence' ? 'Câu' : 'Đoạn'}
                         </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(item.timestamp).toLocaleString('vi-VN')}
+                        <span className="text-xs text-muted-foreground" title={new Date(item.timestamp).toLocaleString('vi-VN')}>
+                          {new Date(item.timestamp).toLocaleDateString('vi-VN')}
                         </span>
                       </div>
                       <p className="text-sm text-foreground truncate">
@@ -435,6 +403,14 @@ function ImprovedAnalysisPageContent() {
           )}
         </div>
       </div>
+
+      {/* Analysis Result Dialog */}
+      <AnalysisResultDialog
+        isOpen={isDetailDialogOpen}
+        onClose={() => setIsDetailDialogOpen(false)}
+        analysis={analysisResult}
+        analysisType={activeTab}
+      />
     </div>
   );
 }
