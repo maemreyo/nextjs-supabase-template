@@ -15,8 +15,8 @@ CREATE TABLE IF NOT EXISTS profiles (
   avatar_url TEXT,
   website TEXT,
   
-  constraint username_min_length check (char_length(username) >= 3),
-  constraint username_max_length check (char_length(username) <= 24)
+  constraint username_length check (char_length(username) >= 3),
+  constraint username_length check (char_length(username) <= 24)
 );
 
 -- ========================================

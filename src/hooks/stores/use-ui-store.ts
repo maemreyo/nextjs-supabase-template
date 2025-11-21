@@ -255,15 +255,21 @@ export function useNotificationManager() {
   const { notifications, removeNotification } = useNotifications()
   
   useEffect(() => {
+    const timers: NodeJS.Timeout[] = []
+    
     notifications.forEach((notification) => {
       if (notification.duration && notification.duration > 0) {
         const timer = setTimeout(() => {
           removeNotification(notification.id)
         }, notification.duration)
         
-        return () => clearTimeout(timer)
+        timers.push(timer)
       }
     })
+    
+    return () => {
+      timers.forEach(timer => clearTimeout(timer))
+    }
   }, [notifications, removeNotification])
 }
 

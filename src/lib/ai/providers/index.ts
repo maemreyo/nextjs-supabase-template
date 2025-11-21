@@ -48,7 +48,7 @@ export class ProviderRegistry {
     switch (provider) {
       case 'openai':
         return {
-          apiKey: process.env.OPENAI_API_KEY,
+          apiKey: process.env.OPENAI_API_KEY || '',
           organization: process.env.OPENAI_ORGANIZATION,
           baseURL: process.env.OPENAI_BASE_URL,
           timeout: parseInt(process.env.OPENAI_TIMEOUT || '30000'),
@@ -58,7 +58,7 @@ export class ProviderRegistry {
         }
       case 'anthropic':
         return {
-          apiKey: process.env.ANTHROPIC_API_KEY,
+          apiKey: process.env.ANTHROPIC_API_KEY || '',
           baseURL: process.env.ANTHROPIC_BASE_URL,
           timeout: parseInt(process.env.ANTHROPIC_TIMEOUT || '30000'),
           retryAttempts: parseInt(process.env.ANTHROPIC_RETRY_ATTEMPTS || '3'),
@@ -68,7 +68,7 @@ export class ProviderRegistry {
         }
       case 'google':
         return {
-          apiKey: process.env.GOOGLE_AI_API_KEY,
+          apiKey: process.env.GOOGLE_AI_API_KEY || '',
           baseURL: process.env.GOOGLE_AI_BASE_URL,
           timeout: parseInt(process.env.GOOGLE_AI_TIMEOUT || '30000'),
           retryAttempts: parseInt(process.env.GOOGLE_AI_RETRY_ATTEMPTS || '3'),
@@ -79,7 +79,7 @@ export class ProviderRegistry {
         }
       case 'cohere':
         return {
-          apiKey: process.env.COHERE_API_KEY,
+          apiKey: process.env.COHERE_API_KEY || '',
           baseURL: process.env.COHERE_BASE_URL,
           timeout: parseInt(process.env.COHERE_TIMEOUT || '30000'),
           retryAttempts: parseInt(process.env.COHERE_RETRY_ATTEMPTS || '3'),

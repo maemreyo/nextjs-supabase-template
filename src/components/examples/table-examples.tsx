@@ -27,7 +27,7 @@ type Profile = Database['public']['Tables']['profiles']['Row']
  */
 export function BasicTableExample() {
   const { data: profiles, isLoading, error } = useSupabaseQuery('profiles', {
-    select: 'id, user_id, full_name, avatar_url, updated_at',
+    select: 'id, full_name, avatar_url, updated_at',
     orderBy: { column: 'updated_at', ascending: false },
     limit: 50,
   })
@@ -35,7 +35,6 @@ export function BasicTableExample() {
   const columns: ColumnDef<Profile>[] = [
     columnUtils.createColumn('id', 'ID'),
     columnUtils.createColumn('full_name', 'Full Name'),
-    columnUtils.createColumn('user_id', 'User ID'),
     columnUtils.createColumn('updated_at', 'Updated At'),
   ]
 
@@ -65,8 +64,12 @@ export function BasicTableExample() {
       </CardHeader>
       <CardContent>
         <DataTable
+          table={useDataTable({
+            columns,
+            data: (profiles as unknown as Profile[]) || [],
+            isLoading,
+          }).table}
           columns={columns}
-          data={profiles || []}
           isLoading={isLoading}
           emptyMessage="No profiles found"
         />
@@ -85,17 +88,18 @@ export function AdvancedTableExample() {
 
   const { data: profiles, isLoading } = useSupabaseQuery('profiles', {
     filters: globalFilter ? { full_name: globalFilter } : undefined,
-    select: 'id, user_id, full_name, avatar_url, updated_at',
+    select: 'id, full_name, avatar_url, updated_at',
     limit: 20,
   })
 
   const columns: ColumnDef<Profile>[] = [
     columnUtils.createSelectionColumn<Profile>(),
     columnUtils.createSortableColumn('full_name', 'Full Name'),
-    columnUtils.createSortableColumn('user_id', 'User ID'),
     columnUtils.createSortableColumn('updated_at', 'Updated At', {
       cell: ({ row }) => {
-        const date = new Date(row.getValue('updated_at'))
+        const dateValue = row.getValue('updated_at') as string | null
+        if (!dateValue) return 'Never'
+        const date = new Date(dateValue)
         return date.toLocaleDateString()
       },
     }),
@@ -121,7 +125,7 @@ export function AdvancedTableExample() {
 
   const table = useDataTable({
     columns,
-    data: profiles || [],
+    data: (profiles as unknown as Profile[]) || [],
     isLoading,
     enableRowSelection: true,
     enableSorting: true,
@@ -223,19 +227,19 @@ export function AdvancedTableExample() {
 export function MutationTableExample() {
   const [newProfile, setNewProfile] = React.useState({
     full_name: '',
-    user_id: '',
+    username: '',
   })
   const [isCreating, setIsCreating] = React.useState(false)
 
   const { data: profiles, isLoading, refetch } = useSupabaseQuery('profiles', {
-    select: 'id, user_id, full_name, avatar_url, updated_at',
+    select: 'id, full_name, avatar_url, updated_at',
     orderBy: { column: 'updated_at', ascending: false },
   })
 
   const createMutation = useSupabaseMutation('profiles', {
     optimisticUpdate: true,
     onSuccess: () => {
-      setNewProfile({ full_name: '', user_id: '' })
+      setNewProfile({ full_name: '', username: '' })
       setIsCreating(false)
       refetch()
     },
@@ -266,7 +270,7 @@ export function MutationTableExample() {
   })
 
   const handleCreate = () => {
-    if (!newProfile.full_name || !newProfile.user_id) {
+    if (!newProfile.full_name || !newProfile.username) {
       alert('Please fill in all fields')
       return
     }
@@ -275,7 +279,7 @@ export function MutationTableExample() {
   }
 
   const handleUpdate = (profile: Profile) => {
-    const newName = prompt('Enter new name:', profile.full_name)
+    const newName = prompt('Enter new name:', profile.full_name || '')
     if (newName && newName !== profile.full_name) {
       updateMutation.mutate({
         id: profile.id,
@@ -307,10 +311,12 @@ export function MutationTableExample() {
         </div>
       ),
     }),
-    columnUtils.createColumn('user_id', 'User ID'),
+    columnUtils.createColumn('username', 'Username'),
     columnUtils.createColumn('updated_at', 'Updated At', {
       cell: ({ row }) => {
-        const date = new Date(row.getValue('updated_at'))
+        const dateValue = row.getValue('updated_at') as string | null
+        if (!dateValue) return 'Never'
+        const date = new Date(dateValue)
         return date.toLocaleDateString()
       },
     }),
@@ -355,9 +361,9 @@ export function MutationTableExample() {
               className="w-48"
             />
             <Input
-              placeholder="User ID"
-              value={newProfile.user_id}
-              onChange={(e) => setNewProfile(prev => ({ ...prev, user_id: e.target.value }))}
+              placeholder="Username"
+              value={newProfile.username}
+              onChange={(e) => setNewProfile(prev => ({ ...prev, username: e.target.value }))}
               className="w-48"
             />
             <Button
@@ -370,8 +376,12 @@ export function MutationTableExample() {
 
           {/* Table */}
           <DataTable
+            table={useDataTable({
+              columns,
+              data: (profiles as unknown as Profile[]) || [],
+              isLoading,
+            }).table}
             columns={columns}
-            data={profiles || []}
             isLoading={isLoading}
             emptyMessage="No profiles found. Create your first profile above!"
           />
@@ -386,10 +396,8 @@ export function MutationTableExample() {
  */
 export function RealTimeTableExample() {
   const { data: profiles, isLoading, refetch } = useSupabaseQuery('profiles', {
-    select: 'id, user_id, full_name, avatar_url, updated_at',
+    select: 'id, full_name, avatar_url, updated_at',
     orderBy: { column: 'updated_at', ascending: false },
-    // Refetch every 30 seconds
-    refetchInterval: 30000,
   })
 
   React.useEffect(() => {
@@ -398,10 +406,13 @@ export function RealTimeTableExample() {
 
   const columns: ColumnDef<Profile>[] = [
     columnUtils.createColumn('full_name', 'Full Name'),
-    columnUtils.createColumn('user_id', 'User ID'),
+    columnUtils.createColumn('username', 'Username'),
     columnUtils.createColumn('updated_at', 'Last Updated', {
       cell: ({ row }) => {
-        const date = new Date(row.getValue('updated_at'))
+        const dateValue = row.getValue('updated_at') as string | null
+        if (!dateValue) return 'Never'
+        
+        const date = new Date(dateValue)
         const now = new Date()
         const diffMs = now.getTime() - date.getTime()
         const diffMins = Math.floor(diffMs / 60000)
@@ -443,8 +454,12 @@ export function RealTimeTableExample() {
           </Button>
         </div>
         <DataTable
+          table={useDataTable({
+            columns,
+            data: (profiles as unknown as Profile[]) || [],
+            isLoading,
+          }).table}
           columns={columns}
-          data={profiles || []}
           isLoading={isLoading}
           emptyMessage="No profiles found"
         />

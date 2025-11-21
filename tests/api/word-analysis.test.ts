@@ -1,6 +1,39 @@
 import { NextRequest } from 'next/server'
 import { POST } from '@/app/api/ai/analyze-word/route'
 
+import '@types/jest'
+
+// Jest globals
+declare global {
+  namespace jest {
+    interface Matchers<R> {
+      toBe(expected: any): R
+      toBeDefined(): R
+      toHaveBeenCalled(): R
+      toHaveBeenCalledWith(...args: any[]): R
+    }
+    
+    interface Mock<T, Y extends any[]> {
+      (...args: Y): T
+      mockResolvedValue(value: any): jest.Mock<T, Y>
+      mockReturnValue(value: any): jest.Mock<T, Y>
+    }
+  }
+}
+
+declare const describe: (name: string, fn: () => void) => void
+declare const it: (name: string, fn: () => Promise<void> | void) => void
+declare const test: (name: string, fn: () => Promise<void> | void) => void
+declare const expect: (actual: any) => jest.Matchers<any>
+declare const beforeAll: (fn: () => Promise<void> | void) => void
+declare const afterAll: (fn: () => Promise<void> | void) => void
+declare const beforeEach: (fn: () => Promise<void> | void) => void
+declare const afterEach: (fn: () => Promise<void> | void) => void
+declare const jest: {
+  fn<T = any, Y extends any[] = any[]>(): jest.Mock<T, Y>
+  mock(path: string, factory: () => any): void
+}
+
 // Mock environment variables
 process.env.OPENAI_API_KEY = 'test-key'
 

@@ -16,8 +16,7 @@ type TableInsert<T extends TableNames> = Tables[T]['Insert']
 type TableUpdate<T extends TableNames> = Tables[T]['Update']
 
 // Enhanced query options
-interface UseSupabaseQueryOptions<TData = unknown>
-  extends Omit<UseQueryOptions<TData, Error>, 'queryKey' | 'queryFn'> {
+interface UseSupabaseQueryOptions<TData = unknown> {
   select?: string
   filters?: Record<string, any>
   orderBy?: {
@@ -26,6 +25,7 @@ interface UseSupabaseQueryOptions<TData = unknown>
   }
   limit?: number
   offset?: number
+  enabled?: boolean
 }
 
 // Enhanced mutation options
@@ -48,6 +48,7 @@ export function useSupabaseQuery<T extends TableNames>(
     orderBy, 
     limit, 
     offset,
+    enabled,
     ...queryOptions 
   } = options
 
@@ -83,6 +84,7 @@ export function useSupabaseQuery<T extends TableNames>(
       if (error) throw error
       return data || []
     },
+    enabled,
     ...queryOptions,
   })
 }
@@ -95,7 +97,7 @@ export function useSupabaseDetailQuery<T extends TableNames>(
   id: string,
   options: UseSupabaseQueryOptions<TableRow<T>> = {}
 ) {
-  const { select = '*', ...queryOptions } = options
+  const { select = '*', enabled, ...queryOptions } = options
 
   return useQuery({
     queryKey: createQueryKeys.table(table).detail(id),
@@ -104,13 +106,13 @@ export function useSupabaseDetailQuery<T extends TableNames>(
       const { data, error } = await supabase
         .from(table)
         .select(select)
-        .eq('id', id)
+        .eq('id', id as any)
         .single()
         
       if (error) throw error
       return data
     },
-    enabled: !!id && (queryOptions.enabled !== false),
+    enabled: !!id && enabled !== false,
     ...queryOptions,
   })
 }
@@ -135,7 +137,7 @@ export function useSupabaseMutation<T extends TableNames>(
         .single()
         
       if (error) throw error
-      return result
+      return result as unknown as TableRow<T>
     },
     
     onMutate: async (newData) => {

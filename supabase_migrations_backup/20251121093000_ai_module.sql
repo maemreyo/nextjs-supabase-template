@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS ai_models (
   max_tokens INTEGER NOT NULL,
   cost_per_token DECIMAL(10,8) NOT NULL DEFAULT 0.00000001,
   cost_per_request DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-  capabilities TEXT[] NOT NULL DEFAULT '{}',
+  capabilities TEXT[] NOT NULL DEFAULT ARRAY[],
   is_available BOOLEAN NOT NULL DEFAULT true,
   deprecated_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

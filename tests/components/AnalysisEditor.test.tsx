@@ -4,6 +4,44 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AnalysisEditor } from '@/components/analysis/AnalysisEditor'
 import type { AnalysisEditorProps } from '@/components/analysis/types'
 
+// Jest types
+declare global {
+  namespace jest {
+    interface Matchers<R> {
+      toBeInTheDocument(): R
+      toHaveBeenCalled(): R
+      toHaveBeenCalledWith(...args: any[]): R
+      toBeDisabled(): R
+      not: {
+        toBeInTheDocument(): R
+        toBeDisabled(): R
+      }
+      toHaveValue(value: string): R
+    }
+    
+    interface Mock<T, Y extends any[]> {
+      (...args: Y): T
+      mockResolvedValue(value: any): jest.Mock<T, Y>
+      mockReturnValue(value: any): jest.Mock<T, Y>
+      mockImplementation(fn: (...args: any[]) => any): jest.Mock<T, Y>
+    }
+  }
+}
+
+declare const describe: (name: string, fn: () => void) => void
+declare const it: (name: string, fn: () => Promise<void> | void) => void
+declare const test: (name: string, fn: () => Promise<void> | void) => void
+declare const expect: (actual: any) => jest.Matchers<any>
+declare const beforeAll: (fn: () => Promise<void> | void) => void
+declare const afterAll: (fn: () => Promise<void> | void) => void
+declare const beforeEach: (fn: () => Promise<void> | void) => void
+declare const afterEach: (fn: () => Promise<void> | void) => void
+declare const jest: {
+  fn<T = any, Y extends any[] = any[]>(): jest.Mock<T, Y>
+  clearAllMocks(): void
+  mock(path: string, factory: () => any): void
+}
+
 // Mock functions
 const mockOnTextSelect = jest.fn()
 const mockOnAnalyze = jest.fn()
@@ -185,7 +223,9 @@ describe('AnalysisEditor', () => {
     
     // Click analyze button in selected text section
     const analyzeButtons = screen.getAllByText('Phân tích câu')
-    fireEvent.click(analyzeButtons[0])
+    if (analyzeButtons[0]) {
+      fireEvent.click(analyzeButtons[0])
+    }
     
     await waitFor(() => {
       expect(mockAnalyze).toHaveBeenCalledWith('This is a test sentence.', 'sentence')
@@ -208,7 +248,7 @@ describe('AnalysisEditor', () => {
 
   it('shows loading state during analysis', async () => {
     let resolveAnalysis: (value: void) => void
-    const mockAnalyze = jest.fn(() => {
+    const mockAnalyze = jest.fn().mockImplementation(() => {
       return new Promise<void>((resolve) => {
         resolveAnalysis = resolve
       })

@@ -112,7 +112,7 @@ export class AIServiceServer {
         .eq('user_id', userId)
         .single()
 
-      const tier = userTier?.tiers || this.getDefaultTier()
+      const tier = userTier?.tiers ? this.convertTierFromDB(userTier.tiers) : this.getDefaultTier()
 
       // Get current usage
       const today = new Date().toISOString().split('T')[0]
@@ -293,10 +293,24 @@ export class AIServiceServer {
         .eq('user_id', userId)
         .single()
 
-      return userTier?.tiers || this.getDefaultTier()
+      return userTier?.tiers ? this.convertTierFromDB(userTier.tiers) : this.getDefaultTier()
     } catch (error) {
       console.error('Failed to get user tier:', error)
       return this.getDefaultTier()
+    }
+  }
+
+  // Helper function to convert database tier to UserTier interface
+  private convertTierFromDB(dbTier: any): UserTier {
+    return {
+      id: dbTier.id,
+      name: dbTier.name,
+      maxRequestsPerDay: dbTier.max_requests_per_day,
+      maxTokensPerDay: dbTier.max_tokens_per_day,
+      maxCostPerDay: dbTier.max_cost_per_day,
+      features: dbTier.features,
+      rateLimitPerMinute: dbTier.rate_limit_per_minute,
+      rateLimitPerHour: dbTier.rate_limit_per_hour
     }
   }
 
@@ -659,21 +673,6 @@ export class AIServiceServer {
     }
   }
 
-  // Usage tracking for analysis operations
-  private async checkUserLimits(userId: string, operation: string): Promise<void> {
-    // Check specific limits for analysis operations
-    const usageCheck = await this.checkUsage(userId)
-    
-    if (!usageCheck.canUseAI) {
-      throw new Error(`AI usage limit reached. Reset at ${usageCheck.resetTime.toISOString()}`)
-    }
-
-    // Check if user has analysis permissions
-    const userTier = await this.getUserTier(userId)
-    if (!userTier.features.includes('analysis')) {
-      throw new Error('Analysis feature not available in your current tier')
-    }
-  }
 }
 
 // Default server instance

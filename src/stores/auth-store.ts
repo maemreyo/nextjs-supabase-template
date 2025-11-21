@@ -16,8 +16,9 @@ export interface User {
 
 export interface Profile {
   id: string
-  user_id: string | null
   full_name?: string | null
+  username?: string | null
+  website?: string | null
   avatar_url?: string | null
   updated_at: string | null
 }
@@ -307,17 +308,18 @@ export const useAuthStore = create<AuthStore>()(
               
               // Create profile from user data
               const profileData = userData ? {
-                id: userData.id,
-                user_id: userData.id,
-                full_name: userData.user_metadata?.full_name || userData.email,
-                avatar_url: userData.user_metadata?.avatar_url,
+                id: userData.user?.id || '',
+                full_name: userData.user?.user_metadata?.full_name || userData.user?.email || '',
+                username: userData.user?.user_metadata?.username || null,
+                website: userData.user?.user_metadata?.website || null,
+                avatar_url: userData.user?.user_metadata?.avatar_url || null,
                 updated_at: new Date().toISOString()
               } : null
               
               get().setProfile(profileData)
               
-              if (error && error.code !== 'PGRST116') { // Not found error
-                throw error
+              if (userError && 'code' in userError && (userError as any).code !== 'PGRST116') { // Not found error
+                throw userError
               }
               
               get().setProfile(profileData)
@@ -342,7 +344,7 @@ export const useAuthStore = create<AuthStore>()(
               const { data, error } = await supabase
                 .from('profiles')
                 .upsert({
-                  user_id: user.id,
+                  id: user.id,
                   ...updates,
                   updated_at: new Date().toISOString(),
                 })

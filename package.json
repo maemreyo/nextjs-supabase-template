@@ -26,6 +26,7 @@
     "db:restore": "node scripts/db-restore.js",
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",
+    "supabase:kill": "pkill -f 'supabase'",
     "supabase:status": "supabase status",
     "dev:setup": "./scripts/dev-setup.sh",
     "cleanup": "./scripts/cleanup.sh",

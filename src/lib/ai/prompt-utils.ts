@@ -234,7 +234,11 @@ export function validateWordAnalysis(data: any): WordAnalysis {
     for (const field of requiredFields) {
       const [parent, child] = field.split('.')
       const parentObj = data as Record<string, any>
-      if (!parentObj[parent] || (child && !parentObj[parent][child])) {
+      const parentKey = parent as string
+      if (!parentObj[parentKey]) {
+        throw new Error(`Missing required field: ${field}`)
+      }
+      if (child && !parentObj[parentKey][child]) {
         throw new Error(`Missing required field: ${field}`)
       }
     }
@@ -263,7 +267,11 @@ export function validateSentenceAnalysis(data: any): SentenceAnalysis {
     for (const field of requiredFields) {
       const [parent, child] = field.split('.')
       const parentObj = data as Record<string, any>
-      if (!parentObj[parent] || (child && !parentObj[parent][child])) {
+      const parentKey = parent as string
+      if (!parentObj[parentKey]) {
+        throw new Error(`Missing required field: ${field}`)
+      }
+      if (child && !parentObj[parentKey][child]) {
         throw new Error(`Missing required field: ${field}`)
       }
     }
@@ -291,7 +299,11 @@ export function validateParagraphAnalysis(data: any): ParagraphAnalysis {
     for (const field of requiredFields) {
       const [parent, child] = field.split('.')
       const parentObj = data as Record<string, any>
-      if (!parentObj[parent] || (child && !parentObj[parent][child])) {
+      const parentKey = parent as string
+      if (!parentObj[parentKey]) {
+        throw new Error(`Missing required field: ${field}`)
+      }
+      if (child && !parentObj[parentKey][child]) {
         throw new Error(`Missing required field: ${field}`)
       }
     }

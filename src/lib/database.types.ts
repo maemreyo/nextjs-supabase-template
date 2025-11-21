@@ -14,32 +14,285 @@ export type Database = {
   }
   public: {
     Tables: {
-      profiles: {
+      ai_cache: {
         Row: {
-          avatar_url: string | null
-          full_name: string | null
+          cache_key: string
+          created_at: string | null
+          expires_at: string
+          hit_count: number
           id: string
+          model: string
+          operation: string
+          provider: string
+          request_hash: string
+          response_data: Json
           updated_at: string | null
-          username: string | null
-          website: string | null
         }
         Insert: {
-          avatar_url?: string | null
-          full_name?: string | null
+          cache_key: string
+          created_at?: string | null
+          expires_at: string
+          hit_count?: number
           id?: string
+          model: string
+          operation: string
+          provider: string
+          request_hash: string
+          response_data: Json
           updated_at?: string | null
-          username?: string | null
-          website?: string | null
         }
         Update: {
-          avatar_url?: string | null
-          full_name?: string | null
+          cache_key?: string
+          created_at?: string | null
+          expires_at?: string
+          hit_count?: number
           id?: string
+          model?: string
+          operation?: string
+          provider?: string
+          request_hash?: string
+          response_data?: Json
           updated_at?: string | null
-          username?: string | null
-          website?: string | null
         }
         Relationships: []
+      }
+      ai_models: {
+        Row: {
+          capabilities: string[]
+          cost_per_request: number
+          cost_per_token: number
+          created_at: string | null
+          deprecated_at: string | null
+          id: string
+          is_available: boolean
+          max_tokens: number
+          model_id: string
+          name: string
+          provider: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          capabilities?: string[]
+          cost_per_request?: number
+          cost_per_token?: number
+          created_at?: string | null
+          deprecated_at?: string | null
+          id?: string
+          is_available?: boolean
+          max_tokens: number
+          model_id: string
+          name: string
+          provider: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          capabilities?: string[]
+          cost_per_request?: number
+          cost_per_token?: number
+          created_at?: string | null
+          deprecated_at?: string | null
+          id?: string
+          is_available?: boolean
+          max_tokens?: number
+          model_id?: string
+          name?: string
+          provider?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      ai_provider_performance: {
+        Row: {
+          average_response_time: number | null
+          created_at: string | null
+          date: string
+          error_rate: number | null
+          failed_requests: number
+          id: string
+          model: string
+          provider: string
+          success_rate: number | null
+          successful_requests: number
+          total_cost: number
+          total_requests: number
+          total_tokens: number
+          updated_at: string | null
+        }
+        Insert: {
+          average_response_time?: number | null
+          created_at?: string | null
+          date: string
+          error_rate?: number | null
+          failed_requests?: number
+          id?: string
+          model: string
+          provider: string
+          success_rate?: number | null
+          successful_requests?: number
+          total_cost?: number
+          total_requests?: number
+          total_tokens?: number
+          updated_at?: string | null
+        }
+        Update: {
+          average_response_time?: number | null
+          created_at?: string | null
+          date?: string
+          error_rate?: number | null
+          failed_requests?: number
+          id?: string
+          model?: string
+          provider?: string
+          success_rate?: number | null
+          successful_requests?: number
+          total_cost?: number
+          total_requests?: number
+          total_tokens?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      ai_rate_limits: {
+        Row: {
+          created_at: string | null
+          id: string
+          request_count: number
+          updated_at: string | null
+          user_id: string
+          window_start: string
+          window_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          request_count?: number
+          updated_at?: string | null
+          user_id: string
+          window_start: string
+          window_type: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          request_count?: number
+          updated_at?: string | null
+          user_id?: string
+          window_start?: string
+          window_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_rate_limits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "ai_usage_analytics"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      ai_tiers: {
+        Row: {
+          created_at: string | null
+          features: string[]
+          id: string
+          max_cost_per_day: number
+          max_requests_per_day: number
+          max_tokens_per_day: number
+          name: string
+          rate_limit_per_hour: number
+          rate_limit_per_minute: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          features?: string[]
+          id?: string
+          max_cost_per_day?: number
+          max_requests_per_day?: number
+          max_tokens_per_day?: number
+          name: string
+          rate_limit_per_hour?: number
+          rate_limit_per_minute?: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          features?: string[]
+          id?: string
+          max_cost_per_day?: number
+          max_requests_per_day?: number
+          max_tokens_per_day?: number
+          name?: string
+          rate_limit_per_hour?: number
+          rate_limit_per_minute?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      ai_usage_logs: {
+        Row: {
+          cost: number
+          created_at: string | null
+          duration: number | null
+          error: string | null
+          id: string
+          input_tokens: number
+          metadata: Json | null
+          model: string
+          operation: string
+          output_tokens: number
+          provider: string
+          success: boolean
+          timestamp: string | null
+          total_tokens: number
+          user_id: string
+        }
+        Insert: {
+          cost?: number
+          created_at?: string | null
+          duration?: number | null
+          error?: string | null
+          id?: string
+          input_tokens?: number
+          metadata?: Json | null
+          model: string
+          operation: string
+          output_tokens?: number
+          provider: string
+          success?: boolean
+          timestamp?: string | null
+          total_tokens?: number
+          user_id: string
+        }
+        Update: {
+          cost?: number
+          created_at?: string | null
+          duration?: number | null
+          error?: string | null
+          id?: string
+          input_tokens?: number
+          metadata?: Json | null
+          model?: string
+          operation?: string
+          output_tokens?: number
+          provider?: string
+          success?: boolean
+          timestamp?: string | null
+          total_tokens?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "ai_usage_analytics"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       documents: {
         Row: {
@@ -69,7 +322,15 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "documents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "ai_usage_analytics"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       paragraph_analyses: {
         Row: {
@@ -149,6 +410,13 @@ export type Database = {
             referencedRelation: "documents"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "paragraph_analyses_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "ai_usage_analytics"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       paragraph_constructive_feedback: {
@@ -221,6 +489,41 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "paragraph_analyses"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          full_name: string | null
+          id: string
+          updated_at: string | null
+          username: string | null
+          website: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          full_name?: string | null
+          id: string
+          updated_at?: string | null
+          username?: string | null
+          website?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string | null
+          username?: string | null
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "ai_usage_analytics"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -299,6 +602,13 @@ export type Database = {
             referencedRelation: "documents"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "sentence_analyses_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "ai_usage_analytics"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       sentence_key_components: {
@@ -374,6 +684,61 @@ export type Database = {
           },
         ]
       }
+      user_ai_tiers: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          tier_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          tier_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          tier_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_ai_tiers_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "ai_usage_analytics"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_ai_tiers_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "ai_tiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_ai_tiers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "ai_usage_analytics"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       word_analyses: {
         Row: {
           cefr: string | null
@@ -445,6 +810,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "documents"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "word_analyses_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "ai_usage_analytics"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -567,10 +939,73 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      ai_provider_analytics: {
+        Row: {
+          average_cost_per_request: number | null
+          average_response_time: number | null
+          date: string | null
+          error_rate: number | null
+          failed_requests: number | null
+          model: string | null
+          provider: string | null
+          success_rate: number | null
+          successful_requests: number | null
+          total_cost: number | null
+          total_requests: number | null
+          total_tokens: number | null
+        }
+        Insert: {
+          average_cost_per_request?: never
+          average_response_time?: number | null
+          date?: string | null
+          error_rate?: number | null
+          failed_requests?: number | null
+          model?: string | null
+          provider?: string | null
+          success_rate?: number | null
+          successful_requests?: number | null
+          total_cost?: number | null
+          total_requests?: number | null
+          total_tokens?: number | null
+        }
+        Update: {
+          average_cost_per_request?: never
+          average_response_time?: number | null
+          date?: string | null
+          error_rate?: number | null
+          failed_requests?: number | null
+          model?: string | null
+          provider?: string | null
+          success_rate?: number | null
+          successful_requests?: number | null
+          total_cost?: number | null
+          total_requests?: number | null
+          total_tokens?: number | null
+        }
+        Relationships: []
+      }
+      ai_usage_analytics: {
+        Row: {
+          cost_today: number | null
+          email: string | null
+          max_cost_per_day: number | null
+          max_requests_per_day: number | null
+          max_tokens_per_day: number | null
+          remaining_cost: number | null
+          remaining_requests: number | null
+          remaining_tokens: number | null
+          requests_today: number | null
+          tier_name: string | null
+          tokens_today: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      aggregate_provider_performance: { Args: never; Returns: undefined }
+      cleanup_ai_cache: { Args: never; Returns: undefined }
+      cleanup_old_usage_logs: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

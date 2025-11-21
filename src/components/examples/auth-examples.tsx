@@ -64,7 +64,7 @@ export function AuthStatusExample() {
               <strong>Member Since:</strong> {new Date(user?.created_at || '').toLocaleDateString()}
             </p>
             <p className="text-sm">
-              <strong>Last Updated:</strong> {new Date(profile.updated_at).toLocaleDateString()}
+              <strong>Last Updated:</strong> {profile.updated_at ? new Date(profile.updated_at).toLocaleDateString() : 'Never'}
             </p>
           </div>
         )}
