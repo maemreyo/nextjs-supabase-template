@@ -1,7 +1,28 @@
 import { create } from 'zustand'
 import { subscribeWithSelector, devtools, persist } from 'zustand/middleware'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
-import type { User, Profile } from '@/types/database'
+// Define local types since they're not in the generated database types
+export interface User {
+  id: string
+  email: string
+  created_at: string
+  user_metadata?: {
+    full_name?: string
+    avatar_url?: string
+    last_sign_in_at?: string
+    email_confirmed_at?: string
+  }
+}
+
+export interface Profile {
+  id: string
+  user_id: string | null
+  full_name?: string | null
+  avatar_url?: string | null
+  updated_at: string | null
+}
+
+import type { Database } from '@/lib/database.types'
 import { createStore, storeUtils, type LoadingState } from '@/lib/store'
 
 // Auth state interface
@@ -280,17 +301,26 @@ export const useAuthStore = create<AuthStore>()(
               setError(null)
               
               const { supabase } = await import('@/lib/supabase/client')
-              const { data, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('user_id', user.id)
-                .single()
+              const { data: userData, error: userError } = await supabase.auth.getUser()
+              
+              if (userError) throw userError
+              
+              // Create profile from user data
+              const profileData = userData ? {
+                id: userData.id,
+                user_id: userData.id,
+                full_name: userData.user_metadata?.full_name || userData.email,
+                avatar_url: userData.user_metadata?.avatar_url,
+                updated_at: new Date().toISOString()
+              } : null
+              
+              get().setProfile(profileData)
               
               if (error && error.code !== 'PGRST116') { // Not found error
                 throw error
               }
               
-              get().setProfile(data)
+              get().setProfile(profileData)
             } catch (error) {
               setError(error instanceof Error ? error.message : 'Failed to fetch profile')
               throw error

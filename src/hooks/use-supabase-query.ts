@@ -7,7 +7,7 @@ import {
 } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { queryKeys, createQueryKeys } from '@/lib/query-keys'
-import type { Database } from '@/types/database'
+import type { Database } from '@/lib/database.types'
 
 type Tables = Database['public']['Tables']
 type TableNames = keyof Tables

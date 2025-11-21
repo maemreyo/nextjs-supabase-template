@@ -18,7 +18,7 @@ import { useSupabaseQuery, useSupabaseMutation, useSupabaseDelete, useSupabaseUp
 import { queryKeys } from "@/lib/query-keys"
 import { flexRender } from "@tanstack/react-table"
 import type { ColumnDef } from "@tanstack/react-table"
-import type { Database } from "@/types/database"
+import type { Database } from "@/lib/database.types"
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 

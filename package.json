@@ -17,7 +17,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "db:generate": "supabase gen types typescript --local > src/lib/database.types.ts",
-    "db:generate-types-remote": "supabase gen types typescript --project-id mjylodxpsuospphixcjm > src/lib/database.types.ts",
+    "db:generate-types-remote": "supabase gen types typescript --project-id idrnzkbrhnnfombyiavk > src/lib/database.types.ts",
     "db:push": "supabase db push",
     "db:reset": "supabase db reset",
     "db:migrate": "supabase db push",
@@ -33,7 +33,7 @@
     "ai:test-providers": "./scripts/ai-test-providers.sh",
     "ai:usage-report": "./scripts/ai-usage-report.sh",
     "ai:cache-clear": "./scripts/ai-cache-clear.sh",
-    "prepare": "husky install",
+    "prepare": "npx husky install",
     "pre-commit": "lint-staged",
     "postinstall": "npm run db:generate-types-remote"
   },

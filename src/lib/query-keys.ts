@@ -1,4 +1,4 @@
-import type { Database } from '@/types/database'
+import type { Database } from '@/lib/database.types'
 
 type Tables = Database['public']['Tables']
 type TableNames = keyof Tables
@@ -36,15 +36,15 @@ export const queryKeys = {
       [...queryKeys.tables.table(table), 'paginated', page, limit] as const,
   },
 
-  // Profile specific queries
-  profiles: {
-    all: () => [...queryKeys.tables.table('profiles')] as const,
-    list: (filters?: Record<string, any>) => 
-      filters 
-        ? [...queryKeys.profiles.all(), 'list', filters] as const
-        : [...queryKeys.profiles.all(), 'list'] as const,
-    detail: (id: string) => [...queryKeys.profiles.all(), 'detail', id] as const,
-    current: () => [...queryKeys.profiles.all(), 'current'] as const,
+  // Document specific queries
+  documents: {
+    all: () => [...queryKeys.tables.table('documents')] as const,
+    list: (filters?: Record<string, any>) =>
+      filters
+        ? [...queryKeys.documents.all(), 'list', filters] as const
+        : [...queryKeys.documents.all(), 'list'] as const,
+    detail: (id: string) => [...queryKeys.documents.all(), 'detail', id] as const,
+    current: () => [...queryKeys.documents.all(), 'current'] as const,
   },
 
   // Custom business logic queries
