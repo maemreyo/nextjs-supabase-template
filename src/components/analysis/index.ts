@@ -13,8 +13,5 @@ export { default as StructureBreakdown } from './StructureBreakdown';
 export { default as ConstructiveFeedback } from './ConstructiveFeedback';
 export { default as AnalysisEditor } from './AnalysisEditor';
 
-// Export examples
-export * from './examples';
-
 // Export styles
 import './styles.css';

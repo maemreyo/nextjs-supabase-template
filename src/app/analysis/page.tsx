@@ -27,12 +27,8 @@ import {
 } from 'lucide-react';
 
 // Components
-import { ImprovedAnalysisEditor } from '@/components/analysis/ImprovedAnalysisEditor';
-import { WordAnalysisDisplay } from '@/components/analysis/WordAnalysisDisplay';
-import { SentenceAnalysisDisplay } from '@/components/analysis/SentenceAnalysisDisplay';
-import { ParagraphAnalysisDisplay } from '@/components/analysis/ParagraphAnalysisDisplay';
+import { AnalysisEditor } from '@/components/analysis/AnalysisEditor';
 import { CompactResultCard } from '@/components/analysis/CompactResultCard';
-import { AnalysisResultDialog } from '@/components/analysis/AnalysisResultDialog';
 import AuthGuard from '@/components/auth/auth-guard';
 
 // Hooks
@@ -45,6 +41,7 @@ import { useAnalysisStore, useAnalysisSelectors, useAnalysisActions } from '@/st
 
 // Types
 import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis } from '@/lib/ai/types';
+import AnalysisResultDialog from '@/components/analysis/AnalysisResultDialog';
 
 /**
  * Trang cải tiến cho AI Semantic Analysis Editor
@@ -224,7 +221,7 @@ function ImprovedAnalysisPageContent() {
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 min-h-0">
         {/* Main Editor - occupies 2/3 of space */}
         <div className="lg:col-span-2 min-h-0">
-          <ImprovedAnalysisEditor
+          <AnalysisEditor
             onTextSelect={handleTextSelect}
             onAnalyze={handleAnalyze}
             className="h-full"
@@ -281,6 +278,54 @@ function ImprovedAnalysisPageContent() {
               </Tabs>
             )}
           </Card>
+
+          {/* Selected Text Display */}
+          {selectedText && (
+            <Card className="p-3 sm:p-4 bg-primary/5 border-primary/20">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-semibold text-foreground text-sm">Văn bản đã chọn</h3>
+                <Badge variant="outline" className="text-xs">{selectedText.length} ký tự</Badge>
+              </div>
+              
+              <div className="bg-background p-2 rounded border-l-4 border-primary mb-3">
+                <p className="text-xs italic text-foreground line-clamp-3">"{selectedText}"</p>
+              </div>
+
+              <div className="flex justify-end gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedText('');
+                    setAnalysisResult(null);
+                    setError(null);
+                  }}
+                  className="text-xs h-7 px-2"
+                >
+                  Xóa
+                </Button>
+                
+                <Button
+                  onClick={() => handleAnalyze(selectedText, activeTab)}
+                  disabled={currentLoading}
+                  size="sm"
+                  className="text-xs h-7 px-2"
+                >
+                  {currentLoading ? (
+                    <>
+                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                      Đang phân tích...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="h-3 w-3 mr-1" />
+                      Phân tích
+                    </>
+                  )}
+                </Button>
+              </div>
+            </Card>
+          )}
 
           {/* Compact Analysis Results */}
           {selectedText && (

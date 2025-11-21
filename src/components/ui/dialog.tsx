@@ -54,7 +54,7 @@ function DialogContent({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
-  size?: "default" | "large" | "xlarge" | "fullscreen"
+  size?: "default" | "large" | "xlarge" | "xxlarge" | "fullscreen"
 }) {
   const getSizeClasses = () => {
     switch (size) {
@@ -62,6 +62,8 @@ function DialogContent({
         return "sm:max-w-4xl lg:max-w-5xl xl:max-w-6xl max-h-[90vh]";
       case "xlarge":
         return "sm:max-w-6xl lg:max-w-7xl xl:max-w-7xl max-h-[95vh]";
+      case "xxlarge":
+        return "sm:max-w-7xl lg:max-w-[90vw] xl:max-w-[95vw] max-h-[98vh]";
       case "fullscreen":
         return "w-full h-full max-w-[100vw] max-h-[100vh] rounded-none m-0 top-0 left-0 translate-x-0 translate-y-0";
       default:
