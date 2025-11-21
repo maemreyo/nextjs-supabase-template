@@ -4,6 +4,9 @@ const nextConfig: NextConfig = {
   // Enable React strict mode
   reactStrictMode: true,
   
+  // Enable Turbopack
+  turbopack: {},
+  
   // Enable experimental features
   experimental: {
     // Optimize package imports
@@ -18,10 +21,17 @@ const nextConfig: NextConfig = {
   
   // Image optimization
   images: {
-    domains: ['supabase.co'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'supabase.co',
+        port: '',
+        pathname: '/**',
+      },
+    ],
   },
   
-  // Webpack configuration
+  // Webpack configuration (only if needed)
   webpack: (config, { isServer }) => {
     // Fix for Supabase client in server-side
     if (!isServer) {
