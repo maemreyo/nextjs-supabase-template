@@ -13,7 +13,18 @@ const customJestConfig = {
   //   '^@/(.*)$': '<rootDir>/src/$1',
   //   '^@$': '<rootDir>/src/$1',
   // },
-  testEnvironment: 'jest-environment-jsdom',
+  projects: [
+    {
+      displayName: 'node',
+      testMatch: ['<rootDir>/tests/api/**/*.test.{js,ts}'],
+      testEnvironment: 'node',
+    },
+    {
+      displayName: 'jsdom',
+      testMatch: ['<rootDir>/tests/components/**/*.test.{js,jsx,ts,tsx}'],
+      testEnvironment: 'jest-environment-jsdom',
+    },
+  ],
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',
     '!src/**/*.d.ts',
