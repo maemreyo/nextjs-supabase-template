@@ -1,49 +1,13 @@
-// Interface cho Collocation object
-export interface Collocation {
-  phrase: string;
-  meaning: string;
-  usage_example?: string;
-  frequency_level: 'common' | 'uncommon' | 'rare';
-}
+// Re-export types from AI module
+export type {
+  Collocation,
+  WordAnalysis,
+  SentenceAnalysis,
+  ParagraphAnalysis
+} from '@/lib/ai/types';
 
-// Interface cho WordAnalysis
-export interface WordAnalysis {
-  meta: {
-    word: string;
-    ipa: string;
-    pos: string;
-    cefr: string;
-    tone: string;
-  };
-  definitions: {
-    root_meaning: string;
-    context_meaning: string;
-    vietnamese_translation: string;
-  };
-  inference_strategy: {
-    clues: string;
-    reasoning: string;
-  };
-  relations: {
-    synonyms: Array<{
-      word: string;
-      ipa: string;
-      meaning_en: string;
-      meaning_vi: string;
-    }>;
-    antonyms: Array<{
-      word: string;
-      ipa: string;
-      meaning_en: string;
-      meaning_vi: string;
-    }>;
-  };
-  usage: {
-    collocations: Collocation[];
-    example_sentence: string;
-    example_translation: string;
-  };
-}
+// Import types for use in interfaces
+import type { Collocation, WordAnalysis, SentenceAnalysis, ParagraphAnalysis } from '@/lib/ai/types';
 
 // Props cho CollocationList component
 export interface CollocationListProps {
@@ -80,5 +44,67 @@ export interface SynonymAntonymListProps {
   onSynonymClick?: (word: string) => void;
   onAntonymClick?: (word: string) => void;
   maxItems?: number;
+  className?: string;
+}
+
+// Props cho SentenceAnalysisDisplay component
+export interface SentenceAnalysisDisplayProps {
+  analysis: SentenceAnalysis;
+  isLoading?: boolean;
+  error?: string;
+  onRewriteApply?: (text: string) => void;
+  className?: string;
+}
+
+// Props cho ParagraphAnalysisDisplay component
+export interface ParagraphAnalysisDisplayProps {
+  analysis: ParagraphAnalysis;
+  isLoading?: boolean;
+  error?: string;
+  onFeedbackApply?: (text: string) => void;
+  className?: string;
+}
+
+// Props cho RewriteSuggestions component
+export interface RewriteSuggestionsProps {
+  suggestions: SentenceAnalysis['rewrite_suggestions'];
+  onApply?: (text: string) => void;
+  className?: string;
+}
+
+// Props cho StructureBreakdown component
+export interface StructureBreakdownProps {
+  structure: ParagraphAnalysis['structure_breakdown'];
+  className?: string;
+}
+
+// Props cho ConstructiveFeedback component
+export interface ConstructiveFeedbackProps {
+  feedback: ParagraphAnalysis['constructive_feedback'];
+  onApply?: (text: string) => void;
+  className?: string;
+}
+
+// Props cho AnalysisEditor component
+export interface AnalysisEditorProps {
+  onTextSelect?: (text: string, type: 'word' | 'sentence' | 'paragraph') => void;
+  onAnalyze?: (text: string, type: 'word' | 'sentence' | 'paragraph') => void;
+  initialText?: string;
+  className?: string;
+}
+
+// Props cho AnalysisTabs component
+export interface AnalysisTabsProps {
+  activeType: 'word' | 'sentence' | 'paragraph';
+  onTypeChange: (type: 'word' | 'sentence' | 'paragraph') => void;
+  className?: string;
+}
+
+// Props cho AnalysisPanel component
+export interface AnalysisPanelProps {
+  documentId?: string;
+  selectedText?: string;
+  analysisType: 'word' | 'sentence' | 'paragraph';
+  onAnalysisTypeChange: (type: 'word' | 'sentence' | 'paragraph') => void;
   className?: string;
 }

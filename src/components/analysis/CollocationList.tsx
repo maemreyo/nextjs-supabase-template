@@ -2,7 +2,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Volume2 } from 'lucide-react';
-import { CollocationListProps } from './types';
+import type { CollocationListProps } from './types';
 
 /**
  * Component để hiển thị danh sách collocations với các trường thông tin chi tiết

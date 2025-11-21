@@ -2,7 +2,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Volume2, Lightbulb } from 'lucide-react';
-import { WordAnalysisDisplayProps } from './types';
+import type { WordAnalysisDisplayProps } from './types';
 import { SynonymAntonymList } from './SynonymAntonymList';
 import { WordUsageSection } from './WordUsageSection';
 

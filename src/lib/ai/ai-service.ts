@@ -1,16 +1,33 @@
-import { 
-  AIProvider, 
-  GenerateTextParams, 
-  GenerateTextResponse, 
-  GenerateEmbeddingParams, 
+import {
+  AIProvider,
+  GenerateTextParams,
+  GenerateTextResponse,
+  GenerateEmbeddingParams,
   GenerateEmbeddingResponse,
   AIServiceConfig,
   AIError,
   UsageTrackingConfig,
   CacheConfig,
-  RateLimitConfig
+  RateLimitConfig,
+  WordAnalysis,
+  SentenceAnalysis,
+  ParagraphAnalysis,
+  AnalyzeWordRequest,
+  AnalyzeSentenceRequest,
+  AnalyzeParagraphRequest
 } from './types'
 import { providerRegistry } from './providers'
+import {
+  buildWordAnalysisPrompt,
+  buildSentenceAnalysisPrompt,
+  buildParagraphAnalysisPrompt,
+  validateWordAnalysis,
+  validateSentenceAnalysis,
+  validateParagraphAnalysis,
+  createFallbackWordAnalysis,
+  createFallbackSentenceAnalysis,
+  createFallbackParagraphAnalysis
+} from './prompt-utils'
 
 export class AIService {
   private config: AIServiceConfig
@@ -306,6 +323,201 @@ export class AIService {
 
   updateConfig(newConfig: Partial<AIServiceConfig>): void {
     this.config = { ...this.config, ...newConfig }
+  }
+
+  // Word Analysis Method
+  async analyzeWord(request: AnalyzeWordRequest): Promise<WordAnalysis> {
+    const startTime = Date.now()
+    
+    try {
+      const prompt = buildWordAnalysisPrompt(request)
+      const response = await this.generateText({
+        prompt,
+        temperature: 0.3,
+        maxTokens: 4000,
+        metadata: {
+          operation: 'word-analysis',
+          word: request.word,
+          context: request.sentenceContext
+        }
+      })
+      
+      // Parse and validate response
+      const analysisResult = JSON.parse(response.text)
+      const validatedAnalysis = validateWordAnalysis(analysisResult)
+      
+      return validatedAnalysis
+    } catch (error) {
+      console.error('Error analyzing word:', error)
+      
+      // Return fallback response
+      return createFallbackWordAnalysis(request.word)
+    }
+  }
+
+  // Sentence Analysis Method
+  async analyzeSentence(request: AnalyzeSentenceRequest): Promise<SentenceAnalysis> {
+    const startTime = Date.now()
+    
+    try {
+      const prompt = buildSentenceAnalysisPrompt(request)
+      const response = await this.generateText({
+        prompt,
+        temperature: 0.3,
+        maxTokens: 4000,
+        metadata: {
+          operation: 'sentence-analysis',
+          sentence: request.sentence
+        }
+      })
+      
+      // Parse and validate response
+      const analysisResult = JSON.parse(response.text)
+      const validatedAnalysis = validateSentenceAnalysis(analysisResult)
+      
+      return validatedAnalysis
+    } catch (error) {
+      console.error('Error analyzing sentence:', error)
+      
+      // Return fallback response
+      return createFallbackSentenceAnalysis(request.sentence)
+    }
+  }
+
+  // Paragraph Analysis Method
+  async analyzeParagraph(request: AnalyzeParagraphRequest): Promise<ParagraphAnalysis> {
+    const startTime = Date.now()
+    
+    try {
+      const prompt = buildParagraphAnalysisPrompt(request)
+      const response = await this.generateText({
+        prompt,
+        temperature: 0.3,
+        maxTokens: 6000,
+        metadata: {
+          operation: 'paragraph-analysis',
+          paragraphLength: request.paragraph.length
+        }
+      })
+      
+      // Parse and validate response
+      const analysisResult = JSON.parse(response.text)
+      const validatedAnalysis = validateParagraphAnalysis(analysisResult)
+      
+      return validatedAnalysis
+    } catch (error) {
+      console.error('Error analyzing paragraph:', error)
+      
+      // Return fallback response
+      return createFallbackParagraphAnalysis(request.paragraph)
+    }
+  }
+
+  // Batch Analysis Methods for optimization
+  async analyzeWordsBatch(requests: AnalyzeWordRequest[]): Promise<WordAnalysis[]> {
+    const maxItems = requests[0]?.maxItems || 5
+    
+    const prompt = `
+Bạn là một chuyên gia ngôn ngữ học và giáo dục. Nhiệm vụ của bạn là phân tích các từ khóa sau để giúp người học hiểu sâu và biết cách tư duy đoán nghĩa.
+
+INPUT DATA:
+- Max Items per list: ${maxItems}
+
+YÊU CẦU OUTPUT:
+1. Trả về duy nhất một chuỗi JSON array hợp lệ (RFC 8259).
+2. Tuyệt đối KHÔNG kèm markdown (\`\`\`), không lời dẫn.
+3. Các trường giải thích chính dùng Tiếng Việt.
+4. Phần Synonyms/Antonyms: Giới hạn tối đa ${maxItems} từ mỗi loại, sắp xếp theo độ phổ biến/độ sát nghĩa giảm dần.
+
+WORDS TO ANALYZE:
+${requests.map((w, i) => `
+${i + 1}. Word: "${w.word}"
+   Sentence: "${w.sentenceContext}"
+   Paragraph: "${w.paragraphContext || ''}"
+`).join('\n')}
+
+JSON SCHEMA FOR EACH WORD:
+{
+  "meta": {
+    "word": "từ",
+    "ipa": "Phiên âm IPA",
+    "pos": "Từ loại (Noun/Verb...)",
+    "cefr": "Trình độ (A1-C2)",
+    "tone": "Sắc thái (Formal/Neutral/Irony...)"
+  },
+  "definitions": {
+    "root_meaning": "Nghĩa gốc trong từ điển",
+    "context_meaning": "Nghĩa trong câu này (dịch thoát ý để hợp văn cảnh)",
+    "vietnamese_translation": "Từ/Cụm từ tiếng Việt tương đương nhất"
+  },
+  "inference_strategy": {
+    "clues": "Dấu hiệu nào trong câu giúp đoán nghĩa? (VD: Tiền tố 'un-', từ nối 'but', hoặc tân ngữ đi kèm...)",
+    "reasoning": "Giải thích ngắn gọn quy trình suy luận để ra nghĩa của từ mà không cần tra từ điển"
+  },
+  "relations": {
+    "synonyms": [
+      {
+        "word": "Từ đồng nghĩa 1",
+        "ipa": "/ipa/",
+        "meaning_en": "Định nghĩa ngắn bằng tiếng Anh",
+        "meaning_vi": "Định nghĩa ngắn bằng tiếng Việt"
+      }
+    ],
+    "antonyms": [
+      {
+        "word": "Từ trái nghĩa 1",
+        "ipa": "/ipa/",
+        "meaning_en": "Định nghĩa ngắn bằng tiếng Anh",
+        "meaning_vi": "Định nghĩa ngắn bằng tiếng Việt"
+      }
+    ]
+  },
+  "usage": {
+    "collocations": [
+      {
+        "phrase": "Cụm từ collocation",
+        "meaning": "Nghĩa của cụm từ",
+        "usage_example": "Ví dụ sử dụng cụm từ trong câu",
+        "frequency_level": "common"
+      }
+    ],
+    "example_sentence": "Một câu ví dụ khác (khác input)",
+    "example_translation": "Dịch câu ví dụ"
+  }
+}
+`
+    
+    try {
+      const response = await this.generateText({
+        prompt,
+        temperature: 0.3,
+        maxTokens: 8000,
+        metadata: {
+          operation: 'batch-word-analysis',
+          batchSize: requests.length
+        }
+      })
+      
+      // Parse JSON array response
+      const analysisResults = JSON.parse(response.text)
+      
+      // Validate each result
+      return analysisResults.map((result: any) => {
+        try {
+          return validateWordAnalysis(result)
+        } catch (error) {
+          console.error('Invalid word analysis in batch:', error)
+          // Return fallback for invalid result
+          const word = result?.meta?.word || 'unknown'
+          return createFallbackWordAnalysis(word)
+        }
+      })
+    } catch (error) {
+      console.error('Error analyzing words batch:', error)
+      
+      // Fallback: return empty analyses
+      return requests.map(request => createFallbackWordAnalysis(request.word))
+    }
   }
 }
 

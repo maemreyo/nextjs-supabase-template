@@ -7,7 +7,14 @@ import {
   GenerateEmbeddingResponse,
   UsageCheckResponse,
   UserTier,
-  AIUsageStats
+  AIUsageStats,
+  WordAnalysis,
+  SentenceAnalysis,
+  ParagraphAnalysis,
+  AnalyzeWordRequest,
+  AnalyzeSentenceRequest,
+  AnalyzeParagraphRequest,
+  AnalysisResponse
 } from './types'
 
 // Server-side AI service with database integration
@@ -191,7 +198,7 @@ export class AIServiceServer {
       })
     } catch (error) {
       console.error('Failed to log usage:', error)
-      // Don't throw here to avoid breaking the main flow
+      // Don't throw here to avoid breaking main flow
     }
   }
 
@@ -307,6 +314,364 @@ export class AIServiceServer {
     } catch (error) {
       console.error('Failed to update user tier:', error)
       throw new Error('Failed to update user tier')
+    }
+  }
+
+  // Word Analysis Method
+  async analyzeWord(userId: string, request: AnalyzeWordRequest): Promise<AnalysisResponse<WordAnalysis>> {
+    const startTime = Date.now()
+    
+    try {
+      // Check user permissions and usage limits
+      await this.checkUserLimits(userId, 'word-analysis')
+      
+      const analysis = await this.aiService.analyzeWord(request)
+      
+      // Save to database
+      await this.saveWordAnalysis(userId, request, analysis)
+      
+      return {
+        success: true,
+        data: analysis,
+        metadata: {
+          processingTime: Date.now() - startTime,
+          tokensUsed: 0, // Would be calculated from actual AI response
+          cost: 0, // Would be calculated from actual AI response
+          model: 'unknown', // Would come from actual AI response
+          provider: 'unknown' // Would come from actual AI response
+        }
+      }
+    } catch (error) {
+      console.error('Error analyzing word:', error)
+      
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }
+    }
+  }
+
+  // Sentence Analysis Method
+  async analyzeSentence(userId: string, request: AnalyzeSentenceRequest): Promise<AnalysisResponse<SentenceAnalysis>> {
+    const startTime = Date.now()
+    
+    try {
+      // Check user permissions and usage limits
+      await this.checkUserLimits(userId, 'sentence-analysis')
+      
+      const analysis = await this.aiService.analyzeSentence(request)
+      
+      // Save to database
+      await this.saveSentenceAnalysis(userId, request, analysis)
+      
+      return {
+        success: true,
+        data: analysis,
+        metadata: {
+          processingTime: Date.now() - startTime,
+          tokensUsed: 0, // Would be calculated from actual AI response
+          cost: 0, // Would be calculated from actual AI response
+          model: 'unknown', // Would come from actual AI response
+          provider: 'unknown' // Would come from actual AI response
+        }
+      }
+    } catch (error) {
+      console.error('Error analyzing sentence:', error)
+      
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }
+    }
+  }
+
+  // Paragraph Analysis Method
+  async analyzeParagraph(userId: string, request: AnalyzeParagraphRequest): Promise<AnalysisResponse<ParagraphAnalysis>> {
+    const startTime = Date.now()
+    
+    try {
+      // Check user permissions and usage limits
+      await this.checkUserLimits(userId, 'paragraph-analysis')
+      
+      const analysis = await this.aiService.analyzeParagraph(request)
+      
+      // Save to database
+      await this.saveParagraphAnalysis(userId, request, analysis)
+      
+      return {
+        success: true,
+        data: analysis,
+        metadata: {
+          processingTime: Date.now() - startTime,
+          tokensUsed: 0, // Would be calculated from actual AI response
+          cost: 0, // Would be calculated from actual AI response
+          model: 'unknown', // Would come from actual AI response
+          provider: 'unknown' // Would come from actual AI response
+        }
+      }
+    } catch (error) {
+      console.error('Error analyzing paragraph:', error)
+      
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }
+    }
+  }
+
+  // Database save methods
+  private async saveWordAnalysis(userId: string, request: AnalyzeWordRequest, analysis: WordAnalysis): Promise<void> {
+    const supabase = await createClient()
+    
+    try {
+      // Save main word analysis
+      const { data: wordAnalysisData, error: wordError } = await supabase
+        .from('word_analyses')
+        .insert({
+          user_id: userId,
+          word: analysis.meta.word,
+          ipa: analysis.meta.ipa,
+          pos: analysis.meta.pos,
+          cefr: analysis.meta.cefr,
+          tone: analysis.meta.tone,
+          root_meaning: analysis.definitions.root_meaning,
+          context_meaning: analysis.definitions.context_meaning,
+          vietnamese_translation: analysis.definitions.vietnamese_translation,
+          inference_clues: analysis.inference_strategy.clues,
+          inference_reasoning: analysis.inference_strategy.reasoning,
+          sentence_context: request.sentenceContext,
+          paragraph_context: request.paragraphContext,
+          example_sentence: analysis.usage.example_sentence,
+          example_translation: analysis.usage.example_translation
+        })
+        .select()
+        .single()
+
+      if (wordError || !wordAnalysisData) {
+        throw new Error('Failed to save word analysis')
+      }
+
+      // Save synonyms
+      if (analysis.relations.synonyms.length > 0) {
+        const synonymsToInsert = analysis.relations.synonyms.map(synonym => ({
+          word_analysis_id: wordAnalysisData.id,
+          synonym_word: synonym.word,
+          ipa: synonym.ipa,
+          meaning_en: synonym.meaning_en,
+          meaning_vi: synonym.meaning_vi
+        }))
+
+        await supabase.from('word_synonyms').insert(synonymsToInsert)
+      }
+
+      // Save antonyms
+      if (analysis.relations.antonyms.length > 0) {
+        const antonymsToInsert = analysis.relations.antonyms.map(antonym => ({
+          word_analysis_id: wordAnalysisData.id,
+          antonym_word: antonym.word,
+          ipa: antonym.ipa,
+          meaning_en: antonym.meaning_en,
+          meaning_vi: antonym.meaning_vi
+        }))
+
+        await supabase.from('word_antonyms').insert(antonymsToInsert)
+      }
+
+      // Save collocations
+      if (analysis.usage.collocations.length > 0) {
+        const collocationsToInsert = analysis.usage.collocations.map(collocation => ({
+          word_analysis_id: wordAnalysisData.id,
+          phrase: collocation.phrase,
+          meaning: collocation.meaning,
+          usage_example: collocation.usage_example,
+          frequency_level: collocation.frequency_level
+        }))
+
+        await supabase.from('word_collocations').insert(collocationsToInsert)
+      }
+    } catch (error) {
+      console.error('Failed to save word analysis:', error)
+      throw error
+    }
+  }
+
+  private async saveSentenceAnalysis(userId: string, request: AnalyzeSentenceRequest, analysis: SentenceAnalysis): Promise<void> {
+    const supabase = await createClient()
+    
+    try {
+      // Save main sentence analysis
+      const { data: sentenceAnalysisData, error: sentenceError } = await supabase
+        .from('sentence_analyses')
+        .insert({
+          user_id: userId,
+          sentence: analysis.meta.sentence,
+          complexity_level: analysis.meta.complexity_level,
+          sentence_type: analysis.meta.sentence_type,
+          main_idea: analysis.semantics.main_idea,
+          subtext: analysis.semantics.subtext,
+          sentiment: analysis.semantics.sentiment,
+          subject: analysis.grammar_breakdown.subject,
+          main_verb: analysis.grammar_breakdown.main_verb,
+          object: analysis.grammar_breakdown.object,
+          function: analysis.contextual_role.function,
+          relation_to_previous: analysis.contextual_role.relation_to_previous,
+          literal_translation: analysis.translation.literal,
+          natural_translation: analysis.translation.natural,
+          paragraph_context: request.paragraphContext,
+          clauses: analysis.grammar_breakdown.clauses
+        })
+        .select()
+        .single()
+
+      if (sentenceError || !sentenceAnalysisData) {
+        throw new Error('Failed to save sentence analysis')
+      }
+
+      // Save key components
+      if (analysis.key_components.length > 0) {
+        const componentsToInsert = analysis.key_components.map(component => ({
+          sentence_analysis_id: sentenceAnalysisData.id,
+          phrase: component.phrase,
+          type: component.type,
+          meaning: component.meaning,
+          significance: component.significance
+        }))
+
+        await supabase.from('sentence_key_components').insert(componentsToInsert)
+      }
+
+      // Save rewrite suggestions
+      if (analysis.rewrite_suggestions.length > 0) {
+        const suggestionsToInsert = analysis.rewrite_suggestions.map(suggestion => ({
+          sentence_analysis_id: sentenceAnalysisData.id,
+          style: suggestion.style,
+          text: suggestion.text,
+          change_log: suggestion.change_log
+        }))
+
+        await supabase.from('sentence_rewrite_suggestions').insert(suggestionsToInsert)
+      }
+    } catch (error) {
+      console.error('Failed to save sentence analysis:', error)
+      throw error
+    }
+  }
+
+  private async saveParagraphAnalysis(userId: string, request: AnalyzeParagraphRequest, analysis: ParagraphAnalysis): Promise<void> {
+    const supabase = await createClient()
+    
+    try {
+      // Save main paragraph analysis
+      const { data: paragraphAnalysisData, error: paragraphError } = await supabase
+        .from('paragraph_analyses')
+        .insert({
+          user_id: userId,
+          paragraph: request.paragraph,
+          type: analysis.meta.type,
+          tone: analysis.meta.tone,
+          target_audience: analysis.meta.target_audience,
+          main_topic: analysis.content_analysis.main_topic,
+          sentiment_label: analysis.content_analysis.sentiment.label,
+          sentiment_intensity: analysis.content_analysis.sentiment.intensity,
+          sentiment_justification: analysis.content_analysis.sentiment.justification,
+          keywords: analysis.content_analysis.keywords,
+          logic_score: analysis.coherence_and_cohesion.logic_score,
+          flow_score: analysis.coherence_and_cohesion.flow_score,
+          transition_words: analysis.coherence_and_cohesion.transition_words,
+          gap_analysis: analysis.coherence_and_cohesion.gap_analysis,
+          vocabulary_level: analysis.stylistic_evaluation.vocabulary_level,
+          sentence_variety: analysis.stylistic_evaluation.sentence_variety,
+          better_version: analysis.constructive_feedback.better_version
+        })
+        .select()
+        .single()
+
+      if (paragraphError || !paragraphAnalysisData) {
+        throw new Error('Failed to save paragraph analysis')
+      }
+
+      // Save structure breakdown
+      if (analysis.structure_breakdown.length > 0) {
+        const structureToInsert = analysis.structure_breakdown.map(item => ({
+          paragraph_analysis_id: paragraphAnalysisData.id,
+          sentence_index: item.sentence_index,
+          snippet: item.snippet,
+          role: item.role,
+          analysis: item.analysis
+        }))
+
+        await supabase.from('paragraph_structure_breakdown').insert(structureToInsert)
+      }
+
+      // Save constructive feedback
+      if (analysis.constructive_feedback.critiques.length > 0) {
+        const feedbackToInsert = analysis.constructive_feedback.critiques.map(critique => ({
+          paragraph_analysis_id: paragraphAnalysisData.id,
+          issue_type: critique.issue_type,
+          description: critique.description,
+          suggestion: critique.suggestion
+        }))
+
+        await supabase.from('paragraph_constructive_feedback').insert(feedbackToInsert)
+      }
+    } catch (error) {
+      console.error('Failed to save paragraph analysis:', error)
+      throw error
+    }
+  }
+
+  // Cache methods for optimization
+  private analysisCache = new Map<string, any>()
+
+  private getCacheKey(type: string, input: any): string {
+    return `${type}:${JSON.stringify(input)}`
+  }
+
+  private getCachedAnalysis<T>(cacheKey: string): T | null {
+    const cached = this.analysisCache.get(cacheKey)
+    if (cached) {
+      const { data, timestamp } = cached
+      const age = Date.now() - timestamp
+      
+      // Cache for 1 hour
+      if (age < 3600000) {
+        return data
+      } else {
+        this.analysisCache.delete(cacheKey)
+      }
+    }
+    
+    return null
+  }
+
+  private setCachedAnalysis<T>(cacheKey: string, data: T): void {
+    this.analysisCache.set(cacheKey, {
+      data,
+      timestamp: Date.now()
+    })
+
+    // Limit cache size
+    if (this.analysisCache.size > 100) {
+      const firstKey = this.analysisCache.keys().next().value
+      if (firstKey) {
+        this.analysisCache.delete(firstKey)
+      }
+    }
+  }
+
+  // Usage tracking for analysis operations
+  private async checkUserLimits(userId: string, operation: string): Promise<void> {
+    // Check specific limits for analysis operations
+    const usageCheck = await this.checkUsage(userId)
+    
+    if (!usageCheck.canUseAI) {
+      throw new Error(`AI usage limit reached. Reset at ${usageCheck.resetTime.toISOString()}`)
+    }
+
+    // Check if user has analysis permissions
+    const userTier = await this.getUserTier(userId)
+    if (!userTier.features.includes('analysis')) {
+      throw new Error('Analysis feature not available in your current tier')
     }
   }
 }

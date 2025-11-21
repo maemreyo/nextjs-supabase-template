@@ -2,7 +2,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Volume2 } from 'lucide-react';
-import { SynonymAntonymListProps } from './types';
+import type { SynonymAntonymListProps } from './types';
 
 /**
  * Component tái sử dụng để hiển thị danh sách từ đồng nghĩa và trái nghĩa

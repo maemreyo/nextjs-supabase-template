@@ -1,90 +1,46 @@
-# Next.js Supabase Template
+# AI Semantic Analysis Editor
 
 <div align="center">
 
-![Next.js Supabase Template](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js&logoColor=white)
+![AI Semantic Analysis Editor](https://img.shields.io/badge/AI-Semantic%20Analysis-blue?style=for-the-badge&logo=openai&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-06B6D4?style=for-the-badge&logo=tailwind-css&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
-**Một production-ready template hiện đại với Next.js 16, Supabase, TypeScript, và AI integration**
+**Một công cụ phân tích ngữ nghĩa AI mạnh mẽ cho từ, câu và đoạn văn với multi-provider support**
 
 [![Live Demo](https://img.shields.io/badge/Demo-Online-brightgreen?style=for-the-badge)](https://your-demo-url.com)
 [![Documentation](https://img.shields.io/badge/Documentation-Latest-blue?style=for-the-badge)](./docs)
-[![GitHub stars](https://img.shields.io/github/stars/your-username/nextjs-supabase-template?style=for-the-badge)](https://github.com/maemreyo/nextjs-supabase-template)
-[![GitHub forks](https://img.shields.io/github/forks/your-username/nextjs-supabase-template?style=for-the-badge)](https://github.com/maemreyo/nextjs-supabase-template)
-[![GitHub issues](https://img.shields.io/github/issues/your-username/nextjs-supabase-template?style=for-the-badge)](https://github.com/maemreyo/nextjs-supabase-template/issues)
-[![GitHub license](https://img.shields.io/github/license/your-username/nextjs-supabase-template?style=for-the-badge)](https://github.com/maemreyo/nextjs-supabase-template/blob/main/LICENSE)
 
 </div>
 
 ## ✨ Tính Năng Nổi Bật
 
-### 🚀 **Framework & Platform**
-- **Next.js 16** với App Router
-- **React 19** với Server Components
-- **TypeScript** cho type safety
-- **Tailwind CSS** cho styling
-- **ESLint & Prettier** cho code quality
+### 🧠 **AI-Powered Analysis**
+- **Word Analysis**: Phân tích chi tiết từ vựng bao gồm định nghĩa, đồng nghĩa, trái nghĩa, và cách dùng
+- **Sentence Analysis**: Phân tích cấu trúc ngữ pháp, ý nghĩa, và gợi ý cải thiện câu
+- **Paragraph Analysis**: Phân tích toàn diện đoạn văn về cấu trúc, mạch lạc, và phong cách viết
 
-### 🔐 **Authentication & Security**
-- **Supabase Auth** với multiple providers
-- **Row Level Security (RLS)** cho data protection
-- **JWT token management** với httpOnly cookies
-- **OAuth integration** (Google, GitHub, etc.)
-- **Password reset** và email verification
-- **Middleware protection** cho routes
+### 🤖 **Multi-Provider Support**
+- **OpenAI**: GPT-3.5, GPT-4, GPT-4o models
+- **Anthropic**: Claude 3 Haiku, Sonnet, Opus models
+- **Google AI**: Gemini Pro, Gemini 1.5 models
+- **Cohere**: Command, Command Light, Command R models
 
-### 🗄️ **Database & Backend**
-- **PostgreSQL** với Supabase
-- **Real-time subscriptions** với Supabase Realtime
-- **Database migrations** với version control
-- **Type-safe database access** với generated types
-- **Connection pooling** và optimization
-- **Backup và restore** utilities
+### 📊 **Intelligent Features**
+- **Smart Rate Limiting**: Quản lý usage theo user tiers
+- **Usage Tracking**: Monitor cost và token usage
+- **Intelligent Caching**: Cache results để tối ưu performance
+- **Error Handling**: Fallback strategies cho reliability
+- **Real-time Analysis**: Phân tích tức thì với responsive UI
 
-### 🧠 **AI Module Integration**
-- **Multi-provider support**: OpenAI, Anthropic, Google AI, Cohere
-- **Smart rate limiting** với user tiers
-- **Usage tracking** và cost monitoring
-- **Intelligent caching** cho performance
-- **Error handling** với fallback strategies
-- **Prompt management** system
-- **Cost optimization** với model selection
-
-### 🎨 **UI Components & Styling**
-- **Shadcn UI** components library
-- **Dark/Light theme** với system detection
-- **Responsive design** với mobile-first approach
-- **Custom animations** và transitions
-- **Form validation** với Zod
-- **Data tables** với sorting và filtering
-- **Toast notifications** với Sonner
-
-### 📊 **State Management & Data Fetching**
-- **Zustand** cho client state
-- **React Query (TanStack Query)** cho server state
-- **Optimistic updates** cho better UX
-- **Background refetching** và cache invalidation
-- **Pagination** và infinite scroll
-- **Error boundaries** và error handling
-
-### 🧪 **Testing & Quality**
-- **Jest** cho unit testing
-- **Playwright** cho E2E testing
-- **Testing Library** cho component testing
-- **Coverage reporting** với thresholds
-- **Mock utilities** cho isolated testing
-- **CI/CD integration** với GitHub Actions
-
-### ⚡ **Performance & Optimization**
-- **Code splitting** với dynamic imports
-- **Image optimization** với Next.js Image
-- **Bundle analysis** với webpack-bundle-analyzer
-- **Core Web Vitals** monitoring
-- **Lazy loading** cho components và routes
-- **Service Worker** cho offline support
+### 🎨 **Modern UI/UX**
+- **Responsive Design**: Mobile-first approach
+- **Dark/Light Theme**: System detection và manual toggle
+- **Interactive Editor**: Text selection và real-time analysis
+- **Rich Display**: Comprehensive result visualization
+- **History Tracking**: Lưu lịch sử phân tích
 
 ## 🚀 Quick Start
 
@@ -92,21 +48,21 @@
 
 - **Node.js 18+** và **npm** hoặc **yarn**
 - **Supabase account** ([đăng ký miễn phí](https://supabase.com))
-- **Git** cho version control
+- **AI Provider API keys** (OpenAI, Anthropic, Google AI, hoặc Cohere)
 
 ### Installation
 
 ```bash
 # Clone repository
-git clone https://github.com/maemreyo/nextjs-supabase-template.git
-cd nextjs-supabase-template
+git clone <repository-url>
+cd ai-semantic-analysis-editor
 
 # Install dependencies
 npm install
 
 # Configure environment variables
 cp .env.example .env.local
-# Edit .env.local với Supabase credentials
+# Edit .env.local với API keys của bạn
 
 # Start development server
 npm run dev
@@ -119,17 +75,22 @@ npm run dev
    - Click "New Project"
    - Lấy **Project URL** và **anon key**
 
-2. **Configure Environment**:
+2. **Configure AI Providers**:
    ```env
-   NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+   # OpenAI
+   OPENAI_API_KEY=your_openai_api_key
    
-   # AI Configuration (tùy chọn)
-   OPENAI_API_KEY=your-openai-key
-   ANTHROPIC_API_KEY=your-anthropic-key
+   # Anthropic
+   ANTHROPIC_API_KEY=your_anthropic_api_key
+   
+   # Google AI
+   GOOGLE_AI_API_KEY=your_google_ai_api_key
+   
+   # Cohere
+   COHERE_API_KEY=your_cohere_api_key
    ```
 
-3. **Run Database Migrations**:
+3. **Run Database Setup**:
    ```bash
    npm run db:push
    npm run db:generate-types-remote
@@ -144,35 +105,28 @@ npm run dev
 ## 📁 Project Structure
 
 ```
-nextjs-supabase-template/
+ai-semantic-analysis-editor/
 ├── src/
 │   ├── app/                    # Next.js App Router
-│   │   ├── (auth)/            # Authentication routes
-│   │   ├── (dashboard)/        # Protected dashboard routes
-│   │   ├── api/               # API routes
+│   │   ├── api/               # API routes cho AI analysis
+│   │   ├── analysis/          # Analysis page
 │   │   ├── globals.css         # Global styles
 │   │   ├── layout.tsx          # Root layout
 │   │   └── page.tsx           # Home page
 │   ├── components/             # React components
 │   │   ├── ui/               # Shadcn UI components
-│   │   ├── forms/             # Form components
-│   │   ├── layout/            # Layout components
-│   │   ├── providers/         # Context providers
-│   │   ├── examples/          # Component examples
-│   │   └── features/         # Feature-specific components
+│   │   ├── analysis/         # Analysis-specific components
+│   │   └── providers/        # Context providers
 │   ├── lib/                   # Utilities và business logic
+│   │   ├── ai/               # AI module với multi-provider support
 │   │   ├── supabase/         # Supabase client configuration
-│   │   ├── auth/              # Authentication utilities
-│   │   ├── ai/               # AI module
-│   │   ├── utils/             # General utilities
-│   │   └── validations/       # Form validation schemas
+│   │   └── utils/            # General utilities
 │   ├── hooks/                 # Custom React hooks
 │   ├── stores/                # State management (Zustand)
 │   └── types/                # TypeScript definitions
 ├── supabase/                # Supabase migrations và config
 ├── docs/                     # Documentation
-├── scripts/                  # Utility scripts
-└── tests/                    # Test files
+└── scripts/                  # Utility scripts
 ```
 
 ## 🛠️ Available Scripts
@@ -183,9 +137,7 @@ npm run dev              # Start development server
 npm run build            # Build cho production
 npm run start            # Start production server
 npm run lint             # Run ESLint
-npm run lint:fix         # Fix ESLint issues
 npm run type-check       # Run TypeScript type checking
-npm run format           # Format code với Prettier
 ```
 
 ### Testing
@@ -193,17 +145,6 @@ npm run format           # Format code với Prettier
 npm run test             # Run tất cả tests
 npm run test:watch       # Run tests trong watch mode
 npm run test:coverage    # Run tests với coverage report
-npm run test:e2e         # Run E2E tests
-npm run test:e2e:ui      # Run E2E tests với UI
-```
-
-### Database
-```bash
-npm run db:generate       # Generate types từ local database
-npm run db:generate-types-remote  # Generate types từ remote database
-npm run db:push          # Push migrations đến database
-npm run db:reset         # Reset database
-npm run db:migrate        # Run database migrations
 ```
 
 ### AI Module
@@ -213,199 +154,86 @@ npm run ai:usage-report     # Generate AI usage report
 npm run ai:cache-clear       # Clear AI cache
 ```
 
-### Utilities
+### Database
 ```bash
-npm run bundle:analyze   # Analyze bundle size
-npm run cleanup           # Cleanup project
-npm run dev:setup         # Setup development environment
+npm run db:push          # Push migrations đến database
+npm run db:reset         # Reset database
+npm run db:generate      # Generate types từ database
 ```
 
-## 🎨 Components & Features
+## 🎨 Components Overview
 
-### Shadcn UI Components
+### Analysis Components
 
-Template includes các Shadcn UI components sau:
+#### **AnalysisEditor**
+- Text editor với selection capabilities
+- Real-time text statistics
+- Integration với analysis hooks
 
-#### **Form Components**
-- **Button** - Multiple variants và sizes
-- **Input** - Form inputs với validation
-- **Label** - Labels cho form fields
-- **Form** - Complete form patterns với Zod validation
-- **Select** - Dropdown selections
-- **Checkbox** - Toggle inputs
-- **Textarea** - Multi-line text inputs
+#### **WordAnalysisDisplay**
+- Comprehensive word analysis visualization
+- Synonyms và antonyms với interactive elements
+- IPA pronunciation và CEFR level display
 
-#### **Layout Components**
-- **Card** - Container components với header, content, footer
-- **Dialog** - Modal dialogs và confirmations
-- **Sheet** - Slide-out panels
-- **Tabs** - Tabbed navigation
-- **Avatar** - User profile images
-- **Badge** - Status indicators
+#### **SentenceAnalysisDisplay**
+- Grammar breakdown visualization
+- Rewrite suggestions với apply functionality
+- Semantic analysis results
 
-#### **Feedback Components**
-- **Alert** - Notification messages
-- **Toast** - Toast notifications với Sonner
-- **Progress** - Progress bars và indicators
-- **Spinner** - Loading states
+#### **ParagraphAnalysisDisplay**
+- Structure breakdown với sentence-by-sentence analysis
+- Constructive feedback với actionable suggestions
+- Coherence và flow analysis
 
-#### **Data Display**
-- **Table** - Data tables với sorting và filtering
-- **Data Table** - Advanced table với pagination
-- **Skeleton** - Loading placeholders
+### AI Provider Integration
 
-### Authentication Features
+#### **Multi-Provider Architecture**
+- Automatic fallback giữa providers
+- Provider-specific optimizations
+- Unified interface cho tất cả AI models
 
-#### **User Management**
-- **Sign up/Sign in** với email/password
-- **OAuth providers** (Google, GitHub, etc.)
-- **Password reset** với email verification
-- **Profile management** với avatar upload
-- **Session management** với automatic refresh
+#### **Usage Management**
+- Real-time usage tracking
+- Cost optimization với smart caching
+- Rate limiting per user tier
 
-#### **Security Features**
-- **Row Level Security (RLS)** policies
-- **Rate limiting** cho API endpoints
-- **CSRF protection** với Next.js middleware
-- **Input validation** với Zod schemas
-
-### AI Module Features
-
-#### **Multi-Provider Support**
-- **OpenAI** (GPT-3.5, GPT-4, GPT-4o)
-- **Anthropic** (Claude 3 Haiku, Sonnet, Opus)
-- **Google AI** (Gemini Pro, Gemini 1.5)
-- **Cohere** (Command, Command Light, Command R)
-
-#### **Usage Tracking & Management**
-- **Real-time usage monitoring** với dashboard
-- **Cost tracking** per provider và model
-- **Rate limiting** với user tiers
-- **Smart caching** để reduce costs
-- **Usage analytics** và reporting
-
-#### **Developer Tools**
-- **AI provider testing** utilities
-- **Usage report generation**
-- **Cache management** tools
-- **Error logging** và monitoring
-
-## 🧪 Testing Strategy
-
-### Test Pyramid
-
-```
-    E2E Tests (10%)
-   ─────────────────
-  Integration Tests (20%)
- ─────────────────────────
-Unit Tests (70%)
-─────────────────────────────────
-```
+## 🧪 Testing
 
 ### Test Structure
-
 ```
 tests/
-├── __mocks__/           # Mock files
 ├── components/          # Component tests
 ├── api/               # API route tests
 ├── hooks/             # Hook tests
-├── utils/             # Utility function tests
-├── integration/        # Integration tests
-└── e2e/              # End-to-end tests
+├── integration/       # Integration tests
+└── e2e/             # End-to-end tests
 ```
 
-### Coverage Requirements
+### Running Tests
+```bash
+# Unit tests
+npm run test
 
-- **Unit Tests**: > 80% coverage
-- **Integration Tests**: Critical paths covered
-- **E2E Tests**: Main user flows covered
+# Coverage report
+npm run test:coverage
 
-## 🚀 Deployment
-
-### Vercel (Khuyến nghị)
-
-1. **Connect GitHub Repository** đến Vercel
-2. **Configure Environment Variables**:
-   ```env
-   NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-   SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-   
-   # AI Keys (nếu có)
-   OPENAI_API_KEY=your-openai-key
-   ```
-3. **Deploy** tự động trên mỗi push đến main branch
-
-### Docker Deployment
-
-```dockerfile
-FROM node:18-alpine AS base
-
-# Install dependencies
-FROM base AS deps
-RUN npm ci --only=production
-
-# Build application
-FROM base AS builder
-WORKDIR /app
-COPY . .
-COPY --from=deps /app/node_modules
-RUN npm run build
-
-# Production image
-FROM node:18-alpine AS runner
-WORKDIR /app
-ENV NODE_ENV=production
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-
-EXPOSE 3000
-ENV PORT 3000
-CMD ["node", "server.js"]
+# E2E tests
+npm run test:e2e
 ```
 
-### Environment Configuration
+## 📊 Usage Analytics
 
-#### Development
-```env
-NODE_ENV=development
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_SUPABASE_URL=https://your-dev-project.supabase.co
-```
-
-#### Production
-```env
-NODE_ENV=production
-NEXT_PUBLIC_APP_URL=https://your-domain.com
-NEXT_PUBLIC_SUPABASE_URL=https://your-prod-project.supabase.co
-```
-
-## 📊 Performance & Monitoring
-
-### Core Web Vitals
-
-Template được optimized cho Core Web Vitals:
-- **Largest Contentful Paint (LCP)**: < 2.5s
-- **First Input Delay (FID)**: < 100ms
-- **Cumulative Layout Shift (CLS)**: < 0.1
-
-### Performance Tools
-
-- **Bundle Analyzer**: `npm run bundle:analyze`
-- **Lighthouse**: Integrated trong development
-- **Speed Insights**: Vercel Analytics
-- **Error Tracking**: Configurable với Sentry
-
-### Monitoring Dashboard
-
-AI module includes built-in monitoring:
-- **Usage Analytics**: Real-time usage tracking
-- **Cost Monitoring**: Per-provider cost breakdown
+### Built-in Monitoring
+- **Request Tracking**: Monitor tất cả AI requests
+- **Cost Analysis**: Track spending per provider và model
 - **Performance Metrics**: Response times và success rates
-- **Error Tracking**: Automatic error logging
+- **User Analytics**: Usage patterns và popular features
+
+### Dashboard Features
+- Real-time usage statistics
+- Cost optimization recommendations
+- Provider performance comparison
+- User tier management
 
 ## 🔧 Configuration
 
@@ -419,107 +247,87 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 ```
 
-#### Optional Variables
+#### AI Provider Configuration
 ```env
-# AI Provider Configuration
+# OpenAI
 OPENAI_API_KEY=your_openai_api_key
-ANTHROPIC_API_KEY=your_anthropic_api_key
-GOOGLE_AI_API_KEY=your_google_ai_api_key
-COHERE_API_KEY=your_cohere_api_key
+OPENAI_ORGANIZATION=your_openai_org_id
 
-# AI Default Settings
+# Anthropic
+ANTHROPIC_API_KEY=your_anthropic_api_key
+
+# Google AI
+GOOGLE_AI_API_KEY=your_google_ai_api_key
+
+# Cohere
+COHERE_API_KEY=your_cohere_api_key
+```
+
+#### AI Default Settings
+```env
 AI_DEFAULT_PROVIDER=openai
 AI_DEFAULT_MODEL=gpt-3.5-turbo
-AI_MAX_TOKENS=1000
+AI_MAX_TOKENS=4000
 AI_TEMPERATURE=0.7
+```
 
-# Application Configuration
+## 🚀 Deployment
+
+### Vercel (Recommended)
+
+1. **Connect GitHub Repository** đến Vercel
+2. **Configure Environment Variables** trong Vercel dashboard
+3. **Deploy** tự động trên mỗi push đến main branch
+
+### Environment Configuration
+
+#### Development
+```env
 NODE_ENV=development
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_AUTH_REDIRECT_URL=http://localhost:3000/auth/callback
-
-# Optional: Redis Configuration
-REDIS_URL=redis://localhost:6379
-
-# Optional: Analytics
-NEXT_PUBLIC_ANALYTICS_ID=your_analytics_id
-SENTRY_DSN=your_sentry_dsn
 ```
 
-### Customization
+#### Production
+```env
+NODE_ENV=production
+NEXT_PUBLIC_APP_URL=https://your-domain.com
+```
 
-#### Theme Configuration
+## 📚 API Documentation
+
+### Analysis Endpoints
+
+#### Word Analysis
 ```typescript
-// tailwind.config.js
-module.exports = {
-  theme: {
-    extend: {
-      colors: {
-        brand: {
-          50: '#eff6ff',
-          500: '#3b82f6',
-          900: '#1e3a8a',
-        }
-      }
-    }
-  }
+POST /api/ai/analyze-word
+{
+  "word": "example",
+  "sentenceContext": "This is an example sentence.",
+  "paragraphContext": "This paragraph contains examples.",
+  "maxItems": 5
 }
 ```
 
-#### Component Customization
+#### Sentence Analysis
 ```typescript
-// Custom component example
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
-
-interface CustomButtonProps {
-  variant?: 'default' | 'brand' | 'destructive'
-  size?: 'sm' | 'md' | 'lg'
-}
-
-export function CustomButton({ 
-  variant = 'default', 
-  size = 'md',
-  className,
-  ...props 
-}: CustomButtonProps) {
-  return (
-    <Button 
-      className={cn(
-        'custom-styles',
-        variant === 'brand' && 'bg-brand-500 hover:bg-brand-600',
-        className
-      )}
-      size={size}
-      {...props}
-    />
-  )
+POST /api/ai/analyze-sentence
+{
+  "sentence": "The quick brown fox jumps over the lazy dog.",
+  "paragraphContext": "This paragraph describes animal actions."
 }
 ```
 
-## 📚 Documentation
-
-### Comprehensive Guides
-
-- **[Getting Started Guide](./docs/getting-started.md)** - Hướng dẫn chi tiết setup
-- **[AI Setup Guide](./docs/ai-setup-guide.md)** - Cấu hình AI module
-- **[Development Workflow](./docs/development-workflow.md)** - Quy trình phát triển
-- **[Template Replication](./docs/template-replication-guide.md)** - Sao chép template
-- **[Quick Reference](./docs/quick-reference.md)** - Commands và patterns
-- **[Troubleshooting](./docs/troubleshooting.md)** - Gỡ rối phổ biến
-- **[Migration Guide](./docs/migration-guide.md)** - Migration từ existing projects
-
-### API Documentation
-
-- **[Architecture Guide](./docs/architecture.md)** - Architecture overview
-- **[AI Module Guide](./docs/ai-module-guide.md)** - AI module documentation
-- **[Scripts Guide](./docs/scripts-guide.md)** - Utility scripts documentation
-- **[TanStack Query Guide](./docs/tanstack-query-guide.md)** - Data fetching patterns
-- **[Zustand Usage](./docs/zustand-usage.md)** - State management patterns
+#### Paragraph Analysis
+```typescript
+POST /api/ai/analyze-paragraph
+{
+  "paragraph": "This is a full paragraph with multiple sentences..."
+}
+```
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please read our [Contributing Guide](./docs/contributing.md) cho details.
+Contributions are welcome! Please read our contributing guidelines.
 
 ### Development Process
 
@@ -529,62 +337,37 @@ Contributions are welcome! Please read our [Contributing Guide](./docs/contribut
 4. **Follow commit conventions**
 5. **Create pull request** với detailed description
 
-### Code Standards
-
-- **TypeScript strict mode** enabled
-- **ESLint** configuration enforced
-- **Prettier** formatting required
-- **Unit tests** cho new features
-- **Documentation updates** cho API changes
-
-### Issue Reporting
-
-Please use the [issue template](.github/ISSUE_TEMPLATE.md) khi reporting bugs.
-
 ## 📄 License
 
-Distributed under the **MIT License**. See [LICENSE](LICENSE) cho details.
+Distributed under **MIT License**. See [LICENSE](LICENSE) cho details.
 
 ## 🙏 Acknowledgments
 
 ### Core Technologies
-
 - **[Next.js](https://nextjs.org/)** - The React framework
 - **[Supabase](https://supabase.com/)** - Backend as a Service
 - **[React](https://react.dev/)** - UI library
 - **[TypeScript](https://www.typescriptlang.org/)** - Type safety
 - **[Tailwind CSS](https://tailwindcss.com/)** - Utility-first CSS
 
-### UI Components
-
-- **[Shadcn UI](https://ui.shadcn.com/)** - Beautiful UI components
-- **[Radix UI](https://www.radix-ui.com/)** - Low-level UI primitives
-- **[Lucide React](https://lucide.dev/)** - Icon library
-- **[Sonner](https://sonner.emilkowal.ski/)** - Toast notifications
-
-### Development Tools
-
-- **[ESLint](https://eslint.org/)** - Code linting
-- **[Prettier](https://prettier.io/)** - Code formatting
-- **[Jest](https://jestjs.io/)** - Testing framework
-- **[Playwright](https://playwright.dev/)** - E2E testing
-- **[TanStack Query](https://tanstack.com/query)** - Data fetching
-
 ### AI Services
-
 - **[OpenAI](https://openai.com/)** - GPT models
 - **[Anthropic](https://anthropic.com/)** - Claude models
 - **[Google AI](https://ai.google.dev/)** - Gemini models
 - **[Cohere](https://cohere.com/)** - Command models
 
+### UI Components
+- **[Shadcn UI](https://ui.shadcn.com/)** - Beautiful UI components
+- **[Radix UI](https://www.radix-ui.com/)** - Low-level UI primitives
+- **[Lucide React](https://lucide.dev/)** - Icon library
+
 ---
 
 <div align="center">
 
-**[⭐ Star this repository](https://github.com/maemreyo/nextjs-supabase-template)** nếu nó giúp bạn!  
-**[🐛 Report issues](https://github.com/maemreyo/nextjs-supabase-template/issues)** để chúng tôi cải thiện  
-**[📖 Read documentation](./docs)** để hiểu thêm về template**
+**[⭐ Star this repository](https://github.com/your-username/ai-semantic-analysis-editor)** nếu nó giúp bạn!  
+**[🐛 Report issues](https://github.com/your-username/ai-semantic-analysis-editor/issues)** để chúng tôi cải thiện
 
-Made với ❤️ bởi [Your Name](https://github.com/maemreyo)
+Made với ❤️ bởi AI Semantic Analysis Team
 
 </div>

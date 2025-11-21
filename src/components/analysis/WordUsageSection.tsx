@@ -1,7 +1,7 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CollocationList } from './CollocationList';
-import { WordUsageSectionProps } from './types';
+import type { WordUsageSectionProps } from './types';
 
 /**
  * Component để hiển thị phần usage của WordAnalysis

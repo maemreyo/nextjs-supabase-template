@@ -14,8 +14,16 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Next.js Supabase Template",
-  description: "A modern Next.js template with Supabase integration",
+  title: "AI Semantic Analysis Editor",
+  description: "An AI-powered semantic analysis tool for words, sentences, and paragraphs with multi-provider support",
+  keywords: ["AI", "semantic analysis", "language learning", "text analysis", "OpenAI", "Anthropic", "Google AI"],
+  authors: [{ name: "AI Semantic Analysis Team" }],
+  openGraph: {
+    title: "AI Semantic Analysis Editor",
+    description: "An AI-powered semantic analysis tool for words, sentences, and paragraphs",
+    type: "website",
+    locale: "en_US",
+  },
 };
 
 export default function RootLayout({
