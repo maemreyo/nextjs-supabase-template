@@ -24,16 +24,38 @@ export function useSentenceAnalysis(
   return useQuery({
     queryKey: sentenceAnalysisKeys.detail(sentence, paragraphContext),
     queryFn: async (): Promise<SentenceAnalysis> => {
+      // DEBUG: Log để kiểm tra authentication state
+      console.log('DEBUG: useSentenceAnalysis - Starting API call for sentence:', sentence.substring(0, 50) + '...');
+      
+      // DEBUG: Kiểm tra xem có access token không
+      const { useSupabase } = await import('@/components/providers/supabase-provider');
+      const { getAccessToken } = useSupabase();
+      const accessToken = await getAccessToken();
+      console.log('DEBUG: useSentenceAnalysis - Access token exists:', !!accessToken);
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      // DEBUG: Thêm authorization header nếu có token
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+        console.log('DEBUG: useSentenceAnalysis - Added Authorization header');
+      } else {
+        console.log('DEBUG: useSentenceAnalysis - No access token available');
+      }
+      
       const response = await fetch('/api/ai/analyze-sentence', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           sentence,
           paragraphContext,
         } as AnalyzeSentenceRequest),
       });
+      
+      console.log('DEBUG: useSentenceAnalysis - Response status:', response.status);
+      console.log('DEBUG: useSentenceAnalysis - Response ok:', response.ok);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -67,11 +89,22 @@ export function useSentenceAnalysisMutation() {
 
   return useMutation({
     mutationFn: async (params: AnalyzeSentenceRequest): Promise<SentenceAnalysis> => {
+      // Lấy access token cho mutation
+      const { useSupabase } = await import('@/components/providers/supabase-provider');
+      const { getAccessToken } = useSupabase();
+      const accessToken = await getAccessToken();
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      
       const response = await fetch('/api/ai/analyze-sentence', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(params),
       });
 
@@ -111,11 +144,22 @@ export function usePrefetchSentenceAnalysis() {
     queryClient.prefetchQuery({
       queryKey: sentenceAnalysisKeys.detail(sentence, paragraphContext),
       queryFn: async (): Promise<SentenceAnalysis> => {
+        // Lấy access token cho prefetch
+        const { useSupabase } = await import('@/components/providers/supabase-provider');
+        const { getAccessToken } = useSupabase();
+        const accessToken = await getAccessToken();
+        
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+        
+        if (accessToken) {
+          headers['Authorization'] = `Bearer ${accessToken}`;
+        }
+        
         const response = await fetch('/api/ai/analyze-sentence', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers,
           body: JSON.stringify({
             sentence,
             paragraphContext,

@@ -6,12 +6,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  BookOpen, 
-  FileText, 
-  FilePlus, 
-  History, 
-  Settings, 
+import {
+  BookOpen,
+  FileText,
+  FilePlus,
+  History,
+  Settings,
   Loader2,
   AlertTriangle,
   Zap
@@ -22,6 +22,7 @@ import { AnalysisEditor } from '@/components/analysis/AnalysisEditor';
 import { WordAnalysisDisplay } from '@/components/analysis/WordAnalysisDisplay';
 import { SentenceAnalysisDisplay } from '@/components/analysis/SentenceAnalysisDisplay';
 import { ParagraphAnalysisDisplay } from '@/components/analysis/ParagraphAnalysisDisplay';
+import AuthGuard from '@/components/auth/auth-guard';
 
 // Hooks
 import { useWordAnalysis } from '@/hooks/useWordAnalysis';
@@ -37,7 +38,8 @@ import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis } from '@/lib/ai
 /**
  * Trang chính cho AI Semantic Analysis Editor
  */
-export default function AnalysisPage() {
+function AnalysisPageContent() {
+  
   // Local state
   const [activeTab, setActiveTab] = useState<'word' | 'sentence' | 'paragraph'>('word');
   const [selectedText, setSelectedText] = useState('');
@@ -330,5 +332,16 @@ export default function AnalysisPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Trang chính cho AI Semantic Analysis Editor với authentication guard
+ */
+export default function AnalysisPage() {
+  return (
+    <AuthGuard redirectTo="/auth/signin">
+      <AnalysisPageContent />
+    </AuthGuard>
   );
 }

@@ -25,17 +25,39 @@ export function useWordAnalysis(
   return useQuery({
     queryKey: wordAnalysisKeys.detail(word, sentenceContext, paragraphContext),
     queryFn: async (): Promise<WordAnalysis> => {
+      // DEBUG: Log để kiểm tra authentication state
+      console.log('DEBUG: useWordAnalysis - Starting API call for word:', word);
+      
+      // DEBUG: Kiểm tra xem có access token không
+      const { useSupabase } = await import('@/components/providers/supabase-provider');
+      const { getAccessToken } = useSupabase();
+      const accessToken = await getAccessToken();
+      console.log('DEBUG: useWordAnalysis - Access token exists:', !!accessToken);
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      // DEBUG: Thêm authorization header nếu có token
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+        console.log('DEBUG: useWordAnalysis - Added Authorization header');
+      } else {
+        console.log('DEBUG: useWordAnalysis - No access token available');
+      }
+      
       const response = await fetch('/api/ai/analyze-word', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           word,
           sentenceContext,
           paragraphContext,
         } as AnalyzeWordRequest),
       });
+      
+      console.log('DEBUG: useWordAnalysis - Response status:', response.status);
+      console.log('DEBUG: useWordAnalysis - Response ok:', response.ok);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -69,11 +91,22 @@ export function useWordAnalysisMutation() {
 
   return useMutation({
     mutationFn: async (params: AnalyzeWordRequest): Promise<WordAnalysis> => {
+      // Lấy access token cho mutation
+      const { useSupabase } = await import('@/components/providers/supabase-provider');
+      const { getAccessToken } = useSupabase();
+      const accessToken = await getAccessToken();
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      
       const response = await fetch('/api/ai/analyze-word', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(params),
       });
 
@@ -113,11 +146,22 @@ export function usePrefetchWordAnalysis() {
     queryClient.prefetchQuery({
       queryKey: wordAnalysisKeys.detail(word, sentenceContext, paragraphContext),
       queryFn: async (): Promise<WordAnalysis> => {
+        // Lấy access token cho prefetch
+        const { useSupabase } = await import('@/components/providers/supabase-provider');
+        const { getAccessToken } = useSupabase();
+        const accessToken = await getAccessToken();
+        
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+        
+        if (accessToken) {
+          headers['Authorization'] = `Bearer ${accessToken}`;
+        }
+        
         const response = await fetch('/api/ai/analyze-word', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers,
           body: JSON.stringify({
             word,
             sentenceContext,

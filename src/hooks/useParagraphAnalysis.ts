@@ -23,15 +23,37 @@ export function useParagraphAnalysis(
   return useQuery({
     queryKey: paragraphAnalysisKeys.detail(paragraph),
     queryFn: async (): Promise<ParagraphAnalysis> => {
+      // DEBUG: Log để kiểm tra authentication state
+      console.log('DEBUG: useParagraphAnalysis - Starting API call for paragraph:', paragraph.substring(0, 50) + '...');
+      
+      // DEBUG: Kiểm tra xem có access token không
+      const { supabase } = await import('@/lib/supabase/client');
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('DEBUG: useParagraphAnalysis - Session exists:', !!session);
+      console.log('DEBUG: useParagraphAnalysis - Access token exists:', !!session?.access_token);
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      // DEBUG: Thêm authorization header nếu có token
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+        console.log('DEBUG: useParagraphAnalysis - Added Authorization header');
+      } else {
+        console.log('DEBUG: useParagraphAnalysis - No access token available');
+      }
+      
       const response = await fetch('/api/ai/analyze-paragraph', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           paragraph,
         } as AnalyzeParagraphRequest),
       });
+      
+      console.log('DEBUG: useParagraphAnalysis - Response status:', response.status);
+      console.log('DEBUG: useParagraphAnalysis - Response ok:', response.ok);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -65,11 +87,22 @@ export function useParagraphAnalysisMutation() {
 
   return useMutation({
     mutationFn: async (params: AnalyzeParagraphRequest): Promise<ParagraphAnalysis> => {
+      // Lấy access token cho mutation
+      const { useSupabase } = await import('@/components/providers/supabase-provider');
+      const { getAccessToken } = useSupabase();
+      const accessToken = await getAccessToken();
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      
       const response = await fetch('/api/ai/analyze-paragraph', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(params),
       });
 
@@ -109,11 +142,22 @@ export function usePrefetchParagraphAnalysis() {
     queryClient.prefetchQuery({
       queryKey: paragraphAnalysisKeys.detail(paragraph),
       queryFn: async (): Promise<ParagraphAnalysis> => {
+        // Lấy access token cho prefetch
+        const { useSupabase } = await import('@/components/providers/supabase-provider');
+        const { getAccessToken } = useSupabase();
+        const accessToken = await getAccessToken();
+        
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+        
+        if (accessToken) {
+          headers['Authorization'] = `Bearer ${accessToken}`;
+        }
+        
         const response = await fetch('/api/ai/analyze-paragraph', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers,
           body: JSON.stringify({
             paragraph,
           } as AnalyzeParagraphRequest),

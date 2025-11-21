@@ -1,21 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAIServiceServer } from '@/lib/ai/ai-service-server'
 import { AnalyzeParagraphRequest } from '@/lib/ai/types'
+import { createClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
   try {
+    // DEBUG: Log để kiểm tra headers
+    console.log('DEBUG: API Route - All headers:', Object.fromEntries(request.headers.entries()));
+    
     // Get user ID from authentication
     const authHeader = request.headers.get('authorization')
+    console.log('DEBUG: API Route - Authorization header:', authHeader ? 'Present' : 'Missing');
+    
     if (!authHeader) {
+      console.log('DEBUG: API Route - Returning 401 error - No Authorization header');
       return NextResponse.json(
         { error: 'Authorization header required' },
         { status: 401 }
       )
     }
 
-    // Extract user ID from token (simplified for demo)
-    // In production, you should verify the JWT token properly
-    const userId = authHeader.replace('Bearer ', '') || 'demo-user'
+    // Verify JWT token with Supabase
+    const supabase = await createClient()
+    const token = authHeader.replace('Bearer ', '')
+    
+    const { data: { user }, error } = await supabase.auth.getUser(token)
+    
+    if (error || !user) {
+      console.log('DEBUG: API Route - Invalid token:', error?.message);
+      return NextResponse.json(
+        { error: 'Invalid or expired token' },
+        { status: 401 }
+      )
+    }
+    
+    const userId = user.id
+    console.log('DEBUG: API Route - Verified user ID:', userId);
 
     // Parse request body
     const body = await request.json()
@@ -85,16 +105,37 @@ export async function POST(request: NextRequest) {
 // Handle GET method for checking if paragraph analysis is available
 export async function GET(request: NextRequest) {
   try {
+    // DEBUG: Log để kiểm tra headers cho GET request
+    console.log('DEBUG: API Route GET - All headers:', Object.fromEntries(request.headers.entries()));
+    
     // Get user ID from authentication
     const authHeader = request.headers.get('authorization')
+    console.log('DEBUG: API Route GET - Authorization header:', authHeader ? 'Present' : 'Missing');
+    
     if (!authHeader) {
+      console.log('DEBUG: API Route GET - Returning 401 error - No Authorization header');
       return NextResponse.json(
         { error: 'Authorization header required' },
         { status: 401 }
       )
     }
 
-    const userId = authHeader.replace('Bearer ', '') || 'demo-user'
+    // Verify JWT token with Supabase
+    const supabase = await createClient()
+    const token = authHeader.replace('Bearer ', '')
+    
+    const { data: { user }, error } = await supabase.auth.getUser(token)
+    
+    if (error || !user) {
+      console.log('DEBUG: API Route GET - Invalid token:', error?.message);
+      return NextResponse.json(
+        { error: 'Invalid or expired token' },
+        { status: 401 }
+      )
+    }
+    
+    const userId = user.id
+    console.log('DEBUG: API Route GET - Verified user ID:', userId);
     const aiService = createAIServiceServer()
 
     // Check user limits
