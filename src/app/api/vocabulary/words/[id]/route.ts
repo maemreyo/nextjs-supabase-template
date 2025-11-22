@@ -5,7 +5,7 @@ import type { VocabularyWord } from '@/types/vocabulary';
 // GET /api/vocabulary/words/[id] - Get specific vocabulary word
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get user ID from authentication
@@ -29,7 +29,7 @@ export async function GET(
       );
     }
 
-    const wordId = params.id;
+    const { id: wordId } = await params;
 
     // Get word with related data
     const { data: word, error: fetchError } = await supabase
@@ -93,7 +93,7 @@ export async function GET(
 // PATCH /api/vocabulary/words/[id] - Update vocabulary word
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get user ID from authentication
@@ -117,7 +117,7 @@ export async function PATCH(
       );
     }
 
-    const wordId = params.id;
+    const { id: wordId } = await params;
     const updateData: Partial<VocabularyWord> = await request.json();
 
     // Check if user owns the word
@@ -167,7 +167,7 @@ export async function PATCH(
 // DELETE /api/vocabulary/words/[id] - Delete vocabulary word
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get user ID from authentication
@@ -191,7 +191,7 @@ export async function DELETE(
       );
     }
 
-    const wordId = params.id;
+    const { id: wordId } = await params;
 
     // Check if user owns the word
     const { data: existingWord, error: checkError } = await supabase
@@ -238,7 +238,7 @@ export async function DELETE(
 // POST /api/vocabulary/words/[id]/practice - Update word practice stats
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get user ID from authentication
@@ -262,7 +262,7 @@ export async function POST(
       );
     }
 
-    const wordId = params.id;
+    const { id: wordId } = await params;
     const { result, time_spent_seconds } = await request.json();
 
     if (!result) {
@@ -288,13 +288,13 @@ export async function POST(
 
     // Update word mastery level and practice count
     const newMasteryLevel = result === 'correct'
-      ? Math.min(existingWord.mastery_level + 1, 5)
-      : Math.max(existingWord.mastery_level - 1, 0);
+      ? Math.min((existingWord.mastery_level ?? 0) + 1, 5)
+      : Math.max((existingWord.mastery_level ?? 0) - 1, 0);
 
-    const newReviewCount = existingWord.review_count + 1;
+    const newReviewCount = (existingWord.review_count ?? 0) + 1;
     const newCorrectCount = result === 'correct'
-      ? existingWord.correct_count + 1
-      : existingWord.correct_count;
+      ? (existingWord.correct_count ?? 0) + 1
+      : (existingWord.correct_count ?? 0);
 
     const { error: updateError } = await supabase
       .from('vocabulary_words')

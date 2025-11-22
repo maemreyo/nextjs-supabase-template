@@ -37,6 +37,9 @@ const ScrollArea = React.forwardRef<HTMLDivElement, ScrollAreaProps>(
           }
         };
       }
+      
+      // Return empty cleanup function for the else case
+      return () => {};
     }, [scrollHideDelay]);
 
     React.useImperativeHandle(ref, () => scrollAreaRef.current!);

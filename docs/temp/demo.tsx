@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState, useEffect, useRef } from 'react';
 import { BookOpen, Type, FileText, AlignLeft, Bold, Italic, Underline, List, ListOrdered, Quote, Highlighter, MessageSquare, Volume2, BookMarked, Strikethrough, Code, Undo, Redo, Minus } from 'lucide-react';
 
@@ -5,7 +6,7 @@ import { BookOpen, Type, FileText, AlignLeft, Bold, Italic, Underline, List, Lis
 // PLACEHOLDER CALLBACKS - Replace with your implementations
 // ============================================
 const callbacks = {
-  analyzeWord: (word) => {
+  analyzeWord: (word: string) => {
     console.log('Analyzing word:', word);
     return { word, type: 'word', definition: 'Definition placeholder', pronunciation: '/.../', examples: ['Example 1', 'Example 2'] };
   },

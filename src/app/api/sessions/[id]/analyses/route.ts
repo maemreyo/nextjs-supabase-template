@@ -5,7 +5,7 @@ import type { SessionAnalysis, SessionAnalysisInsert } from '@/types/sessions';
 // GET /api/sessions/[id]/analyses - Get session analyses
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get user ID from authentication
@@ -29,7 +29,7 @@ export async function GET(
       );
     }
 
-    const sessionId = params.id;
+    const { id: sessionId } = await params;
 
     // Get session analyses
     const { data: analyses, error: fetchError } = await supabase
@@ -63,7 +63,7 @@ export async function GET(
 // POST /api/sessions/[id]/analyses - Add analysis to session
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get user ID from authentication
@@ -87,7 +87,7 @@ export async function POST(
       );
     }
 
-    const sessionId = params.id;
+    const { id: sessionId } = await params;
     const analysisData: SessionAnalysisInsert = await request.json();
 
     // Validate required fields
@@ -147,7 +147,7 @@ export async function POST(
 // DELETE /api/sessions/[id]/analyses/[analysisId] - Remove analysis from session
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; analysisId: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get user ID from authentication
@@ -171,8 +171,18 @@ export async function DELETE(
       );
     }
 
-    const sessionId = params.id;
-    const analysisId = params.analysisId;
+    // For DELETE, we need to extract analysisId from the URL
+    const url = new URL(request.url);
+    const pathSegments = url.pathname.split('/');
+    const analysisId = pathSegments[pathSegments.length - 1];
+    const { id: sessionId } = await params;
+    
+    if (!analysisId) {
+      return NextResponse.json(
+        { error: 'Analysis ID is required' },
+        { status: 400 }
+      );
+    }
 
     // Check if user owns the analysis
     const { data: analysis, error: checkError } = await supabase
@@ -219,7 +229,7 @@ export async function DELETE(
 // PATCH /api/sessions/[id]/analyses/reorder - Reorder session analyses
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get user ID from authentication
@@ -243,7 +253,7 @@ export async function PATCH(
       );
     }
 
-    const sessionId = params.id;
+    const { id: sessionId } = await params;
     const { analysis_ids } = await request.json();
 
     if (!Array.isArray(analysis_ids) || analysis_ids.length === 0) {

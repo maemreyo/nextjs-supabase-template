@@ -5,7 +5,7 @@ import type { AnalysisSession, AnalysisSessionUpdate } from '@/types/sessions';
 // GET /api/sessions/[id] - Get specific session
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get user ID from authentication
@@ -29,7 +29,7 @@ export async function GET(
       );
     }
 
-    const sessionId = params.id;
+    const { id: sessionId } = await params;
 
     // Get session with analyses and settings
     const { data: session, error: sessionError } = await supabase
@@ -70,7 +70,7 @@ export async function GET(
 // PATCH /api/sessions/[id] - Update specific session
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get user ID from authentication
@@ -94,7 +94,7 @@ export async function PATCH(
       );
     }
 
-    const sessionId = params.id;
+    const { id: sessionId } = await params;
     const updates: AnalysisSessionUpdate = await request.json();
 
     // Check if user owns the session
@@ -147,7 +147,7 @@ export async function PATCH(
 // DELETE /api/sessions/[id] - Delete specific session
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get user ID from authentication
@@ -171,7 +171,7 @@ export async function DELETE(
       );
     }
 
-    const sessionId = params.id;
+    const { id: sessionId } = await params;
 
     // Check if user owns the session
     const { data: existingSession, error: checkError } = await supabase

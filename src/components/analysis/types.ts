@@ -108,3 +108,13 @@ export interface AnalysisPanelProps {
   onAnalysisTypeChange: (type: 'word' | 'sentence' | 'paragraph') => void;
   className?: string;
 }
+
+// Props cho CollapsibleAnalysisPanel component
+export interface CollapsibleAnalysisPanelProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  analysisResult: WordAnalysis | SentenceAnalysis | ParagraphAnalysis | null;
+  analysisType: 'word' | 'sentence' | 'paragraph';
+  onAddToVocabulary: () => void;
+  className?: string;
+}

@@ -34,38 +34,29 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { useSessionStore } from '@/stores/session-store';
-import { useVocabularyStore } from '@/stores/vocabulary-store';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-export function AnalysisEditor({ 
-  onTextSelect, 
+export function AnalysisEditor({
+  onTextSelect,
   onAnalyze,
   initialText = "",
   className = ""
 }: AnalysisEditorProps) {
+  console.log('🔍 [DEBUG] AnalysisEditor - Component started', { initialText, className });
   const [selectedText, setSelectedText] = useState('');
   const [selectionType, setSelectionType] = useState<'word' | 'phrase' | 'sentence' | 'paragraph'>('word');
   const [analysisType, setAnalysisType] = useState<'word' | 'sentence' | 'paragraph'>('word');
   
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<WordAnalysis | SentenceAnalysis | ParagraphAnalysis | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [autoAnalysisEnabled, setAutoAnalysisEnabled] = useState(true);
   
   const [saveToSessionDialogOpen, setSaveToSessionDialogOpen] = useState(false);
-  const [addToVocabularyDialogOpen, setAddToVocabularyDialogOpen] = useState(false);
   const [sessionTitle, setSessionTitle] = useState('');
   const [selectedSessionId, setSelectedSessionId] = useState('');
-  const [vocabularyData, setVocabularyData] = useState({
-    word: '',
-    definition_en: '',
-    definition_vi: '',
-    difficulty_level: 1
-  });
   
   const [activeFormats, setActiveFormats] = useState({
     bold: false,
@@ -75,7 +66,6 @@ export function AnalysisEditor({
   });
   
   const [bubbleMenuPosition, setBubbleMenuPosition] = useState({ x: 0, y: 0, show: false });
-  const [analysisPanelOpen, setAnalysisPanelOpen] = useState(false);
   const [textStats, setTextStats] = useState({ characters: 0, words: 0, sentences: 0, paragraphs: 0 });
   
   const editorRef = useRef<HTMLDivElement>(null);
@@ -83,7 +73,6 @@ export function AnalysisEditor({
   const isInitializedRef = useRef(false);
 
   const { sessions, createSession, addAnalysisToSession } = useSessionStore();
-  const { createWord } = useVocabularyStore();
   const { theme, systemTheme } = useTheme();
   
   // Get the actual theme (accounting for system theme)
@@ -152,12 +141,12 @@ export function AnalysisEditor({
     analysisTimeoutRef.current = setTimeout(async () => {
       if (autoAnalysisEnabled && textToAnalyze.trim()) {
         setIsAnalyzing(true);
-        setError(null);
         try {
           const result = await onAnalyze?.(textToAnalyze, type);
-          if (result) setAnalysisResult(result);
+          // Result is now handled at page level
         } catch (err) {
-          setError(err instanceof Error ? err.message : 'Phân tích thất bại');
+          // Error is now handled at page level
+          console.error(err instanceof Error ? err.message : 'Phân tích thất bại');
         } finally {
           setIsAnalyzing(false);
         }
@@ -304,15 +293,14 @@ export function AnalysisEditor({
     if (!textToAnalyze.trim()) return;
 
     setIsAnalyzing(true);
-    setError(null);
-    setAnalysisPanelOpen(true);
     
     try {
       const result = await onAnalyze?.(textToAnalyze, analysisType);
-      if (result) setAnalysisResult(result);
+      // Result is now handled at page level
       setBubbleMenuPosition(prev => ({ ...prev, show: false }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Phân tích thất bại');
+      // Error is now handled at page level
+      console.error(err instanceof Error ? err.message : 'Phân tích thất bại');
     } finally {
       setIsAnalyzing(false);
     }
@@ -375,6 +363,11 @@ export function AnalysisEditor({
 
   // Initialize content once
   useEffect(() => {
+    console.log('🔍 [DEBUG] AnalysisEditor - Initialize effect triggered', {
+      hasEditorRef: !!editorRef.current,
+      isInitialized: isInitializedRef.current,
+      initialText
+    });
     if (editorRef.current && !isInitializedRef.current && initialText) {
       // Clean initial text colors to match theme
       const cleanedInitialText = cleanTextColors(initialText);
@@ -401,6 +394,7 @@ export function AnalysisEditor({
 
   // Setup event listeners
   useEffect(() => {
+    console.log('🔍 [DEBUG] AnalysisEditor - Event listeners setup effect triggered');
     const handleMouseUp = (e: MouseEvent) => {
       // Only handle if selection is in editor
       const sel = window.getSelection();
@@ -456,6 +450,16 @@ export function AnalysisEditor({
       {children}
     </Button>
   );
+
+  console.log('🔍 [DEBUG] AnalysisEditor - About to render', {
+    selectedText,
+    selectionType,
+    analysisType,
+    isAnalyzing,
+    autoAnalysisEnabled,
+    bubbleMenuPosition,
+    textStats
+  });
 
   return (
     <div className={`h-full flex flex-col ${className}`}>
@@ -551,135 +555,23 @@ export function AnalysisEditor({
         </div>
 
         {/* Editor */}
-        <div className="flex-1 flex">
-          <div className="flex-1 overflow-auto p-6">
-            <div className="max-w-4xl mx-auto">
-              <div
-                ref={editorRef}
-                contentEditable
-                className="min-h-96 p-6 bg-background rounded border border-border focus:outline-none focus:ring-2 focus:ring-primary/50 prose max-w-none"
-                onInput={handleContentChange}
-                onPaste={handlePaste}
-                onKeyUp={updateActiveFormats}
-                onClick={updateActiveFormats}
-                suppressContentEditableWarning
-              />
-            </div>
+        <div className="flex-1 overflow-auto p-6">
+          {(() => {
+            console.log('🔍 [DEBUG] AnalysisEditor - Rendering editor div');
+            return null;
+          })()}
+          <div className="max-w-4xl mx-auto">
+            <div
+              ref={editorRef}
+              contentEditable
+              className="min-h-96 p-6 bg-background rounded border border-border focus:outline-none focus:ring-2 focus:ring-primary/50 prose max-w-none"
+              onInput={handleContentChange}
+              onPaste={handlePaste}
+              onKeyUp={updateActiveFormats}
+              onClick={updateActiveFormats}
+              suppressContentEditableWarning
+            />
           </div>
-
-          {/* Analysis Panel */}
-          {analysisPanelOpen && analysisResult && (
-            <div className="w-80 border-l border-border bg-background">
-              <div className="sticky top-0 bg-background border-b p-3 flex items-center justify-between">
-                <h3 className="font-medium flex items-center gap-2">
-                  <MessageSquare size={16} className="text-primary" />
-                  Analysis
-                </h3>
-                <Button variant="ghost" size="sm" onClick={() => setAnalysisPanelOpen(false)} className="h-6 w-6 p-0">
-                  <X size={14} />
-                </Button>
-              </div>
-              
-              <ScrollArea className="flex-1 h-full">
-                <div className="p-4">
-                  <Badge variant="secondary" className="text-xs mb-3">{analysisType}</Badge>
-                  
-                  <div className="p-3 bg-muted rounded border mb-4">
-                    <p className="font-medium text-sm">
-                      {analysisType === 'word' && (analysisResult as WordAnalysis)?.meta?.word}
-                      {analysisType === 'sentence' && (analysisResult as SentenceAnalysis)?.meta?.sentence}
-                      {analysisType === 'paragraph' && (analysisResult as ParagraphAnalysis)?.meta?.type}
-                    </p>
-                  </div>
-
-                  {analysisType === 'word' && analysisResult && 'meta' in analysisResult && (
-                    <div className="space-y-3 text-sm">
-                      <div>
-                        <h4 className="text-xs text-muted-foreground mb-1">Pronunciation</h4>
-                        <p className="text-primary font-mono">{(analysisResult as WordAnalysis).meta.ipa}</p>
-                      </div>
-                      <div>
-                        <h4 className="text-xs text-muted-foreground mb-1">Definition</h4>
-                        <p className="text-foreground">{(analysisResult as WordAnalysis).definitions.root_meaning}</p>
-                      </div>
-                      <div>
-                        <h4 className="text-xs text-muted-foreground mb-1">Vietnamese</h4>
-                        <p className="text-foreground">{(analysisResult as WordAnalysis).definitions.vietnamese_translation}</p>
-                      </div>
-                      <div>
-                        <h4 className="text-xs text-muted-foreground mb-1">Example</h4>
-                        <p className="text-muted-foreground italic">{(analysisResult as WordAnalysis).usage.example_sentence}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {analysisType === 'sentence' && analysisResult && 'meta' in analysisResult && (
-                    <div className="space-y-3 text-sm">
-                      {(() => {
-                        const sentenceAnalysis = analysisResult as SentenceAnalysis;
-                        // Log để debug khi semantics undefined
-                        if (!sentenceAnalysis.semantics) {
-                          console.warn('DEBUG: semantics is undefined in SentenceAnalysis:', sentenceAnalysis);
-                        }
-                        if (!sentenceAnalysis.translation) {
-                          console.warn('DEBUG: translation is undefined in SentenceAnalysis:', sentenceAnalysis);
-                        }
-                        return null;
-                      })()}
-                      <div>
-                        <h4 className="text-xs text-muted-foreground mb-1">Complexity</h4>
-                        <Badge variant="outline" className="text-xs">{(analysisResult as SentenceAnalysis).meta.complexity_level}</Badge>
-                      </div>
-                      <div>
-                        <h4 className="text-xs text-muted-foreground mb-1">Main Idea</h4>
-                        <p className="text-foreground">{(analysisResult as SentenceAnalysis).semantics?.main_idea || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <h4 className="text-xs text-muted-foreground mb-1">Sentiment</h4>
-                        <Badge variant="outline" className="text-xs">{(analysisResult as SentenceAnalysis).semantics?.sentiment || 'N/A'}</Badge>
-                      </div>
-                      <div>
-                        <h4 className="text-xs text-muted-foreground mb-1">Translation</h4>
-                        <p className="text-foreground">{(analysisResult as SentenceAnalysis).translation?.natural || 'N/A'}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {analysisType === 'paragraph' && analysisResult && 'meta' in analysisResult && (
-                    <div className="space-y-3 text-sm">
-                      <div>
-                        <h4 className="text-xs text-muted-foreground mb-1">Type</h4>
-                        <Badge variant="outline" className="text-xs">{(analysisResult as ParagraphAnalysis).meta.type}</Badge>
-                      </div>
-                      <div>
-                        <h4 className="text-xs text-muted-foreground mb-1">Tone</h4>
-                        <Badge variant="outline" className="text-xs">{(analysisResult as ParagraphAnalysis).meta.tone}</Badge>
-                      </div>
-                      <div>
-                        <h4 className="text-xs text-muted-foreground mb-1">Main Topic</h4>
-                        <p className="text-foreground">{(analysisResult as ParagraphAnalysis).content_analysis.main_topic}</p>
-                      </div>
-                      <div>
-                        <h4 className="text-xs text-muted-foreground mb-1">Keywords</h4>
-                        <div className="flex flex-wrap gap-1">
-                          {(analysisResult as ParagraphAnalysis).content_analysis.keywords.map((keyword, i) => (
-                            <Badge key={i} variant="secondary" className="text-xs">{keyword}</Badge>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <Separator className="my-4" />
-                  
-                  <Button className="w-full" size="sm" onClick={() => setAddToVocabularyDialogOpen(true)}>
-                    <BookOpen size={14} className="mr-2" />
-                    Add to Vocabulary
-                  </Button>
-                </div>
-              </ScrollArea>
-            </div>
-          )}
         </div>
 
         {/* Status bar */}
@@ -738,110 +630,20 @@ export function AnalysisEditor({
             <Button
               onClick={async () => {
                 try {
-                  if (selectedSessionId) {
-                    await addAnalysisToSession(selectedSessionId, {
-                      session_id: selectedSessionId,
-                      analysis_type: analysisType,
-                      analysis_id: '',
-                      analysis_title: analysisType === 'word'
-                        ? (analysisResult as WordAnalysis)?.meta?.word || 'Analysis'
-                        : analysisType === 'sentence'
-                        ? (analysisResult as SentenceAnalysis)?.meta?.sentence || 'Analysis'
-                        : (analysisResult as ParagraphAnalysis)?.meta?.type || 'Analysis',
-                      analysis_summary: selectedText,
-                      analysis_data: analysisResult
-                    });
-                  } else {
-                    const newSession = await createSession({
-                      title: sessionTitle || `${analysisType} Analysis`,
-                      description: `Analysis of: ${selectedText}`,
-                      session_type: analysisType
-                    });
-                    if (newSession) {
-                      await addAnalysisToSession(newSession.id, {
-                        session_id: newSession.id,
-                        analysis_type: analysisType,
-                        analysis_id: '',
-                        analysis_title: analysisType === 'word'
-                          ? (analysisResult as WordAnalysis)?.meta?.word || 'Analysis'
-                          : analysisType === 'sentence'
-                          ? (analysisResult as SentenceAnalysis)?.meta?.sentence || 'Analysis'
-                          : (analysisResult as ParagraphAnalysis)?.meta?.type || 'Analysis',
-                        analysis_summary: selectedText,
-                        analysis_data: analysisResult
-                      });
-                    }
-                  }
+                  // Note: This dialog should be moved to the parent component
+                  // For now, we'll disable this functionality since analysisResult is managed at page level
+                  console.warn('Save to Session dialog should be moved to parent component');
                   setSaveToSessionDialogOpen(false);
                   setSessionTitle('');
                   setSelectedSessionId('');
                 } catch (error) {
                   console.error('Failed to save to session:', error);
-                  setError('Failed to save to session');
                 }
               }}
-              disabled={!analysisResult || !selectedText.trim()}
+              disabled={true}
             >
               <Save size={14} className="mr-2" />
               Save to Session
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Add to Vocabulary Dialog */}
-      <Dialog open={addToVocabularyDialogOpen} onOpenChange={setAddToVocabularyDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add to Vocabulary</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 p-6">
-            <div className="space-y-2">
-              <Label htmlFor="vocabulary-word">Word</Label>
-              <Input id="vocabulary-word" value={vocabularyData.word} onChange={(e) => setVocabularyData(prev => ({ ...prev, word: e.target.value }))} placeholder="Enter word..." />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="vocabulary-definition">Definition</Label>
-              <Input id="vocabulary-definition" value={vocabularyData.definition_en} onChange={(e) => setVocabularyData(prev => ({ ...prev, definition_en: e.target.value }))} placeholder="Enter definition..." />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="vocabulary-vietnamese">Vietnamese Translation</Label>
-              <Input id="vocabulary-vietnamese" value={vocabularyData.definition_vi} onChange={(e) => setVocabularyData(prev => ({ ...prev, definition_vi: e.target.value }))} placeholder="Enter Vietnamese translation..." />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="vocabulary-difficulty">Difficulty Level</Label>
-              <Select value={vocabularyData.difficulty_level.toString()} onValueChange={(v) => setVocabularyData(prev => ({ ...prev, difficulty_level: parseInt(v) }))}>
-                <SelectTrigger><SelectValue placeholder="Select difficulty" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">Easy</SelectItem>
-                  <SelectItem value="2">Medium</SelectItem>
-                  <SelectItem value="3">Hard</SelectItem>
-                  <SelectItem value="4">Very Hard</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAddToVocabularyDialogOpen(false)}>Cancel</Button>
-            <Button
-              onClick={async () => {
-                try {
-                  await createWord({
-                    ...vocabularyData,
-                    source_type: 'analysis' as const,
-                    source_reference: ''
-                  });
-                  setAddToVocabularyDialogOpen(false);
-                  setVocabularyData({ word: '', definition_en: '', definition_vi: '', difficulty_level: 1 });
-                } catch (error) {
-                  console.error('Failed to add to vocabulary:', error);
-                  setError('Failed to add to vocabulary');
-                }
-              }}
-              disabled={!vocabularyData.word.trim() || !vocabularyData.definition_en.trim()}
-            >
-              <FolderOpen size={14} className="mr-2" />
-              Add to Vocabulary
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -881,15 +683,10 @@ export function AnalysisEditor({
         </div>
       )}
 
-      {/* Error display */}
-      {error && (
-        <Alert className="border-destructive/50 bg-destructive/10 text-destructive mt-2">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
     </div>
   );
+  
+  console.log('🔍 [DEBUG] AnalysisEditor - Component finished');
 }
 
 export default AnalysisEditor;

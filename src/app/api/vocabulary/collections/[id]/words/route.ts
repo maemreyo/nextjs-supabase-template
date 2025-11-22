@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 // GET /api/vocabulary/collections/[id]/words - Get words in collection
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get user ID from authentication
@@ -28,7 +28,7 @@ export async function GET(
       );
     }
 
-    const collectionId = params.id;
+    const { id: collectionId } = await params;
 
     // Check if user owns the collection
     const { data: collection, error: checkError } = await supabase
@@ -77,7 +77,7 @@ export async function GET(
 // POST /api/vocabulary/collections/[id]/words - Add word to collection
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get user ID from authentication
@@ -101,7 +101,7 @@ export async function POST(
       );
     }
 
-    const collectionId = params.id;
+    const { id: collectionId } = await params;
     const { word_id } = await request.json();
 
     if (!word_id) {
@@ -173,7 +173,7 @@ export async function POST(
 // DELETE /api/vocabulary/collections/[id]/words/[wordId] - Remove word from collection
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; wordId: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get user ID from authentication
@@ -197,8 +197,18 @@ export async function DELETE(
       );
     }
 
-    const collectionId = params.id;
-    const wordId = params.wordId;
+    // For DELETE, we need to extract wordId from URL
+    const url = new URL(request.url);
+    const pathSegments = url.pathname.split('/');
+    const wordId = pathSegments[pathSegments.length - 1];
+    const { id: collectionId } = await params;
+    
+    if (!wordId) {
+      return NextResponse.json(
+        { error: 'Word ID is required' },
+        { status: 400 }
+      );
+    }
 
     // Check if user owns the collection
     const { data: collection, error: checkError } = await supabase

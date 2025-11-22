@@ -28,7 +28,10 @@ import {
 
 // Components
 import { AnalysisEditor } from '@/components/analysis/AnalysisEditor';
+import { AnalysisPanel } from '@/components/analysis/AnalysisPanel';
 import { CompactResultCard } from '@/components/analysis/CompactResultCard';
+import AnalysisErrorBoundary from '@/components/analysis/AnalysisErrorBoundary';
+import AnalysisDebugPanel from '@/components/analysis/AnalysisDebugPanel';
 import AuthGuard from '@/components/auth/auth-guard';
 
 // Hooks
@@ -47,6 +50,7 @@ import AnalysisResultDialog from '@/components/analysis/AnalysisResultDialog';
  * Trang cải tiến cho AI Semantic Analysis Editor
  */
 function ImprovedAnalysisPageContent() {
+  console.log('🔍 [DEBUG] ImprovedAnalysisPageContent - Component started');
   // Local state
   const [activeTab, setActiveTab] = useState<'word' | 'sentence' | 'paragraph'>('word');
   const [selectedText, setSelectedText] = useState('');
@@ -55,6 +59,7 @@ function ImprovedAnalysisPageContent() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
+  const [analysisPanelOpen, setAnalysisPanelOpen] = useState(false);
   
   // Sidebar collapsible sections state
   const [isAnalysisTypeOpen, setIsAnalysisTypeOpen] = useState(true);
@@ -86,6 +91,11 @@ function ImprovedAnalysisPageContent() {
 
   // Sync local state với store state
   useEffect(() => {
+    console.log('🔍 [DEBUG] ImprovedAnalysisPageContent - Sync effect triggered', {
+      storeSelectedText,
+      storeSelectedType,
+      storeActiveTab
+    });
     if (storeSelectedText) {
       setSelectedText(storeSelectedText);
       setAnalysisType(storeSelectedType);
@@ -102,6 +112,7 @@ function ImprovedAnalysisPageContent() {
   }, []);
 
   const handleAnalyze = useCallback(async (text: string, type: 'word' | 'sentence' | 'paragraph') => {
+    console.log('🔍 [DEBUG] ImprovedAnalysisPageContent - handleAnalyze called', { text, type });
     if (!text.trim()) return;
 
     setIsAnalyzing(true);
@@ -145,6 +156,7 @@ function ImprovedAnalysisPageContent() {
       }
       
       setAnalysisResult(result);
+      setAnalysisPanelOpen(true);
       
       // Add to history using store directly
       const { addToHistory } = useAnalysisStore.getState();
@@ -187,6 +199,7 @@ function ImprovedAnalysisPageContent() {
     setAnalysisType('word');
     setAnalysisResult(null);
     setError(null);
+    setAnalysisPanelOpen(false);
   }, [clearAll]);
 
   const recentHistory = getRecentHistory(5);
@@ -200,8 +213,28 @@ function ImprovedAnalysisPageContent() {
 
   const currentLoading = isAnalyzing || currentMutation.isPending;
 
+  console.log('🔍 [DEBUG] ImprovedAnalysisPageContent - About to render', {
+    selectedText,
+    analysisType,
+    activeTab,
+    isAnalyzing,
+    error,
+    lastError,
+    analysisResult,
+    currentLoading,
+    analysisPanelOpen
+  });
+
+  console.log('🔍 [DEBUG] ImprovedAnalysisPageContent - About to render main container');
   return (
-    <div className="container mx-auto px-4 py-4 sm:px-6 lg:px-8 max-w-7xl h-[calc(100vh-2rem)] flex flex-col">
+    <div
+      className="container mx-auto px-4 py-4 sm:px-6 lg:px-8 max-w-7xl h-[calc(100vh-2rem)] flex flex-col"
+      style={{
+        backgroundColor: 'var(--background)',
+        color: 'var(--foreground)',
+        minHeight: '100vh'
+      }}
+    >
       <div className="mb-4 sm:mb-6 flex-shrink-0">
         <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground mb-2">AI Semantic Analysis Editor</h1>
         <p className="text-muted-foreground text-sm sm:text-base">
@@ -218,9 +251,31 @@ function ImprovedAnalysisPageContent() {
         </Alert>
       )}
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 min-h-0">
+      <div
+        className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 min-h-0"
+        style={{
+          backgroundColor: 'var(--card)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius)',
+          padding: '1rem',
+          minHeight: '400px'
+        }}
+      >
         {/* Main Editor - occupies 2/3 of space */}
-        <div className="lg:col-span-2 min-h-0">
+        <div
+          className="lg:col-span-2 min-h-0"
+          style={{
+            backgroundColor: 'var(--background)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius)',
+            padding: '1rem',
+            minHeight: '300px'
+          }}
+        >
+          {(() => {
+            console.log('🔍 [DEBUG] ImprovedAnalysisPageContent - Rendering AnalysisEditor');
+            return null;
+          })()}
           <AnalysisEditor
             onTextSelect={handleTextSelect}
             onAnalyze={handleAnalyze}
@@ -229,7 +284,16 @@ function ImprovedAnalysisPageContent() {
         </div>
 
         {/* Sidebar - occupies 1/3 of space */}
-        <div className="lg:col-span-1 space-y-3 lg:space-y-4 overflow-y-auto">
+        <div
+          className="lg:col-span-1 space-y-3 lg:space-y-4 overflow-y-auto"
+          style={{
+            backgroundColor: 'var(--background)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius)',
+            padding: '1rem',
+            minHeight: '300px'
+          }}
+        >
           {/* Analysis Type Selector */}
           <Card className="p-3 sm:p-4 sticky top-6" title="Chọn loại phân tích phù hợp với văn bản">
             <div
@@ -446,6 +510,28 @@ function ImprovedAnalysisPageContent() {
               )}
             </Card>
           )}
+
+          {/* Analysis Panel */}
+          {analysisPanelOpen && analysisResult && (
+            <>
+              {(() => {
+                console.log('🔍 [DEBUG] ImprovedAnalysisPageContent - Rendering AnalysisPanel', {
+                  analysisPanelOpen,
+                  analysisResult,
+                  analysisType: activeTab,
+                  selectedText
+                });
+                return null;
+              })()}
+              <AnalysisPanel
+                analysisPanelOpen={analysisPanelOpen}
+                setAnalysisPanelOpen={setAnalysisPanelOpen}
+                analysisResult={analysisResult}
+                analysisType={activeTab}
+                selectedText={selectedText}
+              />
+            </>
+          )}
         </div>
       </div>
 
@@ -464,9 +550,13 @@ function ImprovedAnalysisPageContent() {
  * Trang cải tiến cho AI Semantic Analysis Editor với authentication guard
  */
 export default function ImprovedAnalysisPage() {
+  console.log('🔍 [DEBUG] ImprovedAnalysisPage - Main page component started');
   return (
     <AuthGuard redirectTo="/auth/signin">
-      <ImprovedAnalysisPageContent />
+      <AnalysisErrorBoundary>
+        <ImprovedAnalysisPageContent />
+        <AnalysisDebugPanel />
+      </AnalysisErrorBoundary>
     </AuthGuard>
   );
 }

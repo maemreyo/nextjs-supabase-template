@@ -5,7 +5,7 @@ import type { SessionSettings, SessionSettingsInsert } from '@/types/sessions';
 // GET /api/sessions/[id]/settings - Get session settings
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get user ID from authentication
@@ -29,7 +29,7 @@ export async function GET(
       );
     }
 
-    const sessionId = params.id;
+    const { id: sessionId } = await params;
 
     // Get session settings
     const { data: settings, error: fetchError } = await supabase
@@ -71,7 +71,7 @@ export async function GET(
 // POST /api/sessions/[id]/settings - Create or update session settings
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get user ID from authentication
@@ -95,7 +95,7 @@ export async function POST(
       );
     }
 
-    const sessionId = params.id;
+    const { id: sessionId } = await params;
     const settingsData: Partial<SessionSettingsInsert> = await request.json();
 
     // Check if settings already exist
@@ -164,7 +164,7 @@ export async function POST(
 // PATCH /api/sessions/[id]/settings - Update session settings
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get user ID from authentication
@@ -188,7 +188,7 @@ export async function PATCH(
       );
     }
 
-    const sessionId = params.id;
+    const { id: sessionId } = await params;
     const settingsData: Partial<SessionSettingsInsert> = await request.json();
 
     // Update settings
@@ -224,7 +224,7 @@ export async function PATCH(
 // DELETE /api/sessions/[id]/settings - Delete session settings
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get user ID from authentication
@@ -248,7 +248,7 @@ export async function DELETE(
       );
     }
 
-    const sessionId = params.id;
+    const { id: sessionId } = await params;
 
     // Delete settings
     const { error: deleteError } = await supabase

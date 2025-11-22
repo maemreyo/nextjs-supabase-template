@@ -105,371 +105,370 @@ export const useAuthStore = create<AuthStore>()(
   subscribeWithSelector(
     devtools(
       persist(
-        (set, get) => ({
-          ...initialState,
+        (set, get) => {
+          console.log('🔍 [DEBUG] AuthStore - Initializing store with state:', initialState);
+          return {
+            ...initialState,
 
-          // User actions
-          setUser: (user) => {
-            set(
-              {
-                user,
-                isAuthenticated: !!user,
-                lastSignInAt: user?.user_metadata?.last_sign_in_at || null,
-                emailVerified: !!user?.email_confirmed_at,
-              },
-              false,
-              'setUser'
-            )
-          },
-
-          setProfile: (profile) => {
-            set({ profile }, false, 'setProfile')
-          },
-
-          updateUserProfile: (updates) => {
-            const { profile } = get()
-            if (profile) {
+            // User actions
+            setUser: (user: SupabaseUser | null) => {
               set(
                 {
-                  profile: { ...profile, ...updates, updated_at: new Date().toISOString() },
+                  user,
+                  isAuthenticated: !!user,
+                  lastSignInAt: user?.user_metadata?.last_sign_in_at || null,
+                  emailVerified: !!user?.email_confirmed_at,
                 },
                 false,
-                'updateUserProfile'
+                'setUser'
               )
-            }
-          },
+            },
 
-          // Session actions
-          setSession: (session) => {
-            set(
-              {
-                session,
-                user: session?.user || null,
-                accessToken: session?.access_token || null,
-                refreshToken: session?.refresh_token || null,
-                isAuthenticated: !!session?.user,
-              },
-              false,
-              'setSession'
-            )
-          },
+            setProfile: (profile: Profile | null) => {
+              set({ profile }, false, 'setProfile')
+            },
 
-          setTokens: (accessToken, refreshToken) => {
-            set({ accessToken, refreshToken }, false, 'setTokens')
-          },
-
-          // Auth state actions
-          setLoading: (loading) => {
-            set(storeUtils.setLoading(loading), false, 'setLoading')
-          },
-
-          setError: (error) => {
-            set(storeUtils.setError(error), false, 'setError')
-          },
-
-          clearError: () => {
-            set({ error: null }, false, 'clearError')
-          },
-
-          setInitialized: (isInitialized) => {
-            set({ isInitialized }, false, 'setInitialized')
-          },
-
-          // Auth flow actions
-          signIn: async (email, password) => {
-            const { setError, setLoading } = get()
-            
-            try {
-              setLoading(true)
-              setError(null)
-              
-              // Import dynamically to avoid SSR issues
-              const { supabase } = await import('@/lib/supabase/client')
-              const { data, error } = await supabase.auth.signInWithPassword({
-                email,
-                password,
-              })
-              
-              if (error) throw error
-              
-              // Session will be updated by the auth listener
-            } catch (error) {
-              setError(error instanceof Error ? error.message : 'Failed to sign in')
-              throw error
-            } finally {
-              setLoading(false)
-            }
-          },
-
-          signUp: async (email, password, metadata = {}) => {
-            const { setError, setLoading } = get()
-            
-            try {
-              setLoading(true)
-              setError(null)
-              
-              const { supabase } = await import('@/lib/supabase/client')
-              const { data, error } = await supabase.auth.signUp({
-                email,
-                password,
-                options: {
-                  data: {
-                    ...metadata,
-                    last_sign_in_at: new Date().toISOString(),
+            updateUserProfile: (updates: Partial<Profile>) => {
+              const { profile } = get()
+              if (profile) {
+                set(
+                  {
+                    profile: { ...profile, ...updates, updated_at: new Date().toISOString() },
                   },
-                },
-              })
-              
-              if (error) throw error
-              
-              // Session will be updated by the auth listener
-            } catch (error) {
-              setError(error instanceof Error ? error.message : 'Failed to sign up')
-              throw error
-            } finally {
-              setLoading(false)
-            }
-          },
-
-          signOut: async () => {
-            const { setError, setLoading } = get()
-            
-            try {
-              setLoading(true)
-              setError(null)
-              
-              const { supabase } = await import('@/lib/supabase/client')
-              const { error } = await supabase.auth.signOut()
-              
-              if (error) throw error
-              
-              // Clear auth state
-              get().clearAuth()
-            } catch (error) {
-              setError(error instanceof Error ? error.message : 'Failed to sign out')
-              throw error
-            } finally {
-              setLoading(false)
-            }
-          },
-
-          resetPassword: async (email) => {
-            const { setError, setLoading } = get()
-            
-            try {
-              setLoading(true)
-              setError(null)
-              
-              const { supabase } = await import('@/lib/supabase/client')
-              const { error } = await supabase.auth.resetPasswordForEmail(email)
-              
-              if (error) throw error
-            } catch (error) {
-              setError(error instanceof Error ? error.message : 'Failed to reset password')
-              throw error
-            } finally {
-              setLoading(false)
-            }
-          },
-
-          updatePassword: async (password) => {
-            const { setError, setLoading } = get()
-            
-            try {
-              setLoading(true)
-              setError(null)
-              
-              const { supabase } = await import('@/lib/supabase/client')
-              const { error } = await supabase.auth.updateUser({ password })
-              
-              if (error) throw error
-            } catch (error) {
-              setError(error instanceof Error ? error.message : 'Failed to update password')
-              throw error
-            } finally {
-              setLoading(false)
-            }
-          },
-
-          // Profile actions
-          fetchProfile: async () => {
-            const { user, setError, setLoading } = get()
-            
-            if (!user) return
-            
-            try {
-              setLoading(true)
-              setError(null)
-              
-              const { supabase } = await import('@/lib/supabase/client')
-              const { data: userData, error: userError } = await supabase.auth.getUser()
-              
-              if (userError) throw userError
-              
-              // Create profile from user data
-              const profileData = userData ? {
-                id: userData.user?.id || '',
-                full_name: userData.user?.user_metadata?.full_name || userData.user?.email || '',
-                username: userData.user?.user_metadata?.username || null,
-                website: userData.user?.user_metadata?.website || null,
-                avatar_url: userData.user?.user_metadata?.avatar_url || null,
-                updated_at: new Date().toISOString()
-              } : null
-              
-              get().setProfile(profileData)
-              
-              if (userError && 'code' in userError && (userError as any).code !== 'PGRST116') { // Not found error
-                throw userError
+                  false,
+                  'updateUserProfile'
+                )
               }
-              
-              get().setProfile(profileData)
-            } catch (error) {
-              setError(error instanceof Error ? error.message : 'Failed to fetch profile')
-              throw error
-            } finally {
-              setLoading(false)
-            }
-          },
+            },
 
-          updateProfile: async (updates) => {
-            const { user, setError, setLoading } = get()
-            
-            if (!user) throw new Error('User not authenticated')
-            
-            try {
-              setLoading(true)
-              setError(null)
+            // Session actions
+            setSession: (session: any) => {
+              set(
+                {
+                  session,
+                  user: session?.user || null,
+                  accessToken: session?.access_token || null,
+                  refreshToken: session?.refresh_token || null,
+                  isAuthenticated: !!session?.user,
+                },
+                false,
+                'setSession'
+              )
+            },
+
+            setTokens: (accessToken: string | null, refreshToken: string | null) => {
+              set({ accessToken, refreshToken }, false, 'setTokens')
+            },
+
+            // Auth state actions
+            setLoading: (loading: boolean) => {
+              set(storeUtils.setLoading(loading), false, 'setLoading')
+            },
+
+            setError: (error: string | null) => {
+              set(storeUtils.setError(error), false, 'setError')
+            },
+
+            clearError: () => {
+              set({ error: null }, false, 'clearError')
+            },
+
+            setInitialized: (isInitialized: boolean) => {
+              set({ isInitialized }, false, 'setInitialized')
+            },
+
+            // Auth flow actions
+            signIn: async (email: string, password: string) => {
+              const { setError, setLoading } = get()
               
-              const { supabase } = await import('@/lib/supabase/client')
-              const { data, error } = await supabase
-                .from('profiles')
-                .upsert({
-                  id: user.id,
-                  ...updates,
-                  updated_at: new Date().toISOString(),
+              try {
+                setLoading(true)
+                setError(null)
+                
+                // Import dynamically to avoid SSR issues
+                const { supabase } = await import('@/lib/supabase/client')
+                const { data, error } = await supabase.auth.signInWithPassword({
+                  email,
+                  password,
                 })
-                .select()
-                .single()
-              
-              if (error) throw error
-              
-              get().setProfile(data)
-            } catch (error) {
-              setError(error instanceof Error ? error.message : 'Failed to update profile')
-              throw error
-            } finally {
-              setLoading(false)
-            }
-          },
+                
+                if (error) throw error
+                
+                // Session will be updated by the auth listener
+              } catch (error) {
+                setError(error instanceof Error ? error.message : 'Failed to sign in')
+                throw error
+              } finally {
+                setLoading(false)
+              }
+            },
 
-          uploadAvatar: async (file) => {
-            const { user, setError, setLoading } = get()
-            
-            if (!user) throw new Error('User not authenticated')
-            
-            try {
-              setLoading(true)
-              setError(null)
+            signUp: async (email: string, password: string, metadata: any = {}) => {
+              const { setError, setLoading } = get()
               
-              const { supabase } = await import('@/lib/supabase/client')
-              
-              // Upload file
-              const fileExt = file.name.split('.').pop()
-              const fileName = `${user.id}-${Date.now()}.${fileExt}`
-              const filePath = `avatars/${fileName}`
-              
-              const { error: uploadError } = await supabase.storage
-                .from('avatars')
-                .upload(filePath, file)
-              
-              if (uploadError) throw uploadError
-              
-              // Get public URL
-              const { data: { publicUrl } } = supabase.storage
-                .from('avatars')
-                .getPublicUrl(filePath)
-              
-              // Update profile
-              await get().updateProfile({ avatar_url: publicUrl })
-              
-              return publicUrl
-            } catch (error) {
-              setError(error instanceof Error ? error.message : 'Failed to upload avatar')
-              throw error
-            } finally {
-              setLoading(false)
-            }
-          },
+              try {
+                setLoading(true)
+                setError(null)
+                
+                const { supabase } = await import('@/lib/supabase/client')
+                const { data, error } = await supabase.auth.signUp({
+                  email,
+                  password,
+                  options: {
+                    data: {
+                      ...metadata,
+                      last_sign_in_at: new Date().toISOString(),
+                    },
+                  },
+                })
+                
+                if (error) throw error
+                
+                // Session will be updated by the auth listener
+              } catch (error) {
+                setError(error instanceof Error ? error.message : 'Failed to sign up')
+                throw error
+              } finally {
+                setLoading(false)
+              }
+            },
 
-          // Utility actions
-          refreshSession: async () => {
-            const { setError, setLoading } = get()
-            
-            try {
-              setLoading(true)
-              setError(null)
+            signOut: async () => {
+              const { setError, setLoading } = get()
               
-              const { supabase } = await import('@/lib/supabase/client')
-              const { data, error } = await supabase.auth.refreshSession()
-              
-              if (error) throw error
-              
-              get().setSession(data.session)
-            } catch (error) {
-              setError(error instanceof Error ? error.message : 'Failed to refresh session')
-              throw error
-            } finally {
-              setLoading(false)
-            }
-          },
+              try {
+                setLoading(true)
+                setError(null)
+                
+                const { supabase } = await import('@/lib/supabase/client')
+                const { error } = await supabase.auth.signOut()
+                
+                if (error) throw error
+                
+                // Clear auth state
+                get().clearAuth()
+              } catch (error) {
+                setError(error instanceof Error ? error.message : 'Failed to sign out')
+                throw error
+              } finally {
+                setLoading(false)
+              }
+            },
 
-          clearAuth: () => {
-            set(
-              {
-                user: null,
-                profile: null,
-                session: null,
-                accessToken: null,
-                refreshToken: null,
-                isAuthenticated: false,
-                lastSignInAt: null,
-                emailVerified: false,
-                error: null,
-                loading: false,
-              },
-              false,
-              'clearAuth'
-            )
-          },
-        }),
+            resetPassword: async (email: string) => {
+              const { setError, setLoading } = get()
+              
+              try {
+                setLoading(true)
+                setError(null)
+                
+                const { supabase } = await import('@/lib/supabase/client')
+                const { error } = await supabase.auth.resetPasswordForEmail(email)
+                
+                if (error) throw error
+              } catch (error) {
+                setError(error instanceof Error ? error.message : 'Failed to reset password')
+                throw error
+              } finally {
+                setLoading(false)
+              }
+            },
+
+            updatePassword: async (password: string) => {
+              const { setError, setLoading } = get()
+              
+              try {
+                setLoading(true)
+                setError(null)
+                
+                const { supabase } = await import('@/lib/supabase/client')
+                const { error } = await supabase.auth.updateUser({ password })
+                
+                if (error) throw error
+              } catch (error) {
+                setError(error instanceof Error ? error.message : 'Failed to update password')
+                throw error
+              } finally {
+                setLoading(false)
+              }
+            },
+
+            // Profile actions
+            fetchProfile: async () => {
+              const { user, setError, setLoading } = get()
+              
+              if (!user) return
+              
+              try {
+                setLoading(true)
+                setError(null)
+                
+                const { supabase } = await import('@/lib/supabase/client')
+                const { data: userData, error: userError } = await supabase.auth.getUser()
+                
+                if (userError) throw userError
+                
+                // Create profile from user data
+                const profileData = userData ? {
+                  id: userData.user?.id || '',
+                  full_name: userData.user?.user_metadata?.full_name || userData.user?.email || '',
+                  username: userData.user?.user_metadata?.username || null,
+                  website: userData.user?.user_metadata?.website || null,
+                  avatar_url: userData.user?.user_metadata?.avatar_url || null,
+                  updated_at: new Date().toISOString()
+                } : null
+                
+                get().setProfile(profileData)
+                
+                if (userError && 'code' in userError && (userError as any).code !== 'PGRST116') { // Not found error
+                  throw userError
+                }
+                
+                get().setProfile(profileData)
+              } catch (error) {
+                setError(error instanceof Error ? error.message : 'Failed to fetch profile')
+                throw error
+              } finally {
+                setLoading(false)
+              }
+            },
+
+            updateProfile: async (updates: Partial<Profile>) => {
+              const { user, setError, setLoading } = get()
+              
+              if (!user) throw new Error('User not authenticated')
+              
+              try {
+                setLoading(true)
+                setError(null)
+                
+                const { supabase } = await import('@/lib/supabase/client')
+                const { data, error } = await supabase
+                  .from('profiles')
+                  .upsert({
+                    id: user.id,
+                    ...updates,
+                    updated_at: new Date().toISOString(),
+                  })
+                  .select()
+                  .single()
+                
+                if (error) throw error
+                
+                get().setProfile(data)
+              } catch (error) {
+                setError(error instanceof Error ? error.message : 'Failed to update profile')
+                throw error
+              } finally {
+                setLoading(false)
+              }
+            },
+
+            uploadAvatar: async (file: File) => {
+              const { user, setError, setLoading } = get()
+              
+              if (!user) throw new Error('User not authenticated')
+              
+              try {
+                setLoading(true)
+                setError(null)
+                
+                const { supabase } = await import('@/lib/supabase/client')
+                
+                // Upload file
+                const fileExt = file.name.split('.').pop()
+                const fileName = `${user.id}-${Date.now()}.${fileExt}`
+                const filePath = `avatars/${fileName}`
+                
+                const { error: uploadError } = await supabase.storage
+                  .from('avatars')
+                  .upload(filePath, file)
+                
+                if (uploadError) throw uploadError
+                
+                // Get public URL
+                const { data: { publicUrl } } = supabase.storage
+                  .from('avatars')
+                  .getPublicUrl(filePath)
+                
+                // Update profile
+                await get().updateProfile({ avatar_url: publicUrl })
+                
+                return publicUrl
+              } catch (error) {
+                setError(error instanceof Error ? error.message : 'Failed to upload avatar')
+                throw error
+              } finally {
+                setLoading(false)
+              }
+            },
+
+            // Utility actions
+            refreshSession: async () => {
+              const { setError, setLoading } = get()
+              
+              try {
+                setLoading(true)
+                setError(null)
+                
+                const { supabase } = await import('@/lib/supabase/client')
+                const { data, error } = await supabase.auth.refreshSession()
+                
+                if (error) throw error
+                
+                get().setSession(data.session)
+              } catch (error) {
+                setError(error instanceof Error ? error.message : 'Failed to refresh session')
+                throw error
+              } finally {
+                setLoading(false)
+              }
+            },
+
+            clearAuth: () => {
+              set(
+                {
+                  user: null,
+                  profile: null,
+                  session: null,
+                  accessToken: null,
+                  refreshToken: null,
+                  isAuthenticated: false,
+                  lastSignInAt: null,
+                  emailVerified: false,
+                  error: null,
+                  loading: false,
+                },
+                false,
+                'clearAuth'
+              )
+            },
+          }
+        },
         {
           name: 'auth-storage',
-          partialize: (state) => ({
-            // Only persist essential auth data
-            user: state.user,
-            profile: state.profile,
-            isAuthenticated: state.isAuthenticated,
-            lastSignInAt: state.lastSignInAt,
-            emailVerified: state.emailVerified,
-          }),
-          version: 1,
-          migrate: (persistedState: any, version: number) => {
-            // Handle migrations here if needed
-            if (version === 0) {
-              // Migration from version 0 to 1
-              return {
-                ...persistedState,
-                emailVerified: false,
+          partialize: (state: AuthStore) => ({
+              // Only persist essential auth data
+              user: state.user,
+              profile: state.profile,
+              isAuthenticated: state.isAuthenticated,
+              lastSignInAt: state.lastSignInAt,
+              emailVerified: state.emailVerified,
+            }),
+            version: 1,
+            migrate: (persistedState: any, version: number) => {
+              // Handle migrations here if needed
+              if (version === 0) {
+                // Migration from version 0 to 1
+                return {
+                  ...persistedState,
+                  emailVerified: false,
+                }
               }
-            }
-            return persistedState
-          },
-        }
-      ),
-      {
-        name: 'auth-store',
-        enabled: process.env.NODE_ENV === 'development',
-      }
+              return persistedState
+            },
+          }
+      )
     )
   )
 )

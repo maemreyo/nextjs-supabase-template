@@ -5,7 +5,7 @@ import type { VocabularyCollection } from '@/types/vocabulary';
 // GET /api/vocabulary/collections/[id] - Get specific vocabulary collection
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get user ID from authentication
@@ -29,7 +29,7 @@ export async function GET(
       );
     }
 
-    const collectionId = params.id;
+    const { id: collectionId } = await params;
 
     // Get collection
     const { data: collection, error: fetchError } = await supabase
@@ -69,7 +69,7 @@ export async function GET(
 // PATCH /api/vocabulary/collections/[id] - Update vocabulary collection
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get user ID from authentication
@@ -93,7 +93,7 @@ export async function PATCH(
       );
     }
 
-    const collectionId = params.id;
+    const { id: collectionId } = await params;
     const updateData: Partial<VocabularyCollection> = await request.json();
 
     // Check if user owns the collection
@@ -143,7 +143,7 @@ export async function PATCH(
 // DELETE /api/vocabulary/collections/[id] - Delete vocabulary collection
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get user ID from authentication
@@ -167,7 +167,7 @@ export async function DELETE(
       );
     }
 
-    const collectionId = params.id;
+    const { id: collectionId } = await params;
 
     // Check if user owns the collection
     const { data: existingCollection, error: checkError } = await supabase

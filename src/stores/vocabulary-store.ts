@@ -280,7 +280,7 @@ export const useVocabularyStore = create<VocabularyState & VocabularyActions>((s
 
   searchWords: async (query) => {
     set({ searchQuery: query });
-    return get().loadWords({ search: query });
+    return get().loadWords({ search: query }) as unknown as Promise<VocabularyWord[]>;
   },
 
   // Collection CRUD actions

@@ -38,8 +38,24 @@ export { default as RewriteSuggestions } from './RewriteSuggestions';
 export { default as StructureBreakdown } from './StructureBreakdown';
 export { default as ConstructiveFeedback } from './ConstructiveFeedback';
 export { default as AnalysisEditor } from './AnalysisEditor';
+export { default as AnalysisPanel } from './AnalysisPanel';
 export { default as AnalysisResultDialog } from './AnalysisResultDialog';
+export { default as SmartVocabularyDialog } from './SmartVocabularyDialog';
 export { default as CompactResultCard } from './CompactResultCard';
+export { default as CollapsibleAnalysisPanel } from './CollapsibleAnalysisPanel';
+
+// Export utility functions
+export {
+  mapWordAnalysisToVocabulary,
+  mapSentenceAnalysisToVocabulary,
+  validateVocabularyData,
+  extractWordsFromText,
+  createVocabularyFromWord
+} from './analysisUtils';
+export type {
+  ValidationResult,
+  MappedVocabularyData
+} from './analysisUtils';
 
 // Export styles
 import './styles.css';

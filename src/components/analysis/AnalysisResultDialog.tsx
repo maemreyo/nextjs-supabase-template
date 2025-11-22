@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
 } from '@/components/ui/dialog';
@@ -53,9 +53,14 @@ export function AnalysisResultDialog({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [dialogWidth, setDialogWidth] = useState<number | null>(null);
+  const [isResizing, setIsResizing] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
   
-  // Ref for content printing
+  // Refs
   const contentRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const resizeHandleRef = useRef<HTMLDivElement>(null);
   
   // Aggregate metadata from individual props or meta object
   const metadata = useMemo(() => {
@@ -114,6 +119,66 @@ export function AnalysisResultDialog({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, isFullscreen, onClose, handleExport, handlePrint]);
 
+  // Handle dialog resizing
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+    
+    const startX = e.clientX;
+    const startWidth = dialogRef.current?.offsetWidth || 0;
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      const newWidth = startWidth + (e.clientX - startX);
+      // Set minimum and maximum width constraints with responsive values
+      const minWidth = window.innerWidth < 768 ? window.innerWidth * 0.9 : 600;
+      const maxWidth = window.innerWidth * 0.95;
+      
+      if (newWidth >= minWidth && newWidth <= maxWidth) {
+        setDialogWidth(newWidth);
+      }
+    };
+    
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, []);
+
+  // Reset width when exiting fullscreen or on window resize
+  useEffect(() => {
+    if (!isFullscreen) {
+      setDialogWidth(null);
+    }
+  }, [isFullscreen]);
+
+  // Handle window resize to ensure responsive behavior
+  useEffect(() => {
+    const handleWindowResize = () => {
+      // Reset custom width on small screens to ensure responsive behavior
+      if (window.innerWidth < 768) {
+        setDialogWidth(null);
+      }
+    };
+
+    window.addEventListener('resize', handleWindowResize);
+    return () => window.removeEventListener('resize', handleWindowResize);
+  }, []);
+
+  // Track window width for responsive behavior
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    handleResize(); // Set initial width
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const onShareClick = async () => {
     const result = await handleShare();
     if (result.method === 'clipboard' || result.method === 'share') {
@@ -133,13 +198,20 @@ export function AnalysisResultDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent 
+      <DialogContent
+        ref={dialogRef}
+        size={isFullscreen ? "fullscreen" : (windowWidth < 768 ? "default" : "xlarge")}
         className={cn(
           "flex flex-col p-0 gap-0 transition-all duration-300",
-          isFullscreen 
-            ? "w-screen h-screen max-w-none rounded-none border-0" 
-            : "max-w-4xl h-[85vh] sm:rounded-xl"
+          isFullscreen
+            ? "rounded-none border-0"
+            : "h-[85vh] sm:rounded-xl",
+          dialogWidth && !isFullscreen && "max-w-none"
         )}
+        style={{
+          width: dialogWidth && !isFullscreen && windowWidth >= 768 ? `${dialogWidth}px` : undefined
+        }}
+        showCloseButton={false}
       >
         {/* 1. Header Toolbar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 border-b bg-muted/10 backdrop-blur-sm">
@@ -223,6 +295,18 @@ export function AnalysisResultDialog({
                 </div>
             )}
         </div>
+        
+        {/* Resize Handle - Only show when not in fullscreen and on larger screens */}
+        {!isFullscreen && windowWidth >= 768 && (
+          <div
+            ref={resizeHandleRef}
+            className={cn(
+              "absolute right-0 top-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-primary/20 transition-colors",
+              isResizing && "bg-primary/40"
+            )}
+            onMouseDown={handleMouseDown}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { SupabaseProvider } from './supabase-provider'
+import { AuthSyncProvider } from './auth-sync-provider'
 import { ThemeProvider } from './theme-provider'
 import { getQueryClient } from '@/lib/query-client'
 
@@ -22,10 +23,12 @@ export function Providers({ children }: ProvidersProps) {
       disableTransitionOnChange
     >
       <SupabaseProvider>
-        <QueryClientProvider client={queryClient}>
-          {children}
-          <ReactQueryDevtools initialIsOpen={false} />
-        </QueryClientProvider>
+        <AuthSyncProvider>
+          <QueryClientProvider client={queryClient}>
+            {children}
+            <ReactQueryDevtools initialIsOpen={false} />
+          </QueryClientProvider>
+        </AuthSyncProvider>
       </SupabaseProvider>
     </ThemeProvider>
   )
