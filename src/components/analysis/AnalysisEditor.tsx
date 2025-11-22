@@ -90,7 +90,14 @@ export function AnalysisEditor({
   const currentTheme = theme === 'system' ? systemTheme : theme;
   const isDarkTheme = currentTheme === 'dark';
 
-  const highlightColors = ['#fef08a', '#bbf7d0', '#bfdbfe', '#fecaca', '#e9d5ff'];
+  // Enhanced highlight colors with better contrast for both light and dark themes
+  const highlightColors = [
+    '#fef08a', // Light yellow - good for both themes
+    '#bbf7d0', // Light green - good for both themes
+    '#bfdbfe', // Light blue - good for both themes
+    '#fca5a5', // Light red with better contrast
+    '#e9d5ff', // Light purple - good for both themes
+  ];
 
   // Function to clean text colors to match current theme
   const cleanTextColors = useCallback((htmlContent: string) => {
@@ -377,6 +384,21 @@ export function AnalysisEditor({
     }
   }, [initialText, updateTextStats, cleanTextColors]);
 
+  // Ensure text colors match theme when theme changes
+  useEffect(() => {
+    if (editorRef.current && isInitializedRef.current) {
+      // Apply theme-appropriate text color to all text nodes
+      const allTextNodes = editorRef.current.querySelectorAll('*');
+      allTextNodes.forEach(node => {
+        const htmlElement = node as HTMLElement;
+        if (htmlElement.style && !htmlElement.style.color) {
+          // Let CSS handle the color based on theme
+          htmlElement.style.color = '';
+        }
+      });
+    }
+  }, [currentTheme]);
+
   // Setup event listeners
   useEffect(() => {
     const handleMouseUp = (e: MouseEvent) => {
@@ -593,21 +615,32 @@ export function AnalysisEditor({
 
                   {analysisType === 'sentence' && analysisResult && 'meta' in analysisResult && (
                     <div className="space-y-3 text-sm">
+                      {(() => {
+                        const sentenceAnalysis = analysisResult as SentenceAnalysis;
+                        // Log để debug khi semantics undefined
+                        if (!sentenceAnalysis.semantics) {
+                          console.warn('DEBUG: semantics is undefined in SentenceAnalysis:', sentenceAnalysis);
+                        }
+                        if (!sentenceAnalysis.translation) {
+                          console.warn('DEBUG: translation is undefined in SentenceAnalysis:', sentenceAnalysis);
+                        }
+                        return null;
+                      })()}
                       <div>
                         <h4 className="text-xs text-muted-foreground mb-1">Complexity</h4>
                         <Badge variant="outline" className="text-xs">{(analysisResult as SentenceAnalysis).meta.complexity_level}</Badge>
                       </div>
                       <div>
                         <h4 className="text-xs text-muted-foreground mb-1">Main Idea</h4>
-                        <p className="text-foreground">{(analysisResult as SentenceAnalysis).semantics.main_idea}</p>
+                        <p className="text-foreground">{(analysisResult as SentenceAnalysis).semantics?.main_idea || 'N/A'}</p>
                       </div>
                       <div>
                         <h4 className="text-xs text-muted-foreground mb-1">Sentiment</h4>
-                        <Badge variant="outline" className="text-xs">{(analysisResult as SentenceAnalysis).semantics.sentiment}</Badge>
+                        <Badge variant="outline" className="text-xs">{(analysisResult as SentenceAnalysis).semantics?.sentiment || 'N/A'}</Badge>
                       </div>
                       <div>
                         <h4 className="text-xs text-muted-foreground mb-1">Translation</h4>
-                        <p className="text-foreground">{(analysisResult as SentenceAnalysis).translation.natural}</p>
+                        <p className="text-foreground">{(analysisResult as SentenceAnalysis).translation?.natural || 'N/A'}</p>
                       </div>
                     </div>
                   )}

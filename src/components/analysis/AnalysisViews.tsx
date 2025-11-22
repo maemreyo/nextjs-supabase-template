@@ -331,7 +331,7 @@ export const SentenceAnalysisView: React.FC<{ data: SentenceAnalysis }> = ({ dat
             <Badge variant="outline" className="transition-all hover:scale-105">
               {data.meta.sentence_type}
             </Badge>
-            <SentimentBadge sentiment={data.semantics.sentiment} />
+            <SentimentBadge sentiment={data.semantics?.sentiment || 'N/A'} />
           </div>
         </div>
       </div>
@@ -349,21 +349,21 @@ export const SentenceAnalysisView: React.FC<{ data: SentenceAnalysis }> = ({ dat
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-center border border-blue-100 dark:border-blue-800 transition-all hover:shadow-sm">
                 <div className="text-xs text-blue-600 dark:text-blue-300 font-bold mb-1 uppercase tracking-wide">Chủ ngữ</div>
-                <div className="font-medium text-sm">{data.grammar_breakdown.subject}</div>
+                <div className="font-medium text-sm">{data.grammar_breakdown?.subject || 'N/A'}</div>
               </div>
               <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg text-center border border-orange-100 dark:border-orange-800 transition-all hover:shadow-sm">
                 <div className="text-xs text-orange-600 dark:text-orange-300 font-bold mb-1 uppercase tracking-wide">Động từ</div>
-                <div className="font-medium text-sm">{data.grammar_breakdown.main_verb}</div>
+                <div className="font-medium text-sm">{data.grammar_breakdown?.main_verb || 'N/A'}</div>
               </div>
               <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg text-center border border-green-100 dark:border-green-800 transition-all hover:shadow-sm">
                 <div className="text-xs text-green-600 dark:text-green-300 font-bold mb-1 uppercase tracking-wide">Tân ngữ</div>
-                <div className="font-medium text-sm">{data.grammar_breakdown.object}</div>
+                <div className="font-medium text-sm">{data.grammar_breakdown?.object || 'N/A'}</div>
               </div>
             </div>
             
             <SectionTitle icon={Target}>Thành phần chi tiết</SectionTitle>
             <div className="space-y-3">
-              {data.grammar_breakdown.clauses.map((clause, idx) => (
+              {data.grammar_breakdown?.clauses?.map((clause, idx) => (
                 <div 
                   key={idx} 
                   className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors group"
@@ -383,14 +383,14 @@ export const SentenceAnalysisView: React.FC<{ data: SentenceAnalysis }> = ({ dat
 
         {/* Rewrite Suggestions */}
         {data.rewrite_suggestions && data.rewrite_suggestions.length > 0 && (
-          <AnalysisCard 
-            title="Gợi ý viết lại" 
+          <AnalysisCard
+            title="Gợi ý viết lại"
             icon={Lightbulb}
             description="Các phương án diễn đạt khác"
             variant="success"
           >
             <div className="space-y-4">
-              {data.rewrite_suggestions.map((sug, idx) => (
+              {data.rewrite_suggestions?.map((sug, idx) => (
                 <div 
                   key={idx} 
                   className="p-4 bg-background rounded-lg border shadow-sm hover:shadow-md transition-all duration-200 group"
@@ -421,14 +421,14 @@ export const SentenceAnalysisView: React.FC<{ data: SentenceAnalysis }> = ({ dat
           description="Phân tích ý nghĩa câu"
         >
           <div className="space-y-4">
-            <InfoItem label="Ý chính" value={data.semantics.main_idea} />
-            <InfoItem 
-              label="Ý ngầm (Subtext)" 
-              value={data.semantics.subtext} 
-              className="text-muted-foreground italic" 
+            <InfoItem label="Ý chính" value={data.semantics?.main_idea || 'N/A'} />
+            <InfoItem
+              label="Ý ngầm (Subtext)"
+              value={data.semantics?.subtext || 'N/A'}
+              className="text-muted-foreground italic"
             />
             <Separator />
-            <InfoItem label="Chức năng" value={data.contextual_role.function} />
+            <InfoItem label="Chức năng" value={data.contextual_role?.function || 'N/A'} />
           </div>
         </AnalysisCard>
 
@@ -438,14 +438,14 @@ export const SentenceAnalysisView: React.FC<{ data: SentenceAnalysis }> = ({ dat
           description="Bản dịch và diễn giải"
         >
           <div className="space-y-4">
-            <InfoItem 
-              label="Nghĩa tự nhiên" 
-              value={<span className="font-medium text-primary">{data.translation.natural}</span>} 
+            <InfoItem
+              label="Nghĩa tự nhiên"
+              value={<span className="font-medium text-primary">{data.translation?.natural || 'N/A'}</span>}
             />
-            <InfoItem 
-              label="Nghĩa đen" 
-              value={data.translation.literal} 
-              className="opacity-80" 
+            <InfoItem
+              label="Nghĩa đen"
+              value={data.translation?.literal || 'N/A'}
+              className="opacity-80"
             />
           </div>
         </AnalysisCard>

@@ -119,10 +119,11 @@ export function CompactResultCard({
   // Sentence Analysis Summary
   if (analysisType === 'sentence') {
     const sentenceAnalysis = analysis as SentenceAnalysis;
-    const sentimentColor = sentenceAnalysis.semantics.sentiment === 'Positive' 
-      ? 'text-green-600' 
-      : sentenceAnalysis.semantics.sentiment === 'Negative' 
-      ? 'text-red-600' 
+    const sentiment = sentenceAnalysis.semantics?.sentiment || 'N/A';
+    const sentimentColor = sentiment === 'Positive'
+      ? 'text-green-600'
+      : sentiment === 'Negative'
+      ? 'text-red-600'
       : 'text-gray-600';
     
     return (
@@ -135,7 +136,7 @@ export function CompactResultCard({
           </div>
           <div className="flex items-center gap-1">
             <Badge variant="outline" className={cn("text-xs", sentimentColor)}>
-              {sentenceAnalysis.semantics.sentiment}
+              {sentiment}
             </Badge>
           </div>
         </div>
@@ -143,11 +144,11 @@ export function CompactResultCard({
         <div className="space-y-1 mb-2">
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Lightbulb className="h-3 w-3" />
-            <span className="truncate">{sentenceAnalysis.semantics.main_idea}</span>
+            <span className="truncate">{sentenceAnalysis.semantics?.main_idea || 'N/A'}</span>
           </div>
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Target className="h-3 w-3" />
-            <span>{sentenceAnalysis.rewrite_suggestions.length} gợi ý viết lại</span>
+            <span>{sentenceAnalysis.rewrite_suggestions?.length || 0} gợi ý viết lại</span>
           </div>
         </div>
         

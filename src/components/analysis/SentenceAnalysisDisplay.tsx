@@ -58,21 +58,21 @@ export function SentenceAnalysisDisplay({
         <div className="space-y-3">
           <div>
             <h5 className="text-sm font-medium text-muted-foreground mb-1">Ý chính:</h5>
-            <p className="text-sm bg-primary/10 p-2 rounded text-foreground">{analysis.semantics.main_idea}</p>
+            <p className="text-sm bg-primary/10 p-2 rounded text-foreground">{analysis.semantics?.main_idea || 'N/A'}</p>
           </div>
           
           <div>
             <h5 className="text-sm font-medium text-muted-foreground mb-1">Ý ngầm:</h5>
-            <p className="text-sm bg-purple-50 dark:bg-purple-950/20 p-2 rounded text-foreground">{analysis.semantics.subtext}</p>
+            <p className="text-sm bg-purple-50 dark:bg-purple-950/20 p-2 rounded text-foreground">{analysis.semantics?.subtext || 'N/A'}</p>
           </div>
           
           <div>
             <h5 className="text-sm font-medium text-muted-foreground mb-1">Cảm xúc:</h5>
             <Badge
-              variant={analysis.semantics.sentiment === 'Positive' ? 'default' :
-                     analysis.semantics.sentiment === 'Negative' ? 'destructive' : 'secondary'}
+              variant={analysis.semantics?.sentiment === 'Positive' ? 'default' :
+                     analysis.semantics?.sentiment === 'Negative' ? 'destructive' : 'secondary'}
             >
-              {analysis.semantics.sentiment}
+              {analysis.semantics?.sentiment || 'N/A'}
             </Badge>
           </div>
         </div>
@@ -89,21 +89,21 @@ export function SentenceAnalysisDisplay({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
               <h5 className="text-sm font-medium text-muted-foreground mb-1">Chủ ngữ:</h5>
-              <p className="text-sm font-medium text-foreground">{analysis.grammar_breakdown.subject}</p>
+              <p className="text-sm font-medium text-foreground">{analysis.grammar_breakdown?.subject || 'N/A'}</p>
             </div>
             
             <div>
               <h5 className="text-sm font-medium text-muted-foreground mb-1">Động từ chính:</h5>
-              <p className="text-sm font-medium text-foreground">{analysis.grammar_breakdown.main_verb}</p>
+              <p className="text-sm font-medium text-foreground">{analysis.grammar_breakdown?.main_verb || 'N/A'}</p>
             </div>
             
             <div>
               <h5 className="text-sm font-medium text-muted-foreground mb-1">Tân ngữ:</h5>
-              <p className="text-sm font-medium text-foreground">{analysis.grammar_breakdown.object}</p>
+              <p className="text-sm font-medium text-foreground">{analysis.grammar_breakdown?.object || 'N/A'}</p>
             </div>
           </div>
           
-          {analysis.grammar_breakdown.clauses.length > 0 && (
+          {analysis.grammar_breakdown?.clauses && analysis.grammar_breakdown.clauses.length > 0 && (
             <div>
               <h5 className="text-sm font-medium text-muted-foreground mb-2">Mệnh đề:</h5>
               <div className="space-y-2">
@@ -129,12 +129,12 @@ export function SentenceAnalysisDisplay({
         <div className="space-y-2">
           <div>
             <h5 className="text-sm font-medium text-muted-foreground mb-1">Chức năng:</h5>
-            <p className="text-sm text-foreground">{analysis.contextual_role.function}</p>
+            <p className="text-sm text-foreground">{analysis.contextual_role?.function || 'N/A'}</p>
           </div>
           
           <div>
             <h5 className="text-sm font-medium text-muted-foreground mb-1">Mối quan hệ với câu trước:</h5>
-            <p className="text-sm text-foreground">{analysis.contextual_role.relation_to_previous}</p>
+            <p className="text-sm text-foreground">{analysis.contextual_role?.relation_to_previous || 'N/A'}</p>
           </div>
         </div>
       </Card>
@@ -147,7 +147,7 @@ export function SentenceAnalysisDisplay({
         </h4>
         
         <div className="space-y-3">
-          {analysis.key_components.map((component, index) => (
+          {analysis.key_components?.map((component, index) => (
             <div key={index} className="border-l-2 border-orange-400 dark:border-orange-600 pl-4">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-sm font-medium text-foreground">"{component.phrase}"</span>
@@ -163,7 +163,7 @@ export function SentenceAnalysisDisplay({
 
       {/* Rewrite Suggestions */}
       <RewriteSuggestions
-        suggestions={analysis.rewrite_suggestions}
+        suggestions={analysis.rewrite_suggestions || []}
         onApply={onRewriteApply}
       />
 
@@ -177,12 +177,12 @@ export function SentenceAnalysisDisplay({
         <div className="space-y-3">
           <div>
             <h5 className="text-sm font-medium text-muted-foreground mb-1">Dịch nghĩa đen:</h5>
-            <p className="text-sm bg-background p-2 rounded text-foreground">{analysis.translation.literal}</p>
+            <p className="text-sm bg-background p-2 rounded text-foreground">{analysis.translation?.literal || 'N/A'}</p>
           </div>
           
           <div>
             <h5 className="text-sm font-medium text-muted-foreground mb-1">Dịch nghĩa tự nhiên:</h5>
-            <p className="text-sm font-medium bg-indigo-100 dark:bg-indigo-900/30 p-2 rounded text-foreground">{analysis.translation.natural}</p>
+            <p className="text-sm font-medium bg-indigo-100 dark:bg-indigo-900/30 p-2 rounded text-foreground">{analysis.translation?.natural || 'N/A'}</p>
           </div>
         </div>
       </Card>
