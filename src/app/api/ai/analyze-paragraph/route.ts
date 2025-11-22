@@ -5,15 +5,9 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
   try {
-    // DEBUG: Log để kiểm tra headers
-    console.log('DEBUG: API Route - All headers:', Object.fromEntries(request.headers.entries()));
-    
     // Get user ID from authentication
     const authHeader = request.headers.get('authorization')
-    console.log('DEBUG: API Route - Authorization header:', authHeader ? 'Present' : 'Missing');
-    
     if (!authHeader) {
-      console.log('DEBUG: API Route - Returning 401 error - No Authorization header');
       return NextResponse.json(
         { error: 'Authorization header required' },
         { status: 401 }
@@ -35,7 +29,6 @@ export async function POST(request: NextRequest) {
     }
     
     const userId = user.id
-    console.log('DEBUG: API Route - Verified user ID:', userId);
 
     // Parse request body
     const body = await request.json()
@@ -105,15 +98,9 @@ export async function POST(request: NextRequest) {
 // Handle GET method for checking if paragraph analysis is available
 export async function GET(request: NextRequest) {
   try {
-    // DEBUG: Log để kiểm tra headers cho GET request
-    console.log('DEBUG: API Route GET - All headers:', Object.fromEntries(request.headers.entries()));
-    
     // Get user ID from authentication
     const authHeader = request.headers.get('authorization')
-    console.log('DEBUG: API Route GET - Authorization header:', authHeader ? 'Present' : 'Missing');
-    
     if (!authHeader) {
-      console.log('DEBUG: API Route GET - Returning 401 error - No Authorization header');
       return NextResponse.json(
         { error: 'Authorization header required' },
         { status: 401 }
@@ -135,7 +122,6 @@ export async function GET(request: NextRequest) {
     }
     
     const userId = user.id
-    console.log('DEBUG: API Route GET - Verified user ID:', userId);
     const aiService = createAIServiceServer()
 
     // Check user limits

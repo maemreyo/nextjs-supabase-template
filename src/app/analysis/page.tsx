@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,7 @@ import { AnalysisPanel } from '@/components/analysis/AnalysisPanel';
 import { CompactResultCard } from '@/components/analysis/CompactResultCard';
 import AnalysisErrorBoundary from '@/components/analysis/AnalysisErrorBoundary';
 import AnalysisDebugPanel from '@/components/analysis/AnalysisDebugPanel';
+import HistoryComponent from '@/components/analysis/HistoryComponent';
 import AuthGuard from '@/components/auth/auth-guard';
 
 // Hooks
@@ -60,6 +61,10 @@ function ImprovedAnalysisPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [analysisPanelOpen, setAnalysisPanelOpen] = useState(false);
+  
+  // Refs to prevent duplicate calls
+  const analysisTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const currentAnalysisRef = useRef<{ text: string; type: string } | null>(null);
   
   // Sidebar collapsible sections state
   const [isAnalysisTypeOpen, setIsAnalysisTypeOpen] = useState(true);
@@ -115,68 +120,99 @@ function ImprovedAnalysisPageContent() {
     console.log('🔍 [DEBUG] ImprovedAnalysisPageContent - handleAnalyze called', { text, type });
     if (!text.trim()) return;
 
-    setIsAnalyzing(true);
-    setError(null);
-
-    try {
-      let result;
-      
-      switch (type) {
-        case 'word':
-          // Extract context for word analysis
-          const words = text.split(/\s+/);
-          const wordToAnalyze = words[0];
-          const sentenceContext = words.slice(0, 5).join(' '); // First 5 words as context
-          
-          if (!wordToAnalyze) {
-            throw new Error('Không tìm thấy từ để phân tích');
-          }
-          
-          result = await wordAnalysisMutation.mutateAsync({
-            word: wordToAnalyze,
-            sentenceContext,
-            paragraphContext: ''
-          });
-          break;
-          
-        case 'sentence':
-          result = await sentenceAnalysisMutation.mutateAsync({
-            sentence: text
-          });
-          break;
-          
-        case 'paragraph':
-          result = await paragraphAnalysisMutation.mutateAsync({
-            paragraph: text
-          });
-          break;
-          
-        default:
-          throw new Error('Invalid analysis type');
-      }
-      
-      setAnalysisResult(result);
-      setAnalysisPanelOpen(true);
-      
-      // Add to history using store directly
-      const { addToHistory } = useAnalysisStore.getState();
-      addToHistory({
-        id: `${type}-${Date.now()}`,
-        type,
-        input: text,
-        result,
-        timestamp: Date.now()
-      });
-      
-      return result;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Phân tích thất bại';
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setIsAnalyzing(false);
+    // Prevent duplicate analyses
+    const analysisKey = `${text.trim()}-${type}`;
+    if (currentAnalysisRef.current?.text === text.trim() && currentAnalysisRef.current?.type === type) {
+      console.log('Preventing duplicate analysis for:', analysisKey);
+      return;
     }
-  }, [wordAnalysisMutation, sentenceAnalysisMutation, paragraphAnalysisMutation]);
+
+    // Clear any existing timeout
+    if (analysisTimeoutRef.current) {
+      clearTimeout(analysisTimeoutRef.current);
+    }
+
+    // Debounce the analysis call
+    analysisTimeoutRef.current = setTimeout(async () => {
+      // Check again in case state changed during debounce
+      if (currentAnalysisRef.current?.text === text.trim() && currentAnalysisRef.current?.type === type) {
+        console.log('Preventing duplicate analysis after debounce for:', analysisKey);
+        return;
+      }
+
+      if (isAnalyzing) {
+        console.log('Analysis already in progress, skipping duplicate call');
+        return;
+      }
+
+      currentAnalysisRef.current = { text: text.trim(), type };
+      setIsAnalyzing(true);
+      setError(null);
+
+      try {
+        let result;
+        
+        switch (type) {
+          case 'word':
+            // Extract context for word analysis
+            const words = text.split(/\s+/);
+            const wordToAnalyze = words[0];
+            const sentenceContext = words.slice(0, 5).join(' '); // First 5 words as context
+            
+            if (!wordToAnalyze) {
+              throw new Error('Không tìm thấy từ để phân tích');
+            }
+            
+            result = await wordAnalysisMutation.mutateAsync({
+              word: wordToAnalyze,
+              sentenceContext,
+              paragraphContext: ''
+            });
+            break;
+            
+          case 'sentence':
+            result = await sentenceAnalysisMutation.mutateAsync({
+              sentence: text
+            });
+            break;
+            
+          case 'paragraph':
+            result = await paragraphAnalysisMutation.mutateAsync({
+              paragraph: text
+            });
+            break;
+            
+          default:
+            throw new Error('Invalid analysis type');
+        }
+        
+        setAnalysisResult(result);
+        setAnalysisPanelOpen(true);
+        
+        // Add to history using store directly
+        const { addToHistory } = useAnalysisStore.getState();
+        addToHistory({
+          id: `${type}-${Date.now()}`,
+          type,
+          input: text,
+          result,
+          timestamp: Date.now()
+        });
+        
+        return result;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Phân tích thất bại';
+        setError(errorMessage);
+        throw err;
+      } finally {
+        setIsAnalyzing(false);
+        // Clear current analysis after a delay to prevent immediate duplicates
+        setTimeout(() => {
+          currentAnalysisRef.current = null;
+        }, 1000);
+      }
+    }, 300); // 300ms debounce
+  }, [wordAnalysisMutation, sentenceAnalysisMutation, paragraphAnalysisMutation, isAnalyzing]);
 
   const handleTabChange = useCallback((tab: 'word' | 'sentence' | 'paragraph') => {
     setActiveTab(tab);
@@ -454,62 +490,33 @@ function ImprovedAnalysisPageContent() {
             )}
           </Card>
 
-          {/* Recent History */}
-          {recentHistory.length > 0 && (
-            <Card className="p-3 sm:p-4" title="Lịch sử phân tích gần đây">
-              <div
-                className="flex items-center justify-between mb-3 cursor-pointer"
-                onClick={() => setIsHistoryOpen(!isHistoryOpen)}
-                title={isHistoryOpen ? "Thu gọn" : "Mở rộng"}
-              >
-                <h3 className="font-semibold flex items-center gap-2">
-                  <History className="h-4 w-4" />
-                  <span className="hidden sm:inline">Lịch sử phân tích</span>
-                  <span className="sm:hidden">Lịch sử</span>
-                </h3>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-xs" title={`${recentHistory.length} mục`}>
-                    {recentHistory.length}
-                  </Badge>
-                  {isHistoryOpen ? (
-                    <ChevronUp className="h-4 w-4" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4" />
-                  )}
-                </div>
-              </div>
-              
-              {isHistoryOpen && (
-                <div className="space-y-2 max-h-40 sm:max-h-48 overflow-y-auto">
-                  {recentHistory.map((item) => (
-                    <div
-                      key={item.id}
-                      className="p-2 border rounded cursor-pointer hover:bg-accent/50 transition-colors"
-                      onClick={() => {
-                        setSelectedText(item.input);
-                        setAnalysisType(item.type);
-                        setActiveTab(item.type);
-                        setAnalysisResult(item.result);
-                      }}
-                      title={`Phân tích lại: ${item.input.substring(0, 100)}${item.input.length > 100 ? '...' : ''}`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <Badge variant="outline" className="text-xs">
-                          {item.type === 'word' ? 'Từ' : item.type === 'sentence' ? 'Câu' : 'Đoạn'}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground" title={new Date(item.timestamp).toLocaleString('vi-VN')}>
-                          {new Date(item.timestamp).toLocaleDateString('vi-VN')}
-                        </span>
-                      </div>
-                      <p className="text-sm text-foreground truncate">
-                        "{item.input.substring(0, 50)}{item.input.length > 50 ? '...' : ''}"
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Card>
-          )}
+          {/* Enhanced History Component */}
+          <HistoryComponent
+            className="w-full"
+            maxHeight="300px"
+            showFilters={true}
+            showSearch={true}
+            showPagination={true}
+            compact={true}
+            onItemSelect={(item) => {
+              setSelectedText(item.input);
+              setAnalysisType(item.type);
+              setActiveTab(item.type);
+              setAnalysisResult(item.result);
+            }}
+            onItemEdit={(item) => {
+              // TODO: Implement edit functionality
+              console.log('Edit item:', item);
+            }}
+            onItemShare={(item) => {
+              // TODO: Implement share functionality
+              console.log('Share item:', item);
+            }}
+            onItemDelete={(itemId) => {
+              // TODO: Implement delete functionality with confirmation
+              console.log('Delete item:', itemId);
+            }}
+          />
 
           {/* Analysis Panel */}
           {analysisPanelOpen && analysisResult && (
@@ -555,7 +562,6 @@ export default function ImprovedAnalysisPage() {
     <AuthGuard redirectTo="/auth/signin">
       <AnalysisErrorBoundary>
         <ImprovedAnalysisPageContent />
-        <AnalysisDebugPanel />
       </AnalysisErrorBoundary>
     </AuthGuard>
   );

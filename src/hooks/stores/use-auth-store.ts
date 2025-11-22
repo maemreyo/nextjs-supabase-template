@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { shallow } from 'zustand/shallow'
 import { useAuthStore, authSelectors } from '@/stores/auth-store'
 
@@ -67,18 +67,19 @@ export function useAuthProfile() {
 }
 
 export function useAuthState() {
-    return useAuthStore(
-        useCallback(
-            (state) => ({
-                isAuthenticated: authSelectors.isAuthenticated(state),
-                isLoading: authSelectors.isLoading(state),
-                isInitialized: authSelectors.isInitialized(state),
-                error: authSelectors.error(state),
-                user: authSelectors.user(state),
-            }),
-            []
-        )
-    )
+    const isAuthenticated = useAuthStore(authSelectors.isAuthenticated);
+    const isLoading = useAuthStore(authSelectors.isLoading);
+    const isInitialized = useAuthStore(authSelectors.isInitialized);
+    const error = useAuthStore(authSelectors.error);
+    const user = useAuthStore(authSelectors.user);
+    
+    return {
+        isAuthenticated,
+        isLoading,
+        isInitialized,
+        error,
+        user,
+    };
 }
 
 export function useAuthActions() {

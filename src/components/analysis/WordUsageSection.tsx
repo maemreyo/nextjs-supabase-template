@@ -7,9 +7,9 @@ import type { WordUsageSectionProps } from './types';
  * Component để hiển thị phần usage của WordAnalysis
  * Bao gồm collocations và ví dụ sử dụng
  */
-export function WordUsageSection({ 
-  usage, 
-  onCollocationClick, 
+export function WordUsageSection({
+  usage,
+  onCollocationClick,
   maxCollocations = 5,
   className = ""
 }: WordUsageSectionProps) {
@@ -30,7 +30,7 @@ export function WordUsageSection({
             Ví dụ sử dụng
           </h4>
           
-          <div className="space-y-2">
+          <div className="space-y-3">
             <div className="bg-background p-3 rounded border-l-4 border-amber-400 dark:border-amber-600">
               <p className="text-sm italic text-foreground">
                 "{usage.example_sentence}"

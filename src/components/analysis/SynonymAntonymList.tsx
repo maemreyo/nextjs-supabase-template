@@ -7,10 +7,10 @@ import type { SynonymAntonymListProps } from './types';
 /**
  * Component tái sử dụng để hiển thị danh sách từ đồng nghĩa và trái nghĩa
  */
-export function SynonymAntonymList({ 
-  synonyms, 
-  antonyms, 
-  onSynonymClick, 
+export function SynonymAntonymList({
+  synonyms,
+  antonyms,
+  onSynonymClick,
   onAntonymClick,
   maxItems = 5,
   className = ""
@@ -26,15 +26,15 @@ export function SynonymAntonymList({
             </Badge>
           </h4>
           
-          <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+          <div className="space-y-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
             {synonyms.slice(0, maxItems).map((synonym, index) => (
               <div
                 key={index}
-                className="border rounded p-2 hover:bg-green-50 dark:hover:bg-green-950/20 cursor-pointer transition-colors"
+                className="border rounded-lg p-3 hover:bg-green-50 dark:hover:bg-green-950/20 cursor-pointer transition-all duration-200 hover:shadow-sm"
                 onClick={() => onSynonymClick?.(synonym.word)}
               >
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-foreground">{synonym.word}</span>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium text-green-800 dark:text-green-400 text-sm">{synonym.word}</span>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground font-mono">
                       {synonym.ipa}
@@ -54,11 +54,16 @@ export function SynonymAntonymList({
                   </div>
                 </div>
                 
-                <p className="text-xs text-muted-foreground mt-1">
+                {/* Ưu tiên hiển thị nghĩa tiếng Việt nổi bật hơn */}
+                <div className="bg-green-50 dark:bg-green-950/30 p-2 rounded border-l-2 border-green-300 dark:border-green-600 mb-2">
+                  <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                    {synonym.meaning_vi}
+                  </p>
+                </div>
+                
+                {/* Hiển thị nghĩa tiếng Anh như supplementary info */}
+                <p className="text-xs text-muted-foreground">
                   {synonym.meaning_en}
-                </p>
-                <p className="text-xs mt-1 text-foreground">
-                  {synonym.meaning_vi}
                 </p>
               </div>
             ))}
@@ -75,15 +80,15 @@ export function SynonymAntonymList({
             </Badge>
           </h4>
           
-          <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+          <div className="space-y-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
             {antonyms.slice(0, maxItems).map((antonym, index) => (
               <div
                 key={index}
-                className="border rounded p-2 hover:bg-red-50 dark:hover:bg-red-950/20 cursor-pointer transition-colors"
+                className="border rounded-lg p-3 hover:bg-red-50 dark:hover:bg-red-950/20 cursor-pointer transition-all duration-200 hover:shadow-sm"
                 onClick={() => onAntonymClick?.(antonym.word)}
               >
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-foreground">{antonym.word}</span>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium text-red-800 dark:text-red-400 text-sm">{antonym.word}</span>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground font-mono">
                       {antonym.ipa}
@@ -103,11 +108,16 @@ export function SynonymAntonymList({
                   </div>
                 </div>
                 
-                <p className="text-xs text-muted-foreground mt-1">
+                {/* Ưu tiên hiển thị nghĩa tiếng Việt nổi bật hơn */}
+                <div className="bg-red-50 dark:bg-red-950/30 p-2 rounded border-l-2 border-red-300 dark:border-red-600 mb-2">
+                  <p className="text-sm font-medium text-red-800 dark:text-red-200">
+                    {antonym.meaning_vi}
+                  </p>
+                </div>
+                
+                {/* Hiển thị nghĩa tiếng Anh như supplementary info */}
+                <p className="text-xs text-muted-foreground">
                   {antonym.meaning_en}
-                </p>
-                <p className="text-xs mt-1 text-foreground">
-                  {antonym.meaning_vi}
                 </p>
               </div>
             ))}

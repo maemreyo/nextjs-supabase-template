@@ -45,6 +45,7 @@ export function SmartVocabularyDialog({
   // State management
   const [vocabularyData, setVocabularyData] = useState<VocabularyWordInsert>({
     word: '',
+    content_type: 'word',
     ipa: null,
     part_of_speech: null,
     cefr_level: null,
@@ -91,6 +92,7 @@ export function SmartVocabularyDialog({
       // Reset to default values
       setVocabularyData({
         word: '',
+        content_type: 'paragraph',
         ipa: null,
         part_of_speech: null,
         cefr_level: null,
@@ -150,6 +152,7 @@ export function SmartVocabularyDialog({
       // Reset form
       setVocabularyData({
         word: '',
+        content_type: 'word',
         ipa: null,
         part_of_speech: null,
         cefr_level: null,

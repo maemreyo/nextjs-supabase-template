@@ -209,7 +209,7 @@ export function AnalysisResultDialog({
           dialogWidth && !isFullscreen && "max-w-none"
         )}
         style={{
-          width: dialogWidth && !isFullscreen && windowWidth >= 768 ? `${dialogWidth}px` : undefined
+          width: dialogWidth && !isFullscreen && windowWidth >= 768 ? `${Math.max(dialogWidth, 800)}px` : undefined
         }}
         showCloseButton={false}
       >

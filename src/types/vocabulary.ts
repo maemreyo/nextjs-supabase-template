@@ -3,6 +3,7 @@ export interface VocabularyWord {
   id: string;
   user_id: string;
   word: string;
+  content_type: 'word' | 'phrase' | 'sentence' | 'paragraph';
   ipa?: string | null;
   part_of_speech?: 'noun' | 'verb' | 'adjective' | 'adverb' | 'pronoun' | 'preposition' | 'conjunction' | 'interjection' | 'determiner' | 'exclamation' | null;
   cefr_level?: 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2' | null;
@@ -33,6 +34,7 @@ export interface VocabularyWord {
 export interface VocabularyWordInsert {
   user_id?: string;
   word: string;
+  content_type: 'word' | 'phrase' | 'sentence' | 'paragraph';
   ipa?: string | null;
   part_of_speech?: 'noun' | 'verb' | 'adjective' | 'adverb' | 'pronoun' | 'preposition' | 'conjunction' | 'interjection' | 'determiner' | 'exclamation' | null;
   cefr_level?: 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2' | null;
@@ -60,6 +62,7 @@ export interface VocabularyWordInsert {
 
 export interface VocabularyWordUpdate {
   word?: string;
+  content_type?: 'word' | 'phrase' | 'sentence' | 'paragraph';
   ipa?: string | null;
   part_of_speech?: 'noun' | 'verb' | 'adjective' | 'adverb' | 'pronoun' | 'preposition' | 'conjunction' | 'interjection' | 'determiner' | 'exclamation' | null;
   cefr_level?: 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2' | null;
@@ -570,6 +573,7 @@ export interface VocabularyFilters {
 // API request/response types
 export interface CreateWordRequest {
   word: string;
+  content_type?: VocabularyWordInsert['content_type'];
   ipa?: string;
   part_of_speech?: VocabularyWordInsert['part_of_speech'];
   cefr_level?: VocabularyWordInsert['cefr_level'];
@@ -592,6 +596,7 @@ export interface CreateWordRequest {
 
 export interface UpdateWordRequest {
   word?: string;
+  content_type?: VocabularyWordUpdate['content_type'];
   ipa?: string;
   part_of_speech?: VocabularyWordUpdate['part_of_speech'];
   cefr_level?: VocabularyWordUpdate['cefr_level'];
@@ -763,6 +768,21 @@ export type SourceType = VocabularyWordInsert['source_type'];
 export type CollectionType = VocabularyCollectionInsert['collection_type'];
 export type PracticeSessionType = VocabularyPracticeSessionInsert['session_type'];
 export type DifficultyLevel = VocabularyPracticeSessionInsert['difficulty_level'];
+export type ContentType = VocabularyWordInsert['content_type'];
+
+// Analysis to Vocabulary mapping types
+export interface AnalysisToVocabularyRequest {
+  content: string;
+  content_type: 'word' | 'phrase' | 'sentence' | 'paragraph';
+  analysis_type: 'word' | 'sentence' | 'paragraph';
+  analysis_data?: any; // WordAnalysis | SentenceAnalysis | ParagraphAnalysis
+  difficulty_level?: number;
+  definition_en?: string;
+  definition_vi?: string;
+  vietnamese_translation?: string;
+  context_notes?: string;
+  personal_notes?: string;
+}
 
 export interface VocabularyStatistics {
   totalWords: number;

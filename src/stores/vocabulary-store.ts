@@ -66,7 +66,12 @@ export const useVocabularyStore = create<VocabularyState & VocabularyActions>((s
     set({ isLoading: true, error: null });
     
     try {
-      const response = await fetch('/api/vocabulary/words', {
+      // Use from-analysis endpoint if source_type is analysis
+      const endpoint = wordData.source_type === 'analysis'
+        ? '/api/vocabulary/from-analysis'
+        : '/api/vocabulary/words';
+      
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(wordData),

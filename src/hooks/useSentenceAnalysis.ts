@@ -100,6 +100,8 @@ export function useSentenceAnalysisMutation() {
       
       if (accessToken) {
         headers['Authorization'] = `Bearer ${accessToken}`;
+      } else {
+        throw new Error('Authentication required: Please sign in to analyze sentences.');
       }
       
       const response = await fetch('/api/ai/analyze-sentence', {
@@ -107,6 +109,11 @@ export function useSentenceAnalysisMutation() {
         headers,
         body: JSON.stringify(params),
       });
+
+      // Handle 401 specifically
+      if (response.status === 401) {
+        throw new Error('Authentication failed: Please sign in again to continue.');
+      }
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -130,7 +137,17 @@ export function useSentenceAnalysisMutation() {
     },
     onError: (error) => {
       console.error('Sentence analysis error:', error);
+      // Don't retry authentication errors
+      if (error.message.includes('Authentication')) {
+        console.error('Authentication error detected, not retrying');
+      }
     },
+    retry: (failureCount, error) => {
+      // Don't retry for authentication errors or after 2 attempts
+      if (error.message.includes('Authentication') || failureCount >= 2) return false;
+      return true;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000)
   });
 }
 

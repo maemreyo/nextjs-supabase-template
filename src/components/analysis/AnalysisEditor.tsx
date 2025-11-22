@@ -134,12 +134,23 @@ export function AnalysisEditor({
     });
   }, []);
 
+  // Track current analysis to prevent duplicates
+  const currentAnalysisRef = useRef<{ text: string; type: string } | null>(null);
+  
   // Debounced analysis
   const debouncedAnalysis = useCallback((textToAnalyze: string, type: 'word' | 'sentence' | 'paragraph') => {
     if (analysisTimeoutRef.current) clearTimeout(analysisTimeoutRef.current);
     
     analysisTimeoutRef.current = setTimeout(async () => {
+      // Prevent duplicate analyses
+      const analysisKey = `${textToAnalyze.trim()}-${type}`;
+      if (currentAnalysisRef.current?.text === textToAnalyze.trim() && currentAnalysisRef.current?.type === type) {
+        console.log('Preventing duplicate analysis for:', analysisKey);
+        return;
+      }
+      
       if (autoAnalysisEnabled && textToAnalyze.trim()) {
+        currentAnalysisRef.current = { text: textToAnalyze.trim(), type };
         setIsAnalyzing(true);
         try {
           const result = await onAnalyze?.(textToAnalyze, type);
@@ -149,6 +160,10 @@ export function AnalysisEditor({
           console.error(err instanceof Error ? err.message : 'Phân tích thất bại');
         } finally {
           setIsAnalyzing(false);
+          // Clear current analysis after a delay to prevent immediate duplicates
+          setTimeout(() => {
+            currentAnalysisRef.current = null;
+          }, 1000);
         }
       }
     }, 800);
@@ -292,6 +307,19 @@ export function AnalysisEditor({
     const textToAnalyze = selectedText || editorRef.current?.innerText || '';
     if (!textToAnalyze.trim()) return;
 
+    // Prevent duplicate manual analyses
+    const analysisKey = `${textToAnalyze.trim()}-${analysisType}`;
+    if (currentAnalysisRef.current?.text === textToAnalyze.trim() && currentAnalysisRef.current?.type === analysisType) {
+      console.log('Preventing duplicate manual analysis for:', analysisKey);
+      return;
+    }
+
+    if (isAnalyzing) {
+      console.log('Analysis already in progress, skipping duplicate call');
+      return;
+    }
+
+    currentAnalysisRef.current = { text: textToAnalyze.trim(), type: analysisType };
     setIsAnalyzing(true);
     
     try {
@@ -303,8 +331,12 @@ export function AnalysisEditor({
       console.error(err instanceof Error ? err.message : 'Phân tích thất bại');
     } finally {
       setIsAnalyzing(false);
+      // Clear current analysis after a delay to prevent immediate duplicates
+      setTimeout(() => {
+        currentAnalysisRef.current = null;
+      }, 1000);
     }
-  }, [selectedText, analysisType, onAnalyze]);
+  }, [selectedText, analysisType, onAnalyze, isAnalyzing]);
 
   // Handle paste event to ensure text colors match theme
   const handlePaste = useCallback((e: React.ClipboardEvent) => {

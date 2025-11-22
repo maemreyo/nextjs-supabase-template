@@ -23,6 +23,7 @@ export async function GET(
     const { data: { user }, error } = await supabase.auth.getUser(token);
     
     if (error || !user) {
+      console.log('DEBUG: API Route - Invalid token:', error?.message);
       return NextResponse.json(
         { error: 'Invalid or expired token' },
         { status: 401 }
@@ -111,6 +112,7 @@ export async function PATCH(
     const { data: { user }, error } = await supabase.auth.getUser(token);
     
     if (error || !user) {
+      console.log('DEBUG: API Route - Invalid token:', error?.message);
       return NextResponse.json(
         { error: 'Invalid or expired token' },
         { status: 401 }
@@ -185,6 +187,7 @@ export async function DELETE(
     const { data: { user }, error } = await supabase.auth.getUser(token);
     
     if (error || !user) {
+      console.log('DEBUG: API Route - Invalid token:', error?.message);
       return NextResponse.json(
         { error: 'Invalid or expired token' },
         { status: 401 }
@@ -256,6 +259,7 @@ export async function POST(
     const { data: { user }, error } = await supabase.auth.getUser(token);
     
     if (error || !user) {
+      console.log('DEBUG: API Route - Invalid token:', error?.message);
       return NextResponse.json(
         { error: 'Invalid or expired token' },
         { status: 401 }

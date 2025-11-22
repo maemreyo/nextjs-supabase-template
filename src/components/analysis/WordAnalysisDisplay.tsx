@@ -10,11 +10,11 @@ import { WordUsageSection } from './WordUsageSection';
  * Component chính để hiển thị chi tiết phân tích từ
  * Sử dụng các component con để hiển thị các phần khác nhau
  */
-export function WordAnalysisDisplay({ 
-  analysis, 
-  isLoading, 
-  error, 
-  onSynonymClick, 
+export function WordAnalysisDisplay({
+  analysis,
+  isLoading,
+  error,
+  onSynonymClick,
   onAntonymClick,
   onCollocationClick,
   className = ""
@@ -74,7 +74,7 @@ export function WordAnalysisDisplay({
           
           <div>
             <h5 className="text-sm font-medium text-muted-foreground mb-1">Dịch nghĩa</h5>
-            <p className="text-sm font-medium text-foreground">{analysis.definitions.vietnamese_translation}</p>
+            <p className="text-sm font-medium text-primary">{analysis.definitions.vietnamese_translation}</p>
           </div>
         </div>
       </Card>
@@ -100,7 +100,7 @@ export function WordAnalysisDisplay({
       </Card>
 
       {/* Synonym Antonym List */}
-      <SynonymAntonymList 
+      <SynonymAntonymList
         synonyms={analysis.relations.synonyms}
         antonyms={analysis.relations.antonyms}
         onSynonymClick={onSynonymClick}
@@ -109,7 +109,7 @@ export function WordAnalysisDisplay({
       />
 
       {/* Word Usage Section */}
-      <WordUsageSection 
+      <WordUsageSection
         usage={analysis.usage}
         onCollocationClick={onCollocationClick}
         maxCollocations={5}

@@ -1,21 +1,22 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Textarea } from '@/components/ui/textarea';
 import {
   MessageSquare,
   X,
   BookOpen,
-  Save,
-  FolderOpen
+  FolderOpen,
+  Info,
+  AlertCircle
 } from 'lucide-react';
 import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis } from './types';
-import { useState } from 'react';
-import { useSessionStore } from '@/stores/session-store';
+import { useState, useEffect } from 'react';
 import { useVocabularyStore } from '@/stores/vocabulary-store';
 
 interface AnalysisPanelProps {
@@ -40,12 +41,26 @@ export function AnalysisPanel({
     selectedText
   });
   const [addToVocabularyDialogOpen, setAddToVocabularyDialogOpen] = useState(false);
-  const [vocabularyData, setVocabularyData] = useState({
+  const [vocabularyData, setVocabularyData] = useState<{
+    word: string;
+    content_type: 'word' | 'phrase' | 'sentence' | 'paragraph';
+    definition_en: string;
+    definition_vi: string;
+    difficulty_level: number;
+    context_notes?: string;
+    personal_notes?: string;
+  }>({
     word: '',
+    content_type: 'word',
     definition_en: '',
     definition_vi: '',
-    difficulty_level: 1
+    difficulty_level: 1,
+    context_notes: '',
+    personal_notes: ''
   });
+
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [suggestedContentType, setSuggestedContentType] = useState<'word' | 'phrase' | 'sentence' | 'paragraph'>('word');
 
   const { createWord } = useVocabularyStore();
 
@@ -65,42 +80,116 @@ export function AnalysisPanel({
     return '';
   };
 
+  // Validate form data
+  const validateForm = () => {
+    const errors: string[] = [];
+    
+    if (!vocabularyData.word.trim()) {
+      errors.push('Nội dung không được để trống');
+    }
+    
+    if (!vocabularyData.definition_en.trim()) {
+      errors.push('Định nghĩa tiếng Anh không được để trống');
+    }
+    
+    if (vocabularyData.content_type === 'word' && vocabularyData.word.trim().split(/\s+/).length > 1) {
+      errors.push('Loại nội dung "Từ" chỉ nên chứa một từ');
+    }
+    
+    if (vocabularyData.content_type === 'paragraph' && vocabularyData.word.trim().length < 50) {
+      errors.push('Đoạn văn nên có ít nhất 50 ký tự');
+    }
+    
+    setValidationErrors(errors);
+    return errors.length === 0;
+  };
+
   // Handle add to vocabulary
   const handleAddToVocabulary = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
     try {
       await createWord({
         ...vocabularyData,
         source_type: 'analysis' as const,
-        source_reference: ''
+        source_reference: `${analysisType}-analysis-${Date.now()}`
       });
       setAddToVocabularyDialogOpen(false);
-      setVocabularyData({ word: '', definition_en: '', definition_vi: '', difficulty_level: 1 });
+      setVocabularyData({
+        word: '',
+        content_type: 'word',
+        definition_en: '',
+        definition_vi: '',
+        difficulty_level: 1,
+        context_notes: '',
+        personal_notes: ''
+      });
+      setValidationErrors([]);
       // Show success message - using a simple alert for now, could be replaced with a toast notification
-      alert('Từ đã được thêm vào vocabulary thành công!');
+      alert('Nội dung đã được thêm vào vocabulary thành công!');
     } catch (error) {
       console.error('Failed to add to vocabulary:', error);
-      alert('Không thể thêm từ vào vocabulary. Vui lòng thử lại.');
+      setValidationErrors(['Không thể thêm nội dung vào vocabulary. Vui lòng thử lại.']);
     }
+  };
+
+  // Get content based on analysis type
+  const getContentForVocabulary = () => {
+    if (analysisType === 'word' && analysisResult && 'meta' in analysisResult) {
+      return (analysisResult as WordAnalysis).meta.word;
+    } else if (analysisType === 'sentence' && analysisResult && 'meta' in analysisResult) {
+      return (analysisResult as SentenceAnalysis).meta.sentence;
+    } else if (analysisType === 'paragraph' && selectedText) {
+      return selectedText;
+    }
+    return selectedText;
+  };
+
+  // Suggest content type based on content
+  const suggestContentType = (content: string): 'word' | 'phrase' | 'sentence' | 'paragraph' => {
+    const wordCount = content.trim().split(/\s+/).length;
+    const charCount = content.trim().length;
+    
+    if (wordCount === 1) return 'word';
+    if (wordCount <= 5 && charCount <= 50) return 'phrase';
+    if (wordCount <= 20 && charCount <= 200) return 'sentence';
+    return 'paragraph';
   };
 
   // Initialize vocabulary data when dialog opens
   const handleAddToVocabularyDialogOpen = () => {
-    const word = getWordForVocabulary() || '';
+    const content = getContentForVocabulary() || '';
     const definition = getDefinitionForVocabulary() || '';
     
-    if (!word.trim()) {
-      alert('Không tìm thấy từ để thêm vào vocabulary. Vui lòng phân tích một từ.');
+    if (!content.trim()) {
+      alert('Không tìm thấy nội dung để thêm vào vocabulary. Vui lòng phân tích nội dung.');
       return;
     }
     
+    const suggestedType = suggestContentType(content);
+    setSuggestedContentType(suggestedType);
+    
     setVocabularyData({
-      word,
+      word: content,
+      content_type: suggestedType,
       definition_en: definition,
       definition_vi: '',
-      difficulty_level: 1
+      difficulty_level: 1,
+      context_notes: `Nguồn: ${analysisType} analysis`,
+      personal_notes: ''
     });
+    setValidationErrors([]);
     setAddToVocabularyDialogOpen(true);
   };
+
+  // Validate form when data changes
+  useEffect(() => {
+    if (addToVocabularyDialogOpen) {
+      validateForm();
+    }
+  }, [vocabularyData, addToVocabularyDialogOpen]);
 
   if (!analysisPanelOpen || !analysisResult) {
     console.log('🔍 [DEBUG] AnalysisPanel - Early return', {
@@ -228,61 +317,187 @@ export function AnalysisPanel({
               </div>
             )}
 
-            <Separator className="my-4" />
-            
-            {/* Quick Actions */}
-            <div className="flex gap-2">
-              <Button
-                className="flex-1"
-                size="sm"
-                onClick={handleAddToVocabularyDialogOpen}
-                variant="outline"
-              >
-                <BookOpen size={14} className="mr-1" />
-                Thêm vào Vocab
-              </Button>
-            </div>
           </div>
         </ScrollArea>
       </div>
 
       {/* Add to Vocabulary Dialog */}
       <Dialog open={addToVocabularyDialogOpen} onOpenChange={setAddToVocabularyDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Thêm vào Vocabulary</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5" />
+              Thêm vào Vocabulary
+            </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 p-6">
-            <div className="space-y-2">
-              <Label htmlFor="vocabulary-word">Từ</Label>
-              <Input id="vocabulary-word" value={vocabularyData.word} onChange={(e) => setVocabularyData(prev => ({ ...prev, word: e.target.value }))} placeholder="Nhập từ..." />
+          
+          <div className="space-y-6 p-6">
+            {/* Content Type Selection */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Loại nội dung</Label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  { value: 'word', label: 'Từ', description: 'Một từ đơn' },
+                  { value: 'phrase', label: 'Cụm từ', description: '2-5 từ' },
+                  { value: 'sentence', label: 'Câu', description: 'Một câu hoàn chỉnh' },
+                  { value: 'paragraph', label: 'Đoạn', description: 'Nhiều câu' }
+                ].map((type) => (
+                  <Button
+                    key={type.value}
+                    variant={vocabularyData.content_type === type.value ? "default" : "outline"}
+                    className="h-auto p-3 flex flex-col items-start"
+                    onClick={() => setVocabularyData(prev => ({ ...prev, content_type: type.value as any }))}
+                  >
+                    <span className="font-medium">{type.label}</span>
+                    <span className="text-xs opacity-70 mt-1">{type.description}</span>
+                  </Button>
+                ))}
+              </div>
+              
+              {suggestedContentType !== vocabularyData.content_type && (
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    Gợi ý: Dựa trên nội dung, loại "{suggestedContentType === 'word' ? 'Từ' : suggestedContentType === 'phrase' ? 'Cụm từ' : suggestedContentType === 'sentence' ? 'Câu' : 'Đoạn'}" có thể phù hợp hơn.
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
+
+            {/* Content Preview */}
             <div className="space-y-2">
-              <Label htmlFor="vocabulary-definition">Định nghĩa (tiếng Anh)</Label>
-              <Input id="vocabulary-definition" value={vocabularyData.definition_en} onChange={(e) => setVocabularyData(prev => ({ ...prev, definition_en: e.target.value }))} placeholder="Nhập định nghĩa tiếng Anh..." />
+              <Label className="text-sm font-medium">Xem trước nội dung</Label>
+              <div className="p-3 bg-muted rounded border">
+                <p className="text-sm">{vocabularyData.word}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {vocabularyData.word.trim().split(/\s+/).length} từ • {vocabularyData.word.length} ký tự
+                </p>
+              </div>
             </div>
+
+            {/* Form Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Content */}
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="vocabulary-content">Nội dung *</Label>
+                <Textarea
+                  id="vocabulary-content"
+                  value={vocabularyData.word}
+                  onChange={(e) => setVocabularyData(prev => ({ ...prev, word: e.target.value }))}
+                  placeholder="Nhập nội dung..."
+                  className={validationErrors.some(e => e.includes('Nội dung')) ? 'border-destructive' : ''}
+                  rows={vocabularyData.content_type === 'paragraph' ? 4 : 2}
+                />
+              </div>
+
+              {/* Definition English */}
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="vocabulary-definition">Định nghĩa (tiếng Anh) *</Label>
+                <Input
+                  id="vocabulary-definition"
+                  value={vocabularyData.definition_en}
+                  onChange={(e) => setVocabularyData(prev => ({ ...prev, definition_en: e.target.value }))}
+                  placeholder="Nhập định nghĩa tiếng Anh..."
+                  className={validationErrors.some(e => e.includes('Định nghĩa')) ? 'border-destructive' : ''}
+                />
+              </div>
+
+              {/* Definition Vietnamese */}
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="vocabulary-vietnamese">Định nghĩa (tiếng Việt)</Label>
+                <Input
+                  id="vocabulary-vietnamese"
+                  value={vocabularyData.definition_vi}
+                  onChange={(e) => setVocabularyData(prev => ({ ...prev, definition_vi: e.target.value }))}
+                  placeholder="Nhập định nghĩa tiếng Việt..."
+                />
+              </div>
+
+              {/* Difficulty Level */}
+              <div className="space-y-2">
+                <Label htmlFor="vocabulary-difficulty">Mức độ khó</Label>
+                <Select
+                  value={vocabularyData.difficulty_level.toString()}
+                  onValueChange={(v) => setVocabularyData(prev => ({ ...prev, difficulty_level: parseInt(v) }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn mức độ" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">Dễ (1)</SelectItem>
+                    <SelectItem value="2">Trung bình (2)</SelectItem>
+                    <SelectItem value="3">Khó (3)</SelectItem>
+                    <SelectItem value="4">Rất khó (4)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Additional fields for specific content types */}
+              {vocabularyData.content_type === 'word' && (
+                <div className="space-y-2">
+                  <Label htmlFor="vocabulary-pos">Loại từ</Label>
+                  <Select defaultValue="">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn loại từ" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Không xác định</SelectItem>
+                      <SelectItem value="noun">Danh từ</SelectItem>
+                      <SelectItem value="verb">Động từ</SelectItem>
+                      <SelectItem value="adjective">Tính từ</SelectItem>
+                      <SelectItem value="adverb">Trạng từ</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+
+            {/* Context Notes */}
             <div className="space-y-2">
-              <Label htmlFor="vocabulary-vietnamese">Dịch nghĩa (tiếng Việt)</Label>
-              <Input id="vocabulary-vietnamese" value={vocabularyData.definition_vi} onChange={(e) => setVocabularyData(prev => ({ ...prev, definition_vi: e.target.value }))} placeholder="Nhập dịch nghĩa tiếng Việt..." />
+              <Label htmlFor="vocabulary-context">Ghi chú ngữ cảnh</Label>
+              <Textarea
+                id="vocabulary-context"
+                value={vocabularyData.context_notes || ''}
+                onChange={(e) => setVocabularyData(prev => ({ ...prev, context_notes: e.target.value }))}
+                placeholder="Thêm ghi chú về ngữ cảnh sử dụng..."
+                rows={2}
+              />
             </div>
+
+            {/* Personal Notes */}
             <div className="space-y-2">
-              <Label htmlFor="vocabulary-difficulty">Mức độ khó</Label>
-              <Select value={vocabularyData.difficulty_level.toString()} onValueChange={(v) => setVocabularyData(prev => ({ ...prev, difficulty_level: parseInt(v) }))}>
-                <SelectTrigger><SelectValue placeholder="Select difficulty" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">Dễ</SelectItem>
-                  <SelectItem value="2">Trung bình</SelectItem>
-                  <SelectItem value="3">Khó</SelectItem>
-                  <SelectItem value="4">Rất khó</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="vocabulary-personal">Ghi chú cá nhân</Label>
+              <Textarea
+                id="vocabulary-personal"
+                value={vocabularyData.personal_notes || ''}
+                onChange={(e) => setVocabularyData(prev => ({ ...prev, personal_notes: e.target.value }))}
+                placeholder="Thêm ghi chú cá nhân..."
+                rows={2}
+              />
             </div>
+
+            {/* Validation Errors */}
+            {validationErrors.length > 0 && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  <ul className="list-disc list-inside space-y-1">
+                    {validationErrors.map((error, index) => (
+                      <li key={index}>{error}</li>
+                    ))}
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAddToVocabularyDialogOpen(false)}>Hủy</Button>
+            <Button variant="outline" onClick={() => setAddToVocabularyDialogOpen(false)}>
+              Hủy
+            </Button>
             <Button
               onClick={handleAddToVocabulary}
-              disabled={!vocabularyData.word.trim() || !vocabularyData.definition_en.trim()}
+              disabled={validationErrors.length > 0}
             >
               <FolderOpen size={14} className="mr-2" />
               Thêm vào Vocabulary

@@ -8,9 +8,9 @@ import type { CollocationListProps } from './types';
  * Component để hiển thị danh sách collocations với các trường thông tin chi tiết
  * Tương tự như SynonymAntonymList nhưng cho collocations
  */
-export function CollocationList({ 
-  collocations, 
-  onCollocationClick, 
+export function CollocationList({
+  collocations,
+  onCollocationClick,
   maxItems = 5,
   showFrequencyLevel = true,
   className = ""
@@ -95,10 +95,20 @@ export function CollocationList({
               </Button>
             </div>
             
-            <div className="space-y-1">
-              <p className="text-sm text-foreground">
-                {collocation.meaning}
-              </p>
+            <div className="space-y-2">
+              {/* Hiển thị nghĩa tiếng Việt nổi bật hơn */}
+              <div className="bg-primary/5 p-2 rounded border-l-2 border-primary">
+                <p className="text-sm font-medium text-primary">
+                  {(collocation as any).meaning_vi || collocation.meaning}
+                </p>
+              </div>
+              
+              {/* Hiển thị nghĩa tiếng Anh như supplementary info */}
+              {(collocation as any).meaning_vi && (
+                <p className="text-xs text-muted-foreground">
+                  {collocation.meaning}
+                </p>
+              )}
               
               {collocation.usage_example && (
                 <div className="bg-muted p-2 rounded border-l-2 border-blue-300 dark:border-blue-600">
@@ -114,8 +124,8 @@ export function CollocationList({
       
       {collocations.length > maxItems && (
         <div className="mt-3 text-center">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             onClick={() => {
               // TODO: Implement show all functionality

@@ -96,6 +96,7 @@ export function mapWordAnalysisToVocabulary(wordAnalysis: WordAnalysis): MappedV
   
   const vocabularyData: MappedVocabularyData = {
     word: meta.word,
+    content_type: 'word', // Default content type cho word analysis
     ipa: meta.ipa || null,
     part_of_speech: mapPartOfSpeech(meta.pos),
     cefr_level: meta.cefr as VocabularyWordInsert['cefr_level'] || null,
@@ -139,6 +140,7 @@ export function mapSentenceAnalysisToVocabulary(sentenceAnalysis: SentenceAnalys
         
         const vocabularyData: MappedVocabularyData = {
           word: word,
+          content_type: 'word', // Default content type
           ipa: null, // Không có trong sentence analysis
           part_of_speech: null, // Không có trong sentence analysis
           cefr_level: null,
@@ -275,6 +277,7 @@ export function createVocabularyFromWord(
 ): MappedVocabularyData {
   return {
     word: word.trim(),
+    content_type: 'word', // Default content type
     ipa: null,
     part_of_speech: context?.partOfSpeech ? mapPartOfSpeech(context.partOfSpeech) : null,
     cefr_level: context?.cefr as VocabularyWordInsert['cefr_level'] || null,
