@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useSessionStore } from '@/stores/session-store';
+import { useSessions, useDeleteSession } from '@/hooks/useSessions';
 import type { AnalysisSession } from '@/types/sessions';
 import { Search, Plus, Filter, Grid, List } from 'lucide-react';
 
@@ -36,24 +36,27 @@ export function SessionList({
 
   const {
     sessions,
+    total,
     isLoading,
     error,
-    loadSessions,
-    deleteSession,
-    totalSessions
-  } = useSessionStore();
+    refetch
+  } = useSessions({
+    search: searchTerm,
+    status: statusFilter === 'all' ? undefined : statusFilter as 'active' | 'archived' | 'deleted',
+    type: typeFilter === 'all' ? undefined : typeFilter as 'word' | 'sentence' | 'paragraph' | 'mixed'
+  });
 
-  useEffect(() => {
-    loadSessions({
-      search: searchTerm,
-      status: statusFilter === 'all' ? undefined : statusFilter as 'active' | 'archived' | 'deleted',
-      type: typeFilter === 'all' ? undefined : typeFilter as 'word' | 'sentence' | 'paragraph' | 'mixed'
-    });
-  }, [searchTerm, statusFilter, typeFilter, loadSessions]);
+  const { deleteSession: deleteSessionMutation } = useDeleteSession();
 
   const handleDeleteSession = async (sessionId: string) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa phiên này?')) {
-      await deleteSession(sessionId);
+      try {
+        await deleteSessionMutation(sessionId);
+        // Refetch sessions list after deletion
+        refetch();
+      } catch (error) {
+        console.error('Failed to delete session:', error);
+      }
     }
   };
 
@@ -66,7 +69,7 @@ export function SessionList({
     return matchesSearch && matchesStatus && matchesType;
   });
 
-  const totalPages = Math.ceil(totalSessions / limit);
+  const totalPages = Math.ceil(total / limit);
   const hasMore = page < totalPages - 1;
 
   if (error) {
@@ -74,10 +77,10 @@ export function SessionList({
       <Card className={className}>
         <CardHeader>
           <CardTitle className="text-red-600">Lỗi tải phiên</CardTitle>
-          <CardDescription>{error}</CardDescription>
+          <CardDescription>{typeof error === 'string' ? error : error?.message || 'Lỗi không xác định'}</CardDescription>
         </CardHeader>
         <CardContent>
-          <Button onClick={() => loadSessions()}>
+          <Button onClick={() => refetch()}>
             Thử lại
           </Button>
         </CardContent>
@@ -92,7 +95,7 @@ export function SessionList({
         <div>
           <h2 className="text-2xl font-bold">Phiên phân tích</h2>
           <p className="text-muted-foreground">
-            {totalSessions} phiên tổng cộng
+            {total} phiên tổng cộng
           </p>
         </div>
         <Button onClick={onCreateSession} className="flex items-center gap-2">
@@ -102,43 +105,45 @@ export function SessionList({
       </div>
 
       {/* Filters and Search */}
-      <div className="flex flex-col lg:flex-row gap-4">
-        <div className="relative flex-1">
+      <div className="flex flex-col gap-4">
+        <div className="relative flex-1 w-full">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
             placeholder="Tìm kiếm phiên..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 w-full"
           />
         </div>
         
-        <div className="flex gap-2">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[140px]">
-              <Filter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Trạng thái" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tất cả</SelectItem>
-              <SelectItem value="active">Đang hoạt động</SelectItem>
-              <SelectItem value="completed">Hoàn thành</SelectItem>
-              <SelectItem value="archived">Lưu trữ</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+          <div className="flex flex-wrap gap-2 flex-1">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-[140px]">
+                <Filter className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Trạng thái" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả</SelectItem>
+                <SelectItem value="active">Đang hoạt động</SelectItem>
+                <SelectItem value="completed">Hoàn thành</SelectItem>
+                <SelectItem value="archived">Lưu trữ</SelectItem>
+              </SelectContent>
+            </Select>
 
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Loại" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tất cả</SelectItem>
-              <SelectItem value="paragraph">Đoạn văn</SelectItem>
-              <SelectItem value="sentence">Câu</SelectItem>
-              <SelectItem value="word">Từ</SelectItem>
-              <SelectItem value="mixed">Hỗn hợp</SelectItem>
-            </SelectContent>
-          </Select>
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="w-full sm:w-[140px]">
+                <SelectValue placeholder="Loại" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả</SelectItem>
+                <SelectItem value="paragraph">Đoạn văn</SelectItem>
+                <SelectItem value="sentence">Câu</SelectItem>
+                <SelectItem value="word">Từ</SelectItem>
+                <SelectItem value="mixed">Hỗn hợp</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
           <div className="flex border rounded-md">
             <Button
@@ -146,6 +151,7 @@ export function SessionList({
               size="sm"
               onClick={() => setViewMode('grid')}
               className="rounded-r-none"
+              aria-label="Grid view"
             >
               <Grid className="h-4 w-4" />
             </Button>
@@ -154,6 +160,7 @@ export function SessionList({
               size="sm"
               onClick={() => setViewMode('list')}
               className="rounded-l-none"
+              aria-label="List view"
             >
               <List className="h-4 w-4" />
             </Button>
@@ -184,8 +191,8 @@ export function SessionList({
 
       {/* Sessions Grid/List */}
       {isLoading ? (
-        <div className={viewMode === 'grid' 
-          ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' 
+        <div className={viewMode === 'grid'
+          ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6'
           : 'space-y-4'
         }>
           {Array.from({ length: 6 }).map((_, i) => (
@@ -222,8 +229,8 @@ export function SessionList({
           </CardContent>
         </Card>
       ) : (
-        <div className={viewMode === 'grid' 
-          ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' 
+        <div className={viewMode === 'grid'
+          ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6'
           : 'space-y-4'
         }>
           {filteredSessions.map((session) => (
@@ -242,21 +249,23 @@ export function SessionList({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-2">
+        <div className="flex flex-col sm:flex-row justify-center items-center gap-2 sm:gap-4">
           <Button
             variant="outline"
             onClick={() => setPage(page - 1)}
             disabled={page === 0}
+            className="w-full sm:w-auto"
           >
             Trước
           </Button>
-          <span className="text-sm text-muted-foreground">
+          <span className="text-sm text-muted-foreground px-2">
             Trang {page + 1} / {totalPages}
           </span>
           <Button
             variant="outline"
             onClick={() => setPage(page + 1)}
             disabled={!hasMore}
+            className="w-full sm:w-auto"
           >
             Tiếp theo
           </Button>

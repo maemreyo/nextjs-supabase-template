@@ -140,7 +140,7 @@ export function useSavedAnalyses(
         const result: SavedAnalysesResponse = await response.json();
         
         console.log('🔍 [DEBUG] useSavedAnalyses - Fetch successful', {
-          analysesCount: result.analyses.length,
+          analysesCount: result.analyses?.length || 0,
           pagination: result.pagination,
         });
 

@@ -189,9 +189,15 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
       
       // Add pagination
       params.append('page', get().sessionsPage.toString());
-      params.append('per_page', get().sessionsPerPage.toString());
+      params.append('limit', get().sessionsPerPage.toString());
 
-      const response = await fetch(`/api/sessions?${params}`);
+      // Get auth token
+      const { data: { session } } = await (await import('@/lib/supabase/client')).createClient().auth.getSession();
+      const token = session?.access_token;
+
+      const response = await fetch(`/api/sessions/list?${params}`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       
       if (!response.ok) {
         throw new Error(`Failed to load sessions: ${response.statusText}`);
@@ -205,7 +211,7 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
 
       set({
         sessions: result.data.sessions,
-        totalSessions: result.data.pagination.total,
+        totalSessions: result.data.total,
         isLoading: false,
       });
     } catch (error) {
@@ -219,7 +225,13 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
     set({ isLoading: true, error: null });
     
     try {
-      const response = await fetch(`/api/sessions/${id}`);
+      // Get auth token
+      const { data: { session } } = await (await import('@/lib/supabase/client')).createClient().auth.getSession();
+      const token = session?.access_token;
+
+      const response = await fetch(`/api/sessions/${id}/load`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       
       if (!response.ok) {
         throw new Error(`Failed to load session: ${response.statusText}`);
@@ -231,17 +243,19 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
         throw new Error(result.error || 'Failed to load session');
       }
 
-      const session = result.data;
+      const sessionData = result.data;
       
       set((state) => ({
-        sessions: state.sessions.some(s => s.id === id) 
-          ? state.sessions 
-          : [...state.sessions, session],
-        currentSession: session,
+        sessions: state.sessions.some(s => s.id === id)
+          ? state.sessions
+          : [...state.sessions, sessionData.session],
+        currentSession: sessionData.session,
+        sessionAnalyses: sessionData.analyses,
+        sessionSettings: sessionData.settings,
         isLoading: false,
       }));
 
-      return session;
+      return sessionData.session;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       set({ error: errorMessage, isLoading: false });
@@ -365,7 +379,13 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
     set({ isLoading: true, error: null });
     
     try {
-      const response = await fetch(`/api/sessions/${sessionId}/analyses`);
+      // Get auth token
+      const { data: { session } } = await (await import('@/lib/supabase/client')).createClient().auth.getSession();
+      const token = session?.access_token;
+
+      const response = await fetch(`/api/sessions/${sessionId}/load`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       
       if (!response.ok) {
         throw new Error(`Failed to load session analyses: ${response.statusText}`);
@@ -378,7 +398,7 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
       }
 
       set({
-        sessionAnalyses: result.data,
+        sessionAnalyses: result.data.analyses,
         isLoading: false,
       });
     } catch (error) {

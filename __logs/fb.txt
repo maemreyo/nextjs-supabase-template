@@ -1,0 +1,26 @@
+Phân tích và triển khai tính năng quản lý phiên làm việc đã lưu với các yêu cầu sau:
+
+Yêu cầu chức năng:
+1. Kiểm tra và hiển thị danh sách tất cả các phiên làm việc người dùng đã lưu
+2. Khi người dùng chọn một phiên, tải và hiển thị tất cả các từ liên quan đã được lưu qua API endpoint @/src/app/api/analyses/save/route.ts
+
+Quy trình triển khai kỹ thuật:
+1. Xác định cấu trúc database Supabase:
+   - Sử dụng Supabase MCP để truy cập bảng dữ liệu
+   - Đọc project ID từ @/package.json
+   - Viết migrations cho bảng sessions (nếu chưa có) với cấu trúc: id, user_id, session_name, created_at, updated_at
+   - Viết migrations cho bảng saved_words (nếu chưa có) với cấu trúc: id, session_id, word_content, metadata
+   - Apply migrations và generate types từ remote database qua npm script
+
+2. Phát triển API backend:
+   - Tạo endpoint GET @/src/app/api/sessions/list/route.ts để lấy danh sách session của user
+   - Tạo endpoint GET @/src/app/api/sessions/[sessionId]/load/route.ts để tải dữ liệu một session cụ thể
+   - Đảm bảo API trả về cấu trúc JSON phù hợp với frontend
+
+3. Triển khai Frontend UI (Frontend Specialist mode:
+   - Tạo component SessionList để hiển thị danh sách các phiên làm việc
+   - Tạo component SessionDetail để hiển thị chi tiết các từ đã lưu khi session được chọn
+   - Tích hợp state management để quản lý việc tải và hiển thị dữ liệu session
+   - Xây dựng responsive design cho các thiết bị khác nhau
+
+Lưu ý: Tập trung vào chức năng cốt lõi mà không cần triển khai module testing.

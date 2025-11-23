@@ -603,7 +603,6 @@ export default function ImprovedAnalysisPage() {
     <AuthGuard redirectTo="/auth/signin">
       <AnalysisErrorBoundary>
         <ImprovedAnalysisPageContent />
-        <AnalysisDebugPanel />
       </AnalysisErrorBoundary>
     </AuthGuard>
   );
