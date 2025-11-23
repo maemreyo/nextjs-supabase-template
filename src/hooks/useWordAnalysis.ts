@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { WordAnalysis, AnalyzeWordRequest, AnalysisResponse } from '@/lib/ai/types';
+import { useSupabase } from '@/components/providers/supabase-provider';
 
 // Query keys cho word analysis
 export const wordAnalysisKeys = {
@@ -21,6 +22,7 @@ export function useWordAnalysis(
   }
 ) {
   const { enabled = true, staleTime = 1000 * 60 * 30 } = options || {};
+  const { getAccessToken } = useSupabase();
 
   return useQuery({
     queryKey: wordAnalysisKeys.detail(word, sentenceContext, paragraphContext),
@@ -28,19 +30,17 @@ export function useWordAnalysis(
       // DEBUG: Log để kiểm tra authentication state
       console.log('DEBUG: useWordAnalysis - Starting API call for word:', word);
       
-      // FIX: Sử dụng supabase client trực tiếp thay vì hook
-      const { supabase } = await import('@/lib/supabase/client');
-      const { data: { session } } = await supabase.auth.getSession();
-      const accessToken = session?.access_token;
-      console.log('DEBUG: useWordAnalysis - Access token exists:', !!accessToken);
+      // Get access token for authentication
+      const token = await getAccessToken();
+      console.log('DEBUG: useWordAnalysis - Access token exists:', !!token);
       
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
       
-      // DEBUG: Thêm authorization header nếu có token
-      if (accessToken) {
-        headers['Authorization'] = `Bearer ${accessToken}`;
+      // Add authorization header if token is available
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
         console.log('DEBUG: useWordAnalysis - Added Authorization header');
       } else {
         console.log('DEBUG: useWordAnalysis - No access token available');
@@ -88,20 +88,19 @@ export function useWordAnalysis(
  */
 export function useWordAnalysisMutation() {
   const queryClient = useQueryClient();
+  const { getAccessToken } = useSupabase();
 
   return useMutation({
     mutationFn: async (params: AnalyzeWordRequest): Promise<WordAnalysis> => {
-      // FIX: Sử dụng supabase client trực tiếp thay vì hook
-      const { supabase } = await import('@/lib/supabase/client');
-      const { data: { session } } = await supabase.auth.getSession();
-      const accessToken = session?.access_token;
+      // Get access token for authentication
+      const token = await getAccessToken();
       
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
       
-      if (accessToken) {
-        headers['Authorization'] = `Bearer ${accessToken}`;
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
       }
       
       const response = await fetch('/api/ai/analyze-word', {
@@ -141,22 +140,21 @@ export function useWordAnalysisMutation() {
  */
 export function usePrefetchWordAnalysis() {
   const queryClient = useQueryClient();
+  const { getAccessToken } = useSupabase();
 
   return (word: string, sentenceContext: string, paragraphContext?: string) => {
     queryClient.prefetchQuery({
       queryKey: wordAnalysisKeys.detail(word, sentenceContext, paragraphContext),
       queryFn: async (): Promise<WordAnalysis> => {
-        // FIX: Sử dụng supabase client trực tiếp thay vì hook
-        const { supabase } = await import('@/lib/supabase/client');
-        const { data: { session } } = await supabase.auth.getSession();
-        const accessToken = session?.access_token;
+        // Get access token for authentication
+        const token = await getAccessToken();
         
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
         };
         
-        if (accessToken) {
-          headers['Authorization'] = `Bearer ${accessToken}`;
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
         }
         
         const response = await fetch('/api/ai/analyze-word', {

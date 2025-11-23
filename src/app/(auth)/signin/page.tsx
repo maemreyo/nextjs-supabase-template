@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import React from 'react'
+import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
@@ -14,7 +15,7 @@ import { useAuthStore } from '@/stores/auth-store'
 import { EyeIcon, EyeOffIcon, Loader2Icon } from 'lucide-react'
 import { signInSchema, type SignInFormValues } from '@/lib/validations/auth'
 
-export default function SignInPage() {
+function SignInPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { signIn, isLoading, error } = useAuthStore()
@@ -153,5 +154,13 @@ export default function SignInPage() {
         </CardFooter>
       </Card>
     </div>
+  )
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SignInPageContent />
+    </Suspense>
   )
 }

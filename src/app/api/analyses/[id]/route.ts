@@ -1,0 +1,445 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { Database } from '@/lib/database.types';
+
+interface DeleteAnalysisResponse {
+  success: boolean;
+  data?: {
+    deletedId: string;
+    deletedType: string;
+    sessionUpdated?: boolean;
+  };
+  error?: string;
+}
+
+// DELETE /api/analyses/[id] - Delete analysis by ID
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    // Get user ID from authentication
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader) {
+      return NextResponse.json(
+        { error: 'Authorization header required' },
+        { status: 401 }
+      );
+    }
+
+    const supabase = await createClient();
+    const token = authHeader.replace('Bearer ', '');
+    
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    
+    if (error || !user) {
+      return NextResponse.json(
+        { error: 'Invalid or expired token' },
+        { status: 401 }
+      );
+    }
+
+    const { id: analysisId } = await params;
+
+    if (!analysisId) {
+      return NextResponse.json(
+        { error: 'Analysis ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Find the analysis in all three tables to determine its type
+    let analysisType: 'word' | 'sentence' | 'paragraph' | null = null;
+    let analysisData: any = null;
+
+    // Check word_analyses table
+    const { data: wordAnalysis, error: wordError } = await supabase
+      .from('word_analyses')
+      .select('*')
+      .eq('id', analysisId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (!wordError && wordAnalysis) {
+      analysisType = 'word';
+      analysisData = wordAnalysis;
+    } else {
+      // Check sentence_analyses table
+      const { data: sentenceAnalysis, error: sentenceError } = await supabase
+        .from('sentence_analyses')
+        .select('*')
+        .eq('id', analysisId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (!sentenceError && sentenceAnalysis) {
+        analysisType = 'sentence';
+        analysisData = sentenceAnalysis;
+      } else {
+        // Check paragraph_analyses table
+        const { data: paragraphAnalysis, error: paragraphError } = await supabase
+          .from('paragraph_analyses')
+          .select('*')
+          .eq('id', analysisId)
+          .eq('user_id', user.id)
+          .single();
+
+        if (!paragraphError && paragraphAnalysis) {
+          analysisType = 'paragraph';
+          analysisData = paragraphAnalysis;
+        }
+      }
+    }
+
+    if (!analysisType || !analysisData) {
+      return NextResponse.json(
+        { error: 'Analysis not found or you do not have permission to delete it' },
+        { status: 404 }
+      );
+    }
+
+    // Delete related data based on analysis type
+    if (analysisType === 'word') {
+      // Delete synonyms
+      const { error: synonymError } = await supabase
+        .from('word_synonyms')
+        .delete()
+        .eq('word_analysis_id', analysisId);
+
+      if (synonymError) {
+        console.error('Error deleting word synonyms:', synonymError);
+        // Don't fail the whole operation if related data deletion fails
+      }
+
+      // Delete antonyms
+      const { error: antonymError } = await supabase
+        .from('word_antonyms')
+        .delete()
+        .eq('word_analysis_id', analysisId);
+
+      if (antonymError) {
+        console.error('Error deleting word antonyms:', antonymError);
+        // Don't fail the whole operation if related data deletion fails
+      }
+
+      // Delete collocations
+      const { error: collocationError } = await supabase
+        .from('word_collocations')
+        .delete()
+        .eq('word_analysis_id', analysisId);
+
+      if (collocationError) {
+        console.error('Error deleting word collocations:', collocationError);
+        // Don't fail the whole operation if related data deletion fails
+      }
+
+      // Delete the main word analysis
+      const { error: deleteError } = await supabase
+        .from('word_analyses')
+        .delete()
+        .eq('id', analysisId)
+        .eq('user_id', user.id);
+
+      if (deleteError) {
+        console.error('Error deleting word analysis:', deleteError);
+        throw deleteError;
+      }
+
+    } else if (analysisType === 'sentence') {
+      // Delete key components
+      const { error: keyComponentsError } = await supabase
+        .from('sentence_key_components')
+        .delete()
+        .eq('sentence_analysis_id', analysisId);
+
+      if (keyComponentsError) {
+        console.error('Error deleting sentence key components:', keyComponentsError);
+        // Don't fail the whole operation if related data deletion fails
+      }
+
+      // Delete rewrite suggestions
+      const { error: rewriteSuggestionsError } = await supabase
+        .from('sentence_rewrite_suggestions')
+        .delete()
+        .eq('sentence_analysis_id', analysisId);
+
+      if (rewriteSuggestionsError) {
+        console.error('Error deleting sentence rewrite suggestions:', rewriteSuggestionsError);
+        // Don't fail the whole operation if related data deletion fails
+      }
+
+      // Delete the main sentence analysis
+      const { error: deleteError } = await supabase
+        .from('sentence_analyses')
+        .delete()
+        .eq('id', analysisId)
+        .eq('user_id', user.id);
+
+      if (deleteError) {
+        console.error('Error deleting sentence analysis:', deleteError);
+        throw deleteError;
+      }
+
+    } else if (analysisType === 'paragraph') {
+      // Delete structure breakdown
+      const { error: structureBreakdownError } = await supabase
+        .from('paragraph_structure_breakdown')
+        .delete()
+        .eq('paragraph_analysis_id', analysisId);
+
+      if (structureBreakdownError) {
+        console.error('Error deleting paragraph structure breakdown:', structureBreakdownError);
+        // Don't fail the whole operation if related data deletion fails
+      }
+
+      // Delete constructive feedback
+      const { error: feedbackError } = await supabase
+        .from('paragraph_constructive_feedback')
+        .delete()
+        .eq('paragraph_analysis_id', analysisId);
+
+      if (feedbackError) {
+        console.error('Error deleting paragraph constructive feedback:', feedbackError);
+        // Don't fail the whole operation if related data deletion fails
+      }
+
+      // Delete the main paragraph analysis
+      const { error: deleteError } = await supabase
+        .from('paragraph_analyses')
+        .delete()
+        .eq('id', analysisId)
+        .eq('user_id', user.id);
+
+      if (deleteError) {
+        console.error('Error deleting paragraph analysis:', deleteError);
+        throw deleteError;
+      }
+    }
+
+    // Delete from session_analyses table
+    const { error: sessionAnalysisError } = await supabase
+      .from('session_analyses')
+      .delete()
+      .eq('analysis_id', analysisId)
+      .eq('user_id', user.id);
+
+    if (sessionAnalysisError) {
+      console.error('Error deleting session analysis link:', sessionAnalysisError);
+      // Don't fail the whole operation if session link deletion fails
+    }
+
+    // Update session counts if the analysis was linked to a session
+    let sessionUpdated = false;
+    const { data: sessionAnalysis } = await supabase
+      .from('session_analyses')
+      .select('session_id')
+      .eq('analysis_id', analysisId)
+      .single();
+
+    // Note: The above query will return null since we just deleted the session_analyses record
+    // We need to check if there was a session link before deletion
+    if (sessionAnalysisError === null) {
+      // Find sessions that might have contained this analysis
+      const { data: sessions } = await supabase
+        .from('analysis_sessions')
+        .select('id, word_analyses_count, sentence_analyses_count, paragraph_analyses_count, total_analyses')
+        .eq('user_id', user.id);
+
+      if (sessions && sessions.length > 0) {
+        // For each session, we need to check if it contained this analysis
+        // This is a bit complex since we've already deleted the session_analyses record
+        // For now, we'll update all sessions owned by the user to recount their analyses
+        for (const session of sessions) {
+          // Count current analyses for this session
+          const { count: wordCount } = await supabase
+            .from('session_analyses')
+            .select('*', { count: 'exact', head: true })
+            .eq('session_id', session.id)
+            .eq('analysis_type', 'word');
+
+          const { count: sentenceCount } = await supabase
+            .from('session_analyses')
+            .select('*', { count: 'exact', head: true })
+            .eq('session_id', session.id)
+            .eq('analysis_type', 'sentence');
+
+          const { count: paragraphCount } = await supabase
+            .from('session_analyses')
+            .select('*', { count: 'exact', head: true })
+            .eq('session_id', session.id)
+            .eq('analysis_type', 'paragraph');
+
+          const { count: totalCount } = await supabase
+            .from('session_analyses')
+            .select('*', { count: 'exact', head: true })
+            .eq('session_id', session.id);
+
+          const { error: updateError } = await supabase
+            .from('analysis_sessions')
+            .update({
+              word_analyses_count: wordCount || 0,
+              sentence_analyses_count: sentenceCount || 0,
+              paragraph_analyses_count: paragraphCount || 0,
+              total_analyses: totalCount || 0,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', session.id);
+
+          if (updateError) {
+            console.error('Error updating session counts:', updateError);
+            // Don't fail the whole operation if session update fails
+          } else {
+            sessionUpdated = true;
+          }
+        }
+      }
+    }
+
+    console.log(`Analysis deleted successfully: ${analysisType} analysis with ID ${analysisId}`);
+
+    const response: DeleteAnalysisResponse = {
+      success: true,
+      data: {
+        deletedId: analysisId,
+        deletedType: analysisType,
+        sessionUpdated
+      }
+    };
+
+    return NextResponse.json(response);
+
+  } catch (error) {
+    console.error('Error in analyses DELETE:', error);
+    return NextResponse.json(
+      { 
+        error: error instanceof Error ? error.message : 'Internal server error',
+        success: false 
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// GET /api/analyses/[id] - Get analysis by ID
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    // Get user ID from authentication
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader) {
+      return NextResponse.json(
+        { error: 'Authorization header required' },
+        { status: 401 }
+      );
+    }
+
+    const supabase = await createClient();
+    const token = authHeader.replace('Bearer ', '');
+    
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    
+    if (error || !user) {
+      return NextResponse.json(
+        { error: 'Invalid or expired token' },
+        { status: 401 }
+      );
+    }
+
+    const { id: analysisId } = await params;
+
+    if (!analysisId) {
+      return NextResponse.json(
+        { error: 'Analysis ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Find the analysis in all three tables
+    let analysisData: any = null;
+    let analysisType: 'word' | 'sentence' | 'paragraph' | null = null;
+
+    // Check word_analyses table
+    const { data: wordAnalysis, error: wordError } = await supabase
+      .from('word_analyses')
+      .select(`
+        *,
+        word_synonyms(*),
+        word_antonyms(*),
+        word_collocations(*)
+      `)
+      .eq('id', analysisId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (!wordError && wordAnalysis) {
+      analysisData = { ...wordAnalysis, analysis_type: 'word' };
+    } else {
+      // Check sentence_analyses table
+      const { data: sentenceAnalysis, error: sentenceError } = await supabase
+        .from('sentence_analyses')
+        .select(`
+          *,
+          sentence_key_components(*),
+          sentence_rewrite_suggestions(*)
+        `)
+        .eq('id', analysisId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (!sentenceError && sentenceAnalysis) {
+        analysisData = { ...sentenceAnalysis, analysis_type: 'sentence' };
+      } else {
+        // Check paragraph_analyses table
+        const { data: paragraphAnalysis, error: paragraphError } = await supabase
+          .from('paragraph_analyses')
+          .select(`
+            *,
+            paragraph_structure_breakdown(*),
+            paragraph_constructive_feedback(*)
+          `)
+          .eq('id', analysisId)
+          .eq('user_id', user.id)
+          .single();
+
+        if (!paragraphError && paragraphAnalysis) {
+          analysisData = { ...paragraphAnalysis, analysis_type: 'paragraph' };
+        }
+      }
+    }
+
+    if (!analysisData) {
+      return NextResponse.json(
+        { error: 'Analysis not found or you do not have permission to access it' },
+        { status: 404 }
+      );
+    }
+
+    // Get session information if available
+    const { data: sessionAnalysis } = await supabase
+      .from('session_analyses')
+      .select('*')
+      .eq('analysis_id', analysisId)
+      .single();
+
+    if (sessionAnalysis) {
+      analysisData.session_analysis = sessionAnalysis;
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: analysisData
+    });
+
+  } catch (error) {
+    console.error('Error in analyses GET:', error);
+    return NextResponse.json(
+      { 
+        error: error instanceof Error ? error.message : 'Internal server error',
+        success: false 
+      },
+      { status: 500 }
+    );
+  }
+}

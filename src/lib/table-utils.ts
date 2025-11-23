@@ -142,8 +142,9 @@ export function useDataTable<TData, TValue>({
     onPaginationChange?.({ pageIndex: 0, pageSize: defaultPageSize })
   }
 
-  const selectedRows = table.getFilteredSelectedRowModel().rows
-  const selectedRowIds = selectedRows.map(row => (row.original as any).id as string)
+  const filteredSelectedRowModel = table.getFilteredSelectedRowModel()
+  const selectedRows = filteredSelectedRowModel ? Object.values(filteredSelectedRowModel).flat().filter(Boolean) : []
+  const selectedRowIds = selectedRows.map((row: any) => row.original?.id as string).filter(Boolean)
 
   return {
     table,

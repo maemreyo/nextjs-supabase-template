@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,7 +12,8 @@ import {
   BookOpen,
   FileText,
   FilePlus,
-  History,
+  Archive,
+  Clock,
   Settings,
   Loader2,
   AlertTriangle,
@@ -23,7 +25,7 @@ import {
   MousePointer,
   Trash2,
   RotateCcw,
-  Eye
+  Eye,
 } from 'lucide-react';
 
 // Components
@@ -45,6 +47,7 @@ import { useAnalysisStore, useAnalysisSelectors, useAnalysisActions } from '@/st
 // Types
 import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis } from '@/lib/ai/types';
 import AnalysisResultDialog from '@/components/analysis/AnalysisResultDialog';
+import SavedAnalysesManager from '@/components/analysis/SavedAnalysesManager';
 
 /**
  * Trang cải tiến cho AI Semantic Analysis Editor
@@ -52,7 +55,7 @@ import AnalysisResultDialog from '@/components/analysis/AnalysisResultDialog';
 function ImprovedAnalysisPageContent() {
   console.log('🔍 [DEBUG] ImprovedAnalysisPageContent - Component started');
   // Local state
-  const [activeTab, setActiveTab] = useState<'word' | 'sentence' | 'paragraph'>('word');
+  const [activeTab, setActiveTab] = useState<'word' | 'sentence' | 'paragraph' | 'saved'>('word');
   const [selectedText, setSelectedText] = useState('');
   const [analysisType, setAnalysisType] = useState<'word' | 'sentence' | 'paragraph'>('word');
   const [analysisResult, setAnalysisResult] = useState<WordAnalysis | SentenceAnalysis | ParagraphAnalysis | null>(null);
@@ -208,7 +211,7 @@ function ImprovedAnalysisPageContent() {
     }
   }, [wordAnalysisMutation, sentenceAnalysisMutation, paragraphAnalysisMutation]);
 
-  const handleTabChange = useCallback((tab: 'word' | 'sentence' | 'paragraph') => {
+  const handleTabChange = useCallback((tab: 'word' | 'sentence' | 'paragraph' | 'saved') => {
     setActiveTab(tab);
   }, []);
 
@@ -291,7 +294,7 @@ function ImprovedAnalysisPageContent() {
           minHeight: '400px'
         }}
       >
-        {/* Main Editor - occupies 2/3 of space */}
+        {/* Main Content - Editor or Saved Analyses */}
         <div
           className="lg:col-span-2 min-h-0"
           style={{
@@ -302,16 +305,22 @@ function ImprovedAnalysisPageContent() {
             minHeight: '300px'
           }}
         >
-          {(() => {
-            console.log('🔍 [DEBUG] ImprovedAnalysisPageContent - Rendering AnalysisEditor');
-            return null;
-          })()}
-          <AnalysisEditor
-            onTextSelect={handleTextSelect}
-            onAnalyze={handleAnalyze}
-            isAnalyzing={isAnalyzing}
-            className="h-full"
-          />
+          {activeTab === 'saved' ? (
+            <SavedAnalysesManager />
+          ) : (
+            <>
+              {(() => {
+                console.log('🔍 [DEBUG] ImprovedAnalysisPageContent - Rendering AnalysisEditor');
+                return null;
+              })()}
+              <AnalysisEditor
+                onTextSelect={handleTextSelect}
+                onAnalyze={handleAnalyze}
+                isAnalyzing={isAnalyzing}
+                className="h-full"
+              />
+            </>
+          )}
         </div>
 
         {/* Sidebar - occupies 1/3 of space */}
@@ -351,10 +360,9 @@ function ImprovedAnalysisPageContent() {
                 )}
               </div>
             </div>
-            
             {isAnalysisTypeOpen && (
               <Tabs value={activeTab} onValueChange={(value) => handleTabChange(value as any)}>
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="word" className="flex items-center gap-2" title="Phân tích từ vựng">
                     <BookOpen className="h-4 w-4" />
                     <span className="hidden sm:inline">Từ</span>
@@ -368,6 +376,11 @@ function ImprovedAnalysisPageContent() {
                   <TabsTrigger value="paragraph" className="flex items-center gap-2" title="Phân tích đoạn văn">
                     <FilePlus className="h-4 w-4" />
                     <span className="hidden sm:inline">Đoạn</span>
+                  </TabsTrigger>
+                  
+                  <TabsTrigger value="saved" className="flex items-center gap-2" title="Phân tích đã lưu">
+                    <Archive className="h-4 w-4" />
+                    <span className="hidden sm:inline">Đã lưu</span>
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
@@ -401,7 +414,11 @@ function ImprovedAnalysisPageContent() {
                 </Button>
                 
                 <Button
-                  onClick={() => handleAnalyze(selectedText, activeTab)}
+                  onClick={() => {
+                    if (activeTab !== 'saved') {
+                      handleAnalyze(selectedText, activeTab as 'word' | 'sentence' | 'paragraph');
+                    }
+                  }}
                   disabled={currentLoading}
                   size="sm"
                   className="text-xs h-7 px-2"
@@ -426,7 +443,7 @@ function ImprovedAnalysisPageContent() {
           {selectedText && (
             <CompactResultCard
               analysis={analysisResult}
-              analysisType={activeTab}
+              analysisType={activeTab === 'saved' ? 'word' : activeTab}
               isLoading={currentLoading}
               error={error}
               onViewDetails={() => setIsDetailDialogOpen(true)}
@@ -494,7 +511,7 @@ function ImprovedAnalysisPageContent() {
                 title={isHistoryOpen ? "Thu gọn" : "Mở rộng"}
               >
                 <h3 className="font-semibold flex items-center gap-2">
-                  <History className="h-4 w-4" />
+                  <Clock className="h-4 w-4" />
                   <span className="hidden sm:inline">Lịch sử phân tích</span>
                   <span className="sm:hidden">Lịch sử</span>
                 </h3>
@@ -558,7 +575,7 @@ function ImprovedAnalysisPageContent() {
                 analysisPanelOpen={analysisPanelOpen}
                 setAnalysisPanelOpen={setAnalysisPanelOpen}
                 analysisResult={analysisResult}
-                analysisType={activeTab}
+                analysisType={activeTab === 'saved' ? 'word' : activeTab}
                 selectedText={selectedText}
               />
             </>
@@ -571,7 +588,7 @@ function ImprovedAnalysisPageContent() {
         isOpen={isDetailDialogOpen}
         onClose={() => setIsDetailDialogOpen(false)}
         analysis={analysisResult}
-        analysisType={activeTab}
+        analysisType={activeTab === 'saved' ? 'word' : activeTab}
       />
     </div>
   );

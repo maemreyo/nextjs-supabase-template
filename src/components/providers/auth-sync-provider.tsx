@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { useEffect } from 'react'
 import { useAuthStore } from '@/stores/auth-store'
 import { useSupabase } from './supabase-provider'

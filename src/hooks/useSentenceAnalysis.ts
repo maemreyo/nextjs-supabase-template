@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { SentenceAnalysis, AnalyzeSentenceRequest, AnalysisResponse } from '@/lib/ai/types';
+import { useSupabase } from '@/components/providers/supabase-provider';
 
 // Query keys cho sentence analysis
 export const sentenceAnalysisKeys = {
@@ -20,6 +21,7 @@ export function useSentenceAnalysis(
   }
 ) {
   const { enabled = true, staleTime = 1000 * 60 * 30 } = options || {};
+  const { getAccessToken } = useSupabase();
 
   return useQuery({
     queryKey: sentenceAnalysisKeys.detail(sentence, paragraphContext),
@@ -27,19 +29,17 @@ export function useSentenceAnalysis(
       // DEBUG: Log để kiểm tra authentication state
       console.log('DEBUG: useSentenceAnalysis - Starting API call for sentence:', sentence.substring(0, 50) + '...');
       
-      // FIX: Sử dụng supabase client trực tiếp thay vì hook
-      const { supabase } = await import('@/lib/supabase/client');
-      const { data: { session } } = await supabase.auth.getSession();
-      const accessToken = session?.access_token;
-      console.log('DEBUG: useSentenceAnalysis - Access token exists:', !!accessToken);
+      // Get access token for authentication
+      const token = await getAccessToken();
+      console.log('DEBUG: useSentenceAnalysis - Access token exists:', !!token);
       
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
       
-      // DEBUG: Thêm authorization header nếu có token
-      if (accessToken) {
-        headers['Authorization'] = `Bearer ${accessToken}`;
+      // Add authorization header if token is available
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
         console.log('DEBUG: useSentenceAnalysis - Added Authorization header');
       } else {
         console.log('DEBUG: useSentenceAnalysis - No access token available');
@@ -86,20 +86,19 @@ export function useSentenceAnalysis(
  */
 export function useSentenceAnalysisMutation() {
   const queryClient = useQueryClient();
+  const { getAccessToken } = useSupabase();
 
   return useMutation({
     mutationFn: async (params: AnalyzeSentenceRequest): Promise<SentenceAnalysis> => {
-      // FIX: Sử dụng supabase client trực tiếp thay vì hook
-      const { supabase } = await import('@/lib/supabase/client');
-      const { data: { session } } = await supabase.auth.getSession();
-      const accessToken = session?.access_token;
+      // Get access token for authentication
+      const token = await getAccessToken();
       
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
       
-      if (accessToken) {
-        headers['Authorization'] = `Bearer ${accessToken}`;
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
       }
       
       const response = await fetch('/api/ai/analyze-sentence', {
@@ -139,22 +138,21 @@ export function useSentenceAnalysisMutation() {
  */
 export function usePrefetchSentenceAnalysis() {
   const queryClient = useQueryClient();
+  const { getAccessToken } = useSupabase();
 
   return (sentence: string, paragraphContext?: string) => {
     queryClient.prefetchQuery({
       queryKey: sentenceAnalysisKeys.detail(sentence, paragraphContext),
       queryFn: async (): Promise<SentenceAnalysis> => {
-        // FIX: Sử dụng supabase client trực tiếp thay vì hook
-        const { supabase } = await import('@/lib/supabase/client');
-        const { data: { session } } = await supabase.auth.getSession();
-        const accessToken = session?.access_token;
+        // Get access token for authentication
+        const token = await getAccessToken();
         
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
         };
         
-        if (accessToken) {
-          headers['Authorization'] = `Bearer ${accessToken}`;
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
         }
         
         const response = await fetch('/api/ai/analyze-sentence', {

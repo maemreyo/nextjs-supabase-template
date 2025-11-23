@@ -89,6 +89,11 @@ export interface ConstructiveFeedbackProps {
 export interface AnalysisEditorProps {
   onTextSelect?: (text: string, type: 'word' | 'sentence' | 'paragraph') => void;
   onAnalyze?: (text: string, type: 'word' | 'sentence' | 'paragraph') => void;
+  onAnalysisComplete?: (result: {
+    text: string;
+    type: 'word' | 'sentence' | 'paragraph';
+    data: WordAnalysis | SentenceAnalysis | ParagraphAnalysis;
+  }) => void;
   initialText?: string;
   className?: string;
   isAnalyzing?: boolean;

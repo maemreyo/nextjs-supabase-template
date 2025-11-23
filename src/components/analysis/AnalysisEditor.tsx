@@ -1,3 +1,4 @@
+import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -27,26 +28,35 @@ import {
   MessageSquare,
   X,
   Save,
-  FolderOpen
+  FolderOpen,
+  CheckCircle,
+  AlertTriangle
 } from 'lucide-react';
 import type { AnalysisEditorProps, WordAnalysis, SentenceAnalysis, ParagraphAnalysis } from './types';
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { useSessionStore } from '@/stores/session-store';
+import { useAnalysisSave } from '@/hooks/useAnalysisSave';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export function AnalysisEditor({
   onTextSelect,
   onAnalyze,
+  onAnalysisComplete, // New prop to handle analysis completion
   initialText = "",
   className = "",
   isAnalyzing: parentIsAnalyzing = false
-}: AnalysisEditorProps) {
+}: AnalysisEditorProps & { onAnalysisComplete?: (result: {
+    text: string;
+    type: 'word' | 'sentence' | 'paragraph';
+    data: WordAnalysis | SentenceAnalysis | ParagraphAnalysis;
+  }) => void }) {
   console.log('🔍 [DEBUG] AnalysisEditor - Component started', { initialText, className });
   const [selectedText, setSelectedText] = useState('');
   const [selectionType, setSelectionType] = useState<'word' | 'phrase' | 'sentence' | 'paragraph'>('word');
@@ -57,6 +67,12 @@ export function AnalysisEditor({
   // Use parent's isAnalyzing state if provided, otherwise use local state
   const effectiveIsAnalyzing = parentIsAnalyzing || isAnalyzing;
   const [autoAnalysisEnabled, setAutoAnalysisEnabled] = useState(true);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+  const [lastAnalysisResult, setLastAnalysisResult] = useState<{
+    text: string;
+    type: 'word' | 'sentence' | 'paragraph';
+    data: WordAnalysis | SentenceAnalysis | ParagraphAnalysis;
+  } | null>(null);
   
   const [saveToSessionDialogOpen, setSaveToSessionDialogOpen] = useState(false);
   const [sessionTitle, setSessionTitle] = useState('');
@@ -85,6 +101,21 @@ export function AnalysisEditor({
 
   const { sessions, createSession, addAnalysisToSession } = useSessionStore();
   const { theme, systemTheme } = useTheme();
+  
+  // Hook for saving analysis
+  const { saveAnalysis, isLoading: isSaving, isSuccess: isSaveSuccess, error: saveError } = useAnalysisSave({
+    onSuccess: (data) => {
+      console.log('🔍 [DEBUG] AnalysisEditor - Analysis saved successfully', data);
+      // Show success feedback
+      setTimeout(() => {
+        // You could add a toast notification here
+      }, 100);
+    },
+    onError: (error) => {
+      console.error('🔍 [DEBUG] AnalysisEditor - Failed to save analysis', error);
+      // You could add an error toast here
+    }
+  });
   
   // Get the actual theme (accounting for system theme)
   const currentTheme = theme === 'system' ? systemTheme : theme;
@@ -185,7 +216,37 @@ export function AnalysisEditor({
         console.log('🔍 [DEBUG] AnalysisEditor - Auto-analysis started, effectiveIsAnalyzing:', effectiveIsAnalyzing);
         try {
           const result = await onAnalyze?.(textToAnalyze, type);
-          // Result is now handled at page level
+          
+          // Handle analysis completion
+          if (result) {
+            const analysisData = {
+              text: textToAnalyze,
+              type,
+              data: result
+            };
+            
+            // Store the last analysis result
+            setLastAnalysisResult(analysisData);
+            
+            // Call the completion callback
+            onAnalysisComplete?.(analysisData);
+            
+            // Auto-save if enabled
+            if (autoSaveEnabled) {
+              console.log('🔍 [DEBUG] AnalysisEditor - Auto-saving analysis', {
+                text: textToAnalyze,
+                type,
+                hasData: !!result
+              });
+              
+              saveAnalysis({
+                type,
+                text: textToAnalyze,
+                analysisData: result,
+                // sessionId: selectedSessionId || undefined, // Optional session ID
+              });
+            }
+          }
         } catch (err) {
           // Error is now handled at page level
           console.error(err instanceof Error ? err.message : 'Phân tích thất bại');
@@ -372,7 +433,38 @@ export function AnalysisEditor({
     
     try {
       const result = await onAnalyze?.(textToAnalyze, analysisType);
-      // Result is now handled at page level
+      
+      // Handle analysis completion
+      if (result) {
+        const analysisData = {
+          text: textToAnalyze,
+          type: analysisType,
+          data: result
+        };
+        
+        // Store the last analysis result
+        setLastAnalysisResult(analysisData);
+        
+        // Call the completion callback
+        onAnalysisComplete?.(analysisData);
+        
+        // Auto-save if enabled
+        if (autoSaveEnabled) {
+          console.log('🔍 [DEBUG] AnalysisEditor - Auto-saving manual analysis', {
+            text: textToAnalyze,
+            type: analysisType,
+            hasData: !!result
+          });
+          
+          saveAnalysis({
+            type: analysisType,
+            text: textToAnalyze,
+            analysisData: result,
+            // sessionId: selectedSessionId || undefined, // Optional session ID
+          });
+        }
+      }
+      
       setBubbleMenuPosition(prev => ({ ...prev, show: false }));
     } catch (err) {
       // Error is now handled at page level
@@ -619,6 +711,19 @@ export function AnalysisEditor({
               </Badge>
             )}
             
+            {/* Auto-save toggle */}
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="auto-save"
+                checked={autoSaveEnabled}
+                onCheckedChange={(checked) => setAutoSaveEnabled(checked as boolean)}
+                className="h-4 w-4"
+              />
+              <Label htmlFor="auto-save" className="text-xs cursor-pointer">
+                Tự động lưu
+              </Label>
+            </div>
+            
             <Button
               variant="outline"
               size="sm"
@@ -629,6 +734,28 @@ export function AnalysisEditor({
               <Sparkles className="h-3 w-3 mr-1" />
               Auto: {autoAnalysisEnabled ? "ON" : "OFF"}
             </Button>
+            
+            {/* Save status indicator */}
+            {isSaving && (
+              <Badge variant="outline" className="text-xs bg-blue-100 border-blue-300 text-blue-800">
+                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                Đang lưu...
+              </Badge>
+            )}
+            
+            {isSaveSuccess && (
+              <Badge variant="outline" className="text-xs bg-green-100 border-green-300 text-green-800">
+                <CheckCircle className="h-3 w-3 mr-1" />
+                Đã lưu
+              </Badge>
+            )}
+            
+            {saveError && (
+              <Badge variant="outline" className="text-xs bg-red-100 border-red-300 text-red-800">
+                <AlertTriangle className="h-3 w-3 mr-1" />
+                Lưu thất bại
+              </Badge>
+            )}
           </div>
         </div>
 
@@ -738,6 +865,37 @@ export function AnalysisEditor({
           <Button size="sm" onMouseDown={(e) => e.preventDefault()} onClick={handleAnalyze} disabled={effectiveIsAnalyzing} className="h-7 px-2 text-xs">
             <BookMarked size={12} className="mr-1" />{effectiveIsAnalyzing ? 'Analyzing...' : 'Analyze'}
           </Button>
+          
+          {/* Manual save button */}
+          {lastAnalysisResult && !autoSaveEnabled && (
+            <Button
+              size="sm"
+              variant="outline"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                console.log('🔍 [DEBUG] AnalysisEditor - Manual save triggered', {
+                  text: lastAnalysisResult.text,
+                  type: lastAnalysisResult.type,
+                });
+                
+                saveAnalysis({
+                  type: lastAnalysisResult.type,
+                  text: lastAnalysisResult.text,
+                  analysisData: lastAnalysisResult.data,
+                  // sessionId: selectedSessionId || undefined,
+                });
+              }}
+              disabled={isSaving}
+              className="h-7 px-2 text-xs"
+              title="Lưu kết quả phân tích"
+            >
+              {isSaving ? (
+                <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Đang lưu...</>
+              ) : (
+                <><Save size={12} className="mr-1" />Lưu</>
+              )}
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"

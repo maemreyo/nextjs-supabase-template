@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import React from 'react'
+import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
@@ -14,7 +15,7 @@ import { useAuthStore } from '@/stores/auth-store'
 import { Loader2Icon, MailIcon } from 'lucide-react'
 import { forgotPasswordSchema, type ForgotPasswordFormValues } from '@/lib/validations/auth'
 
-export default function ForgotPasswordPage() {
+function ForgotPasswordPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { resetPassword, isLoading, error } = useAuthStore()
@@ -143,5 +144,13 @@ export default function ForgotPasswordPage() {
         </CardFooter>
       </Card>
     </div>
+  )
+}
+
+export default function ForgotPasswordPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ForgotPasswordPageContent />
+    </Suspense>
   )
 }

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ParagraphAnalysis, AnalyzeParagraphRequest, AnalysisResponse } from '@/lib/ai/types';
+import { useSupabase } from '@/components/providers/supabase-provider';
 
 // Query keys cho paragraph analysis
 export const paragraphAnalysisKeys = {
@@ -19,6 +20,7 @@ export function useParagraphAnalysis(
   }
 ) {
   const { enabled = true, staleTime = 1000 * 60 * 30 } = options || {};
+  const { getAccessToken } = useSupabase();
 
   return useQuery({
     queryKey: paragraphAnalysisKeys.detail(paragraph),
@@ -26,19 +28,17 @@ export function useParagraphAnalysis(
       // DEBUG: Log để kiểm tra authentication state
       console.log('DEBUG: useParagraphAnalysis - Starting API call for paragraph:', paragraph.substring(0, 50) + '...');
       
-      // DEBUG: Kiểm tra xem có access token không
-      const { supabase } = await import('@/lib/supabase/client');
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log('DEBUG: useParagraphAnalysis - Session exists:', !!session);
-      console.log('DEBUG: useParagraphAnalysis - Access token exists:', !!session?.access_token);
+      // Get access token for authentication
+      const token = await getAccessToken();
+      console.log('DEBUG: useParagraphAnalysis - Access token exists:', !!token);
       
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
       
-      // DEBUG: Thêm authorization header nếu có token
-      if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`;
+      // Add authorization header if token is available
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
         console.log('DEBUG: useParagraphAnalysis - Added Authorization header');
       } else {
         console.log('DEBUG: useParagraphAnalysis - No access token available');
@@ -84,20 +84,19 @@ export function useParagraphAnalysis(
  */
 export function useParagraphAnalysisMutation() {
   const queryClient = useQueryClient();
+  const { getAccessToken } = useSupabase();
 
   return useMutation({
     mutationFn: async (params: AnalyzeParagraphRequest): Promise<ParagraphAnalysis> => {
-      // FIX: Sử dụng supabase client trực tiếp thay vì hook
-      const { supabase } = await import('@/lib/supabase/client');
-      const { data: { session } } = await supabase.auth.getSession();
-      const accessToken = session?.access_token;
+      // Get access token for authentication
+      const token = await getAccessToken();
       
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
       
-      if (accessToken) {
-        headers['Authorization'] = `Bearer ${accessToken}`;
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
       }
       
       const response = await fetch('/api/ai/analyze-paragraph', {
@@ -137,22 +136,21 @@ export function useParagraphAnalysisMutation() {
  */
 export function usePrefetchParagraphAnalysis() {
   const queryClient = useQueryClient();
+  const { getAccessToken } = useSupabase();
 
   return (paragraph: string) => {
     queryClient.prefetchQuery({
       queryKey: paragraphAnalysisKeys.detail(paragraph),
       queryFn: async (): Promise<ParagraphAnalysis> => {
-        // FIX: Sử dụng supabase client trực tiếp thay vì hook
-        const { supabase } = await import('@/lib/supabase/client');
-        const { data: { session } } = await supabase.auth.getSession();
-        const accessToken = session?.access_token;
+        // Get access token for authentication
+        const token = await getAccessToken();
         
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
         };
         
-        if (accessToken) {
-          headers['Authorization'] = `Bearer ${accessToken}`;
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
         }
         
         const response = await fetch('/api/ai/analyze-paragraph', {

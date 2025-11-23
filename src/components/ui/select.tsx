@@ -56,7 +56,10 @@ function SelectContent({
   position = "popper",
   align = "center",
   ...props
-}: React.ComponentProps<typeof SelectPrimitive.Content>) {
+}: React.ComponentProps<typeof SelectPrimitive.Content> & {
+  position?: "popper" | "item-aligned";
+  align?: "start" | "center" | "end";
+}) {
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Content

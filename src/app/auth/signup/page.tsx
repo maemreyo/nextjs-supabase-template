@@ -1,5 +1,6 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -14,7 +15,7 @@ import { useAuthStore } from '@/stores/auth-store'
 import { EyeIcon, EyeOffIcon, Loader2Icon } from 'lucide-react'
 import { signUpSchema, type SignUpFormValues } from '@/lib/validations/auth'
 
-export default function SignUpPage() {
+function SignUpPageContent() {
   const router = useRouter()
   const { signUp, isLoading, error } = useAuthStore()
   
@@ -199,5 +200,13 @@ export default function SignUpPage() {
         </CardFooter>
       </Card>
     </div>
+  )
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SignUpPageContent />
+    </Suspense>
   )
 }
