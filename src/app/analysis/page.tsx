@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -61,6 +61,13 @@ function ImprovedAnalysisPageContent() {
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [analysisPanelOpen, setAnalysisPanelOpen] = useState(false);
   
+  // Ref to track the last analysis request at parent level
+  const lastAnalysisRef = useRef<{
+    text: string;
+    type: 'word' | 'sentence' | 'paragraph';
+    timestamp: number;
+  } | null>(null);
+  
   // Sidebar collapsible sections state
   const [isAnalysisTypeOpen, setIsAnalysisTypeOpen] = useState(true);
   const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(true);
@@ -115,6 +122,29 @@ function ImprovedAnalysisPageContent() {
     console.log('🔍 [DEBUG] ImprovedAnalysisPageContent - handleAnalyze called', { text, type });
     if (!text.trim()) return;
 
+    // Check if this is a duplicate request (same text and type within last 2 seconds)
+    const now = Date.now();
+    const lastAnalysis = lastAnalysisRef.current;
+    if (lastAnalysis &&
+        lastAnalysis.text === text &&
+        lastAnalysis.type === type &&
+        (now - lastAnalysis.timestamp) < 2000) {
+      console.log('🔍 [DEBUG] ImprovedAnalysisPageContent - Skipping duplicate analysis request', {
+        text,
+        type,
+        timeSinceLast: now - lastAnalysis.timestamp
+      });
+      return;
+    }
+
+    // Update the last analysis ref
+    lastAnalysisRef.current = {
+      text,
+      type,
+      timestamp: now
+    };
+
+    console.log('🔍 [DEBUG] ImprovedAnalysisPageContent - Executing analysis from parent', { text, type });
     setIsAnalyzing(true);
     setError(null);
 
@@ -279,6 +309,7 @@ function ImprovedAnalysisPageContent() {
           <AnalysisEditor
             onTextSelect={handleTextSelect}
             onAnalyze={handleAnalyze}
+            isAnalyzing={isAnalyzing}
             className="h-full"
           />
         </div>

@@ -91,6 +91,7 @@ export interface AnalysisEditorProps {
   onAnalyze?: (text: string, type: 'word' | 'sentence' | 'paragraph') => void;
   initialText?: string;
   className?: string;
+  isAnalyzing?: boolean;
 }
 
 // Props cho AnalysisTabs component

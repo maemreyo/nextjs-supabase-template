@@ -44,7 +44,8 @@ export function AnalysisEditor({
   onTextSelect,
   onAnalyze,
   initialText = "",
-  className = ""
+  className = "",
+  isAnalyzing: parentIsAnalyzing = false
 }: AnalysisEditorProps) {
   console.log('🔍 [DEBUG] AnalysisEditor - Component started', { initialText, className });
   const [selectedText, setSelectedText] = useState('');
@@ -52,6 +53,9 @@ export function AnalysisEditor({
   const [analysisType, setAnalysisType] = useState<'word' | 'sentence' | 'paragraph'>('word');
   
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  
+  // Use parent's isAnalyzing state if provided, otherwise use local state
+  const effectiveIsAnalyzing = parentIsAnalyzing || isAnalyzing;
   const [autoAnalysisEnabled, setAutoAnalysisEnabled] = useState(true);
   
   const [saveToSessionDialogOpen, setSaveToSessionDialogOpen] = useState(false);
@@ -71,6 +75,13 @@ export function AnalysisEditor({
   const editorRef = useRef<HTMLDivElement>(null);
   const analysisTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isInitializedRef = useRef(false);
+  
+  // Track last analysis request to prevent duplicates
+  const lastAnalysisRef = useRef<{
+    text: string;
+    type: 'word' | 'sentence' | 'paragraph';
+    timestamp: number;
+  } | null>(null);
 
   const { sessions, createSession, addAnalysisToSession } = useSessionStore();
   const { theme, systemTheme } = useTheme();
@@ -136,11 +147,42 @@ export function AnalysisEditor({
 
   // Debounced analysis
   const debouncedAnalysis = useCallback((textToAnalyze: string, type: 'word' | 'sentence' | 'paragraph') => {
-    if (analysisTimeoutRef.current) clearTimeout(analysisTimeoutRef.current);
+    console.log('🔍 [DEBUG] debouncedAnalysis called', { textToAnalyze, type, autoAnalysisEnabled });
+    
+    // Clear any existing timeout
+    if (analysisTimeoutRef.current) {
+      clearTimeout(analysisTimeoutRef.current);
+      analysisTimeoutRef.current = null;
+    }
+    
+    // Check if this is a duplicate request (same text and type within last 2 seconds)
+    const now = Date.now();
+    const lastAnalysis = lastAnalysisRef.current;
+    if (lastAnalysis &&
+        lastAnalysis.text === textToAnalyze &&
+        lastAnalysis.type === type &&
+        (now - lastAnalysis.timestamp) < 2000) {
+      console.log('🔍 [DEBUG] Skipping duplicate analysis request', {
+        text: textToAnalyze,
+        type,
+        timeSinceLast: now - lastAnalysis.timestamp
+      });
+      return;
+    }
     
     analysisTimeoutRef.current = setTimeout(async () => {
       if (autoAnalysisEnabled && textToAnalyze.trim()) {
+        console.log('🔍 [DEBUG] Executing debounced analysis', { textToAnalyze, type });
+        
+        // Update the last analysis ref
+        lastAnalysisRef.current = {
+          text: textToAnalyze,
+          type,
+          timestamp: Date.now()
+        };
+        
         setIsAnalyzing(true);
+        console.log('🔍 [DEBUG] AnalysisEditor - Auto-analysis started, effectiveIsAnalyzing:', effectiveIsAnalyzing);
         try {
           const result = await onAnalyze?.(textToAnalyze, type);
           // Result is now handled at page level
@@ -169,6 +211,7 @@ export function AnalysisEditor({
 
   // Handle text selection - simplified, no restoration
   const handleTextSelection = useCallback(() => {
+    console.log('🔍 [DEBUG] handleTextSelection triggered');
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) return;
     
@@ -195,7 +238,23 @@ export function AnalysisEditor({
       });
       
       onTextSelect?.(text, newAnalysisType);
-      debouncedAnalysis(text, newAnalysisType);
+      
+      // Check if this is a duplicate request before scheduling debounced analysis
+      const now = Date.now();
+      const lastAnalysis = lastAnalysisRef.current;
+      if (lastAnalysis &&
+          lastAnalysis.text === text &&
+          lastAnalysis.type === newAnalysisType &&
+          (now - lastAnalysis.timestamp) < 2000) {
+        console.log('🔍 [DEBUG] Skipping duplicate analysis in handleTextSelection', {
+          text,
+          type: newAnalysisType,
+          timeSinceLast: now - lastAnalysis.timestamp
+        });
+      } else {
+        console.log('🔍 [DEBUG] Scheduling debounced analysis from handleTextSelection', { text, type: newAnalysisType });
+        debouncedAnalysis(text, newAnalysisType);
+      }
     } else {
       setBubbleMenuPosition({ x: 0, y: 0, show: false });
       setSelectedText('');
@@ -289,9 +348,26 @@ export function AnalysisEditor({
 
   // Handle analysis
   const handleAnalyze = useCallback(async () => {
+    console.log('🔍 [DEBUG] handleAnalyze triggered', { selectedText, analysisType });
+    
+    // Cancel any pending auto-analysis timeout
+    if (analysisTimeoutRef.current) {
+      console.log('🔍 [DEBUG] Cancelling pending auto-analysis timeout');
+      clearTimeout(analysisTimeoutRef.current);
+      analysisTimeoutRef.current = null;
+    }
+    
     const textToAnalyze = selectedText || editorRef.current?.innerText || '';
     if (!textToAnalyze.trim()) return;
 
+    // Update the last analysis ref to prevent duplicates
+    lastAnalysisRef.current = {
+      text: textToAnalyze,
+      type: analysisType,
+      timestamp: Date.now()
+    };
+
+    console.log('🔍 [DEBUG] Executing manual analysis', { textToAnalyze, analysisType, effectiveIsAnalyzing });
     setIsAnalyzing(true);
     
     try {
@@ -399,6 +475,7 @@ export function AnalysisEditor({
       // Only handle if selection is in editor
       const sel = window.getSelection();
       if (sel && editorRef.current?.contains(sel.anchorNode)) {
+        console.log('🔍 [DEBUG] MouseUp event detected, scheduling handleTextSelection');
         // Small delay to let browser finalize selection
         setTimeout(handleTextSelection, 10);
       }
@@ -406,6 +483,7 @@ export function AnalysisEditor({
     
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.shiftKey && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) {
+        console.log('🔍 [DEBUG] KeyUp event detected with Shift key, scheduling handleTextSelection');
         setTimeout(handleTextSelection, 10);
       }
     };
@@ -580,8 +658,8 @@ export function AnalysisEditor({
             {textStats.characters} ký tự • {textStats.words} từ • {textStats.sentences} câu • {textStats.paragraphs} đoạn
           </div>
           
-          <Button onClick={handleAnalyze} disabled={isAnalyzing} size="sm">
-            {isAnalyzing ? (
+          <Button onClick={handleAnalyze} disabled={effectiveIsAnalyzing} size="sm">
+            {effectiveIsAnalyzing ? (
               <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Đang phân tích...</>
             ) : (
               <><Zap className="h-4 w-4 mr-2" />Phân tích</>
@@ -657,8 +735,8 @@ export function AnalysisEditor({
           style={{ left: bubbleMenuPosition.x, top: bubbleMenuPosition.y, transform: 'translate(-50%, -100%)' }}
         >
           <Badge variant="secondary" className="text-xs px-2 border-r">{selectionType}</Badge>
-          <Button size="sm" onMouseDown={(e) => e.preventDefault()} onClick={handleAnalyze} className="h-7 px-2 text-xs">
-            <BookMarked size={12} className="mr-1" />Analyze
+          <Button size="sm" onMouseDown={(e) => e.preventDefault()} onClick={handleAnalyze} disabled={effectiveIsAnalyzing} className="h-7 px-2 text-xs">
+            <BookMarked size={12} className="mr-1" />{effectiveIsAnalyzing ? 'Analyzing...' : 'Analyze'}
           </Button>
           <Button
             variant="ghost"
