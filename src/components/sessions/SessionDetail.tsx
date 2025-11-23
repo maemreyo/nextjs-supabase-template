@@ -7,24 +7,30 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { 
-  Clock, 
-  FileText, 
-  Settings, 
-  ArrowLeft, 
+import {
+  Clock,
+  FileText,
+  Settings,
+  ArrowLeft,
   Download,
   Share,
   Edit,
-  Trash2
+  Trash2,
+  BookOpen,
+  Zap,
+  Copy,
+  Archive,
+  FolderOpen
 } from 'lucide-react';
-import type { 
-  AnalysisSession, 
-  SessionAnalysis, 
-  SessionSettings 
+import type {
+  AnalysisSession,
+  SessionAnalysis,
+  SessionSettings
 } from '@/types/sessions';
 import { WordAnalysisDisplay } from '@/components/analysis/WordAnalysisDisplay';
 import { SentenceAnalysisDisplay } from '@/components/analysis/SentenceAnalysisDisplay';
 import { ParagraphAnalysisDisplay } from '@/components/analysis/ParagraphAnalysisDisplay';
+import { useAppNavigation } from '@/lib/navigation';
 
 interface SessionDetailProps {
   session?: AnalysisSession | null;
@@ -52,6 +58,7 @@ export function SessionDetail({
   className
 }: SessionDetailProps) {
   const [activeTab, setActiveTab] = useState('analyses');
+  const { navigateToAnalysis } = useAppNavigation();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -279,38 +286,102 @@ export function SessionDetail({
         </CardContent>
       </Card>
 
-      {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-2">
-        <div className="flex flex-wrap gap-2 flex-1">
-          <Button variant="outline" onClick={() => onEdit?.(session)} className="flex-1 sm:flex-none">
-            <Edit className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Chỉnh sửa</span>
-            <span className="sm:hidden">Sửa</span>
-          </Button>
-          <Button variant="outline" onClick={() => onSettings?.(session.id)} className="flex-1 sm:flex-none">
-            <Settings className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Cài đặt</span>
-            <span className="sm:hidden">Cài</span>
-          </Button>
-          <Button variant="outline" className="flex-1 sm:flex-none">
-            <Download className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Xuất</span>
-            <span className="sm:hidden">Xuất</span>
-          </Button>
-          <Button variant="outline" className="flex-1 sm:flex-none">
-            <Share className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Chia sẻ</span>
-            <span className="sm:hidden">Chia</span>
-          </Button>
-        </div>
-        {onDelete && (
-          <Button variant="destructive" onClick={() => onDelete(session.id)} className="flex-1 sm:flex-none">
-            <Trash2 className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Xóa</span>
-            <span className="sm:hidden">Xóa</span>
-          </Button>
-        )}
-      </div>
+      {/* Primary Action - Open in Analysis Editor */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <div className="flex-1 text-center sm:text-left">
+              <h3 className="font-semibold text-foreground mb-1">
+                Tiếp tục phân tích phiên này
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Mở trong Analysis Editor để thêm phân tích mới hoặc chỉnh sửa nội dung hiện có
+              </p>
+            </div>
+            <Button
+              onClick={() => navigateToAnalysis(session.id)}
+              size="lg"
+              className="w-full sm:w-auto bg-primary hover:bg-primary/90"
+            >
+              <BookOpen className="h-5 w-5 mr-2" />
+              Mở trong Analysis Editor
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Quick Actions */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Thao tác nhanh</CardTitle>
+          <CardDescription>
+            Các hành động thường dùng cho phiên này
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <Button
+              variant="outline"
+              onClick={() => onEdit?.(session)}
+              className="justify-start h-auto p-3 flex-col gap-2"
+            >
+              <Edit className="h-5 w-5" />
+              <span className="text-xs">Chỉnh sửa</span>
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => onSettings?.(session.id)}
+              className="justify-start h-auto p-3 flex-col gap-2"
+            >
+              <Settings className="h-5 w-5" />
+              <span className="text-xs">Cài đặt</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="justify-start h-auto p-3 flex-col gap-2"
+            >
+              <Download className="h-5 w-5" />
+              <span className="text-xs">Xuất</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="justify-start h-auto p-3 flex-col gap-2"
+            >
+              <Share className="h-5 w-5" />
+              <span className="text-xs">Chia sẻ</span>
+            </Button>
+          </div>
+          
+          <Separator className="my-4" />
+          
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+            >
+              <Copy className="h-4 w-4 mr-2" />
+              Nhân bản
+            </Button>
+            <Button
+              variant="outline"
+              className="flex-1"
+            >
+              <Archive className="h-4 w-4 mr-2" />
+              Lưu trữ
+            </Button>
+            {onDelete && (
+              <Button
+                variant="destructive"
+                onClick={() => onDelete(session.id)}
+                className="flex-1"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Xóa
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>

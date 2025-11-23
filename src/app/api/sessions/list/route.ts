@@ -41,15 +41,35 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type') || 'all';
     const search = searchParams.get('search') || '';
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
+    const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '10')));
     const offset = (page - 1) * limit;
+    const sortBy = searchParams.get('sort_by') || 'updated_at';
+    const sortOrder = searchParams.get('sort_order') || 'desc';
+    const includeEmpty = searchParams.get('include_empty') === 'true';
+
+    // Validate sort parameters
+    const validSortFields = ['created_at', 'updated_at', 'last_accessed_at', 'title', 'total_analyses'];
+    const validSortOrders = ['asc', 'desc'];
+    
+    if (!validSortFields.includes(sortBy)) {
+      return NextResponse.json(
+        { error: 'Invalid sort field. Must be one of: ' + validSortFields.join(', ') },
+        { status: 400 }
+      );
+    }
+    
+    if (!validSortOrders.includes(sortOrder)) {
+      return NextResponse.json(
+        { error: 'Invalid sort order. Must be asc or desc' },
+        { status: 400 }
+      );
+    }
 
     // Build query
     let query = supabase
       .from('analysis_sessions')
       .select('*', { count: 'exact' })
-      .eq('user_id', user.id)
-      .order('updated_at', { ascending: false });
+      .eq('user_id', user.id);
 
     // Apply filters
     if (status !== 'all') {
@@ -64,8 +84,15 @@ export async function GET(request: NextRequest) {
       query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
     }
 
-    // Apply pagination
-    query = query.range(offset, offset + limit - 1);
+    // Filter out empty sessions unless explicitly requested
+    if (!includeEmpty) {
+      query = query.gte('total_analyses', 1);
+    }
+
+    // Apply sorting and pagination
+    query = query
+      .order(sortBy as any, { ascending: sortOrder === 'asc' })
+      .range(offset, offset + limit - 1);
 
     const { data: sessions, error: sessionsError, count } = await query;
 

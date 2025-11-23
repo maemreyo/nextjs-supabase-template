@@ -9,6 +9,8 @@ interface ListSessionsParams {
   search?: string;
   page?: number;
   limit?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 }
 
 interface SessionsListResponse {
@@ -39,6 +41,8 @@ export function useSessions(params: ListSessionsParams = {}, options: UseSession
     search = '',
     page = 1,
     limit = 20,
+    sortBy = 'last_accessed_at',
+    sortOrder = 'desc',
   } = params;
 
   const {
@@ -55,6 +59,8 @@ export function useSessions(params: ListSessionsParams = {}, options: UseSession
     search,
     page,
     limit,
+    sortBy,
+    sortOrder,
   });
 
   const {
@@ -85,6 +91,8 @@ export function useSessions(params: ListSessionsParams = {}, options: UseSession
         if (search) queryParams.append('search', search);
         if (page !== 1) queryParams.append('page', page.toString());
         if (limit !== 20) queryParams.append('limit', limit.toString());
+        if (sortBy) queryParams.append('sort_by', sortBy);
+        if (sortOrder) queryParams.append('sort_order', sortOrder);
 
         const queryString = queryParams.toString();
         const url = `/api/sessions/list${queryString ? `?${queryString}` : ''}`;
@@ -116,7 +124,7 @@ export function useSessions(params: ListSessionsParams = {}, options: UseSession
         const result: SessionsListResponse = await response.json();
         
         console.log('🔍 [DEBUG] useSessions - Fetch successful', {
-          sessionsCount: result.sessions.length,
+          sessionsCount: result.sessions?.length,
           total: result.total,
         });
 

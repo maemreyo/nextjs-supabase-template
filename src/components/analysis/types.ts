@@ -97,6 +97,7 @@ export interface AnalysisEditorProps {
   initialText?: string;
   className?: string;
   isAnalyzing?: boolean;
+  sessionId?: string;
 }
 
 // Props cho AnalysisTabs component

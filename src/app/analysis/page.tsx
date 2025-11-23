@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,6 @@ import {
   BookOpen,
   FileText,
   FilePlus,
-  Archive,
   Clock,
   Settings,
   Loader2,
@@ -35,11 +35,13 @@ import { CompactResultCard } from '@/components/analysis/CompactResultCard';
 import AnalysisErrorBoundary from '@/components/analysis/AnalysisErrorBoundary';
 import AnalysisDebugPanel from '@/components/analysis/AnalysisDebugPanel';
 import AuthGuard from '@/components/auth/auth-guard';
+import SessionWordList from '@/components/analysis/SessionWordList';
 
 // Hooks
 import { useWordAnalysisMutation } from '@/hooks/useWordAnalysis';
 import { useSentenceAnalysisMutation } from '@/hooks/useSentenceAnalysis';
 import { useParagraphAnalysisMutation } from '@/hooks/useParagraphAnalysis';
+import { useSessionData } from '@/hooks/useSessionData';
 
 // Store
 import { useAnalysisStore, useAnalysisSelectors, useAnalysisActions } from '@/stores/analysis-store';
@@ -48,14 +50,33 @@ import { useAnalysisStore, useAnalysisSelectors, useAnalysisActions } from '@/st
 import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis } from '@/lib/ai/types';
 import AnalysisResultDialog from '@/components/analysis/AnalysisResultDialog';
 import SavedAnalysesManager from '@/components/analysis/SavedAnalysesManager';
+import { useAppNavigation, createBreadcrumbItems, NavigationValidation } from '@/lib/navigation';
+import { Breadcrumb, ResponsiveBreadcrumb, MobileBreadcrumb } from '@/components/ui/breadcrumb';
 
 /**
  * Trang cải tiến cho AI Semantic Analysis Editor
  */
 function ImprovedAnalysisPageContent() {
   console.log('🔍 [DEBUG] ImprovedAnalysisPageContent - Component started');
+  
+  // Get sessionId from URL parameters
+  const searchParams = useSearchParams();
+  const sessionId = NavigationValidation.getValidatedSessionId(searchParams);
+  
+  // Load session data
+  const {
+    session,
+    analyses,
+    isLoading: isSessionLoading,
+    error: sessionError,
+    getWordList
+  } = useSessionData(sessionId || undefined, {
+    enabled: !!sessionId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+  
   // Local state
-  const [activeTab, setActiveTab] = useState<'word' | 'sentence' | 'paragraph' | 'saved'>('word');
+  const [activeTab, setActiveTab] = useState<'word' | 'sentence' | 'paragraph'>('word');
   const [selectedText, setSelectedText] = useState('');
   const [analysisType, setAnalysisType] = useState<'word' | 'sentence' | 'paragraph'>('word');
   const [analysisResult, setAnalysisResult] = useState<WordAnalysis | SentenceAnalysis | ParagraphAnalysis | null>(null);
@@ -93,6 +114,7 @@ function ImprovedAnalysisPageContent() {
   const {
     clearAll
   } = useAnalysisActions();
+  const { navigateToSessions } = useAppNavigation();
 
   // Mutations cho analysis
   const wordAnalysisMutation = useWordAnalysisMutation();
@@ -211,7 +233,7 @@ function ImprovedAnalysisPageContent() {
     }
   }, [wordAnalysisMutation, sentenceAnalysisMutation, paragraphAnalysisMutation]);
 
-  const handleTabChange = useCallback((tab: 'word' | 'sentence' | 'paragraph' | 'saved') => {
+  const handleTabChange = useCallback((tab: 'word' | 'sentence' | 'paragraph') => {
     setActiveTab(tab);
   }, []);
 
@@ -258,6 +280,12 @@ function ImprovedAnalysisPageContent() {
     analysisPanelOpen
   });
 
+  // Create breadcrumb items
+  const breadcrumbItems = useMemo(() => {
+    if (!session) return createBreadcrumbItems('/analysis');
+    return createBreadcrumbItems('/analysis', sessionId, session.title);
+  }, [session, sessionId]);
+
   console.log('🔍 [DEBUG] ImprovedAnalysisPageContent - About to render main container');
   return (
     <div
@@ -268,12 +296,53 @@ function ImprovedAnalysisPageContent() {
         minHeight: '100vh'
       }}
     >
-      <div className="mb-4 sm:mb-6 flex-shrink-0">
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground mb-2">AI Semantic Analysis Editor</h1>
-        <p className="text-muted-foreground text-sm sm:text-base">
-          Phân tích chi tiết từ, câu và đoạn văn bằng AI để hiểu sâu sắc thái ngữ nghĩa và cải thiện kỹ năng viết.
-        </p>
+      {/* Breadcrumb Navigation - Desktop */}
+      <div className="hidden sm:block mb-4 sm:mb-6 flex-shrink-0">
+        <ResponsiveBreadcrumb items={breadcrumbItems} />
       </div>
+
+      {/* Breadcrumb Navigation - Mobile */}
+      <div className="sm:hidden mb-4 flex-shrink-0">
+        <MobileBreadcrumb items={breadcrumbItems} />
+      </div>
+
+      {/* Page Header - Only show when not in session mode */}
+      {!sessionId && (
+        <div className="mb-4 sm:mb-6 flex-shrink-0">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground mb-2">AI Semantic Analysis Editor</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">
+            Phân tích chi tiết từ, câu và đoạn văn bằng AI để hiểu sâu sắc thái ngữ nghĩa và cải thiện kỹ năng viết.
+          </p>
+        </div>
+      )}
+
+      {/* Quick Navigation when in session mode */}
+      {sessionId && (
+        <div className="mb-4 sm:mb-6 flex-shrink-0">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground mb-2 truncate">
+                {session?.title || 'Đang tải...'}
+              </h1>
+              <p className="text-muted-foreground text-sm sm:text-base">
+                Phân tích chi tiết từ, câu và đoạn văn bằng AI
+              </p>
+            </div>
+            <div className="flex gap-2 flex-shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigateToSessions()}
+                className="flex-shrink-0"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Danh sách phiên</span>
+                <span className="sm:hidden">Phiên</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {(error || lastError || currentMutation.error) && (
         <Alert className="mb-4 border-destructive/50 bg-destructive/10 text-destructive flex-shrink-0">
@@ -305,22 +374,21 @@ function ImprovedAnalysisPageContent() {
             minHeight: '300px'
           }}
         >
-          {activeTab === 'saved' ? (
-            <SavedAnalysesManager />
-          ) : (
-            <>
-              {(() => {
-                console.log('🔍 [DEBUG] ImprovedAnalysisPageContent - Rendering AnalysisEditor');
-                return null;
-              })()}
-              <AnalysisEditor
-                onTextSelect={handleTextSelect}
-                onAnalyze={handleAnalyze}
-                isAnalyzing={isAnalyzing}
-                className="h-full"
-              />
-            </>
-          )}
+          {(() => {
+            console.log('🔍 [DEBUG] ImprovedAnalysisPageContent - Rendering AnalysisEditor');
+            return null;
+          })()}
+          <AnalysisEditor
+            onTextSelect={handleTextSelect}
+            onAnalyze={handleAnalyze}
+            onAnalysisComplete={(result) => {
+              setAnalysisResult(result.data);
+              setAnalysisPanelOpen(true);
+            }}
+            isAnalyzing={isAnalyzing}
+            className="h-full"
+            sessionId={sessionId || undefined}
+          />
         </div>
 
         {/* Sidebar - occupies 1/3 of space */}
@@ -362,7 +430,7 @@ function ImprovedAnalysisPageContent() {
             </div>
             {isAnalysisTypeOpen && (
               <Tabs value={activeTab} onValueChange={(value) => handleTabChange(value as any)}>
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="word" className="flex items-center gap-2" title="Phân tích từ vựng">
                     <BookOpen className="h-4 w-4" />
                     <span className="hidden sm:inline">Từ</span>
@@ -376,11 +444,6 @@ function ImprovedAnalysisPageContent() {
                   <TabsTrigger value="paragraph" className="flex items-center gap-2" title="Phân tích đoạn văn">
                     <FilePlus className="h-4 w-4" />
                     <span className="hidden sm:inline">Đoạn</span>
-                  </TabsTrigger>
-                  
-                  <TabsTrigger value="saved" className="flex items-center gap-2" title="Phân tích đã lưu">
-                    <Archive className="h-4 w-4" />
-                    <span className="hidden sm:inline">Đã lưu</span>
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
@@ -415,9 +478,7 @@ function ImprovedAnalysisPageContent() {
                 
                 <Button
                   onClick={() => {
-                    if (activeTab !== 'saved') {
-                      handleAnalyze(selectedText, activeTab as 'word' | 'sentence' | 'paragraph');
-                    }
+                    handleAnalyze(selectedText, activeTab as 'word' | 'sentence' | 'paragraph');
                   }}
                   disabled={currentLoading}
                   size="sm"
@@ -443,7 +504,7 @@ function ImprovedAnalysisPageContent() {
           {selectedText && (
             <CompactResultCard
               analysis={analysisResult}
-              analysisType={activeTab === 'saved' ? 'word' : activeTab}
+              analysisType={activeTab}
               isLoading={currentLoading}
               error={error}
               onViewDetails={() => setIsDetailDialogOpen(true)}
@@ -559,6 +620,22 @@ function ImprovedAnalysisPageContent() {
             </Card>
           )}
 
+          {/* Session Word List */}
+          {sessionId && (
+            <SessionWordList
+              words={getWordList()}
+              onWordClick={(wordItem) => {
+                // Handle word click - could show detailed analysis
+                console.log('Word clicked:', wordItem);
+              }}
+              onWordRemove={(wordId) => {
+                // Handle word removal from session
+                console.log('Word removed:', wordId);
+              }}
+              className="mb-4"
+            />
+          )}
+
           {/* Analysis Panel */}
           {analysisPanelOpen && analysisResult && (
             <>
@@ -575,7 +652,7 @@ function ImprovedAnalysisPageContent() {
                 analysisPanelOpen={analysisPanelOpen}
                 setAnalysisPanelOpen={setAnalysisPanelOpen}
                 analysisResult={analysisResult}
-                analysisType={activeTab === 'saved' ? 'word' : activeTab}
+                analysisType={activeTab}
                 selectedText={selectedText}
               />
             </>
@@ -588,7 +665,7 @@ function ImprovedAnalysisPageContent() {
         isOpen={isDetailDialogOpen}
         onClose={() => setIsDetailDialogOpen(false)}
         analysis={analysisResult}
-        analysisType={activeTab === 'saved' ? 'word' : activeTab}
+        analysisType={activeTab}
       />
     </div>
   );

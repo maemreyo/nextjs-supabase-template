@@ -30,20 +30,29 @@ import {
   Save,
   FolderOpen,
   CheckCircle,
-  AlertTriangle
+  AlertTriangle,
+  Plus,
+  ArrowLeft
 } from 'lucide-react';
 import type { AnalysisEditorProps, WordAnalysis, SentenceAnalysis, ParagraphAnalysis } from './types';
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useTheme } from 'next-themes';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useSessionStore } from '@/stores/session-store';
 import { useAnalysisSave } from '@/hooks/useAnalysisSave';
+import { useSessionData } from '@/hooks/useSessionData';
+import { useSessionAutoSave } from '@/hooks/useSessionAutoSave';
+import AutoSaveStatusIndicator from '@/components/sessions/AutoSaveStatusIndicator';
+import { useAppNavigation, createBreadcrumbItems, NavigationValidation } from '@/lib/navigation';
+import { Breadcrumb, ResponsiveBreadcrumb, MobileBreadcrumb } from '@/components/ui/breadcrumb';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import SessionWordList from './SessionWordList';
 
 export function AnalysisEditor({
   onTextSelect,
@@ -51,13 +60,25 @@ export function AnalysisEditor({
   onAnalysisComplete, // New prop to handle analysis completion
   initialText = "",
   className = "",
-  isAnalyzing: parentIsAnalyzing = false
-}: AnalysisEditorProps & { onAnalysisComplete?: (result: {
+  isAnalyzing: parentIsAnalyzing = false,
+  sessionId: propSessionId
+}: AnalysisEditorProps & {
+  onAnalysisComplete?: (result: {
     text: string;
     type: 'word' | 'sentence' | 'paragraph';
     data: WordAnalysis | SentenceAnalysis | ParagraphAnalysis;
-  }) => void }) {
-  console.log('🔍 [DEBUG] AnalysisEditor - Component started', { initialText, className });
+  }) => void;
+  sessionId?: string;
+}) {
+  console.log('🔍 [DEBUG] AnalysisEditor - Component started', { initialText, className, propSessionId });
+  
+  // Get sessionId from URL parameters if not provided as prop
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const urlSessionId = NavigationValidation.getValidatedSessionId(searchParams);
+  const sessionId = propSessionId || urlSessionId || undefined;
+  const { navigateToSessions, navigateToAnalysis } = useAppNavigation();
+  
   const [selectedText, setSelectedText] = useState('');
   const [selectionType, setSelectionType] = useState<'word' | 'phrase' | 'sentence' | 'paragraph'>('word');
   const [analysisType, setAnalysisType] = useState<'word' | 'sentence' | 'paragraph'>('word');
@@ -99,10 +120,39 @@ export function AnalysisEditor({
     timestamp: number;
   } | null>(null);
 
-  const { sessions, createSession, addAnalysisToSession } = useSessionStore();
+  const { sessions, createSession, addAnalysisToSession, setCurrentSession } = useSessionStore();
   const { theme, systemTheme } = useTheme();
   
-  // Hook for saving analysis
+  // Hook for loading session data
+  const {
+    session,
+    analyses,
+    settings,
+    isLoading: isSessionLoading,
+    error: sessionError,
+    getSessionText,
+    getWordList
+  } = useSessionData(sessionId, {
+    enabled: !!sessionId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+  
+  // Hook for auto-saving to session
+  const { autoSave, forceSave, isSaving: isAutoSaving, autoSaveStatus, hasUnsavedChanges, markAsChanged } = useSessionAutoSave({
+    enabled: autoSaveEnabled && !!sessionId,
+    debounceMs: 3000, // 3 seconds
+    intervalMs: 5 * 60 * 1000, // 5 minutes
+    enableBeforeUnload: true,
+    enableNavigationSave: true,
+    onSuccess: (data) => {
+      console.log('🔍 [DEBUG] AnalysisEditor - Auto-save successful', data);
+    },
+    onError: (error) => {
+      console.error('🔍 [DEBUG] AnalysisEditor - Auto-save failed', error);
+    }
+  });
+  
+  // Hook for saving analysis (fallback when no session)
   const { saveAnalysis, isLoading: isSaving, isSuccess: isSaveSuccess, error: saveError } = useAnalysisSave({
     onSuccess: (data) => {
       console.log('🔍 [DEBUG] AnalysisEditor - Analysis saved successfully', data);
@@ -236,15 +286,26 @@ export function AnalysisEditor({
               console.log('🔍 [DEBUG] AnalysisEditor - Auto-saving analysis', {
                 text: textToAnalyze,
                 type,
-                hasData: !!result
+                hasData: !!result,
+                hasSessionId: !!sessionId
               });
               
-              saveAnalysis({
-                type,
-                text: textToAnalyze,
-                analysisData: result,
-                // sessionId: selectedSessionId || undefined, // Optional session ID
-              });
+              if (sessionId) {
+                // Save to current session
+                autoSave({
+                  type,
+                  text: textToAnalyze,
+                  analysisData: result,
+                  sessionId,
+                });
+              } else {
+                // Save without session (fallback)
+                saveAnalysis({
+                  type,
+                  text: textToAnalyze,
+                  analysisData: result,
+                });
+              }
             }
           }
         } catch (err) {
@@ -453,15 +514,26 @@ export function AnalysisEditor({
           console.log('🔍 [DEBUG] AnalysisEditor - Auto-saving manual analysis', {
             text: textToAnalyze,
             type: analysisType,
-            hasData: !!result
+            hasData: !!result,
+            hasSessionId: !!sessionId
           });
           
-          saveAnalysis({
-            type: analysisType,
-            text: textToAnalyze,
-            analysisData: result,
-            // sessionId: selectedSessionId || undefined, // Optional session ID
-          });
+          if (sessionId) {
+            // Save to current session
+            autoSave({
+              type: analysisType,
+              text: textToAnalyze,
+              analysisData: result,
+              sessionId,
+            });
+          } else {
+            // Save without session (fallback)
+            saveAnalysis({
+              type: analysisType,
+              text: textToAnalyze,
+              analysisData: result,
+            });
+          }
         }
       }
       
@@ -527,23 +599,44 @@ export function AnalysisEditor({
   const handleContentChange = useCallback(() => {
     updateTextStats();
     updateActiveFormats();
-  }, [updateTextStats, updateActiveFormats]);
+    // Mark content as changed for auto-save tracking
+    markAsChanged();
+  }, [updateTextStats, updateActiveFormats, markAsChanged]);
 
-  // Initialize content once
+  // Initialize content once and load session data
   useEffect(() => {
     console.log('🔍 [DEBUG] AnalysisEditor - Initialize effect triggered', {
       hasEditorRef: !!editorRef.current,
       isInitialized: isInitializedRef.current,
-      initialText
+      initialText,
+      sessionId,
+      hasSessionData: !!session,
+      isSessionLoading
     });
-    if (editorRef.current && !isInitializedRef.current && initialText) {
-      // Clean initial text colors to match theme
-      const cleanedInitialText = cleanTextColors(initialText);
-      editorRef.current.innerHTML = cleanedInitialText;
-      isInitializedRef.current = true;
-      updateTextStats();
+    
+    // Set current session in store when session data is loaded
+    if (session && !isSessionLoading) {
+      setCurrentSession(session);
     }
-  }, [initialText, updateTextStats, cleanTextColors]);
+    
+    // Load session text into editor
+    if (editorRef.current && !isInitializedRef.current) {
+      let textToLoad = initialText;
+      
+      // If we have session data, use session text instead of initialText
+      if (sessionId && session) {
+        textToLoad = getSessionText() || '';
+      }
+      
+      if (textToLoad) {
+        // Clean text colors to match theme
+        const cleanedText = cleanTextColors(textToLoad);
+        editorRef.current.innerHTML = cleanedText;
+        isInitializedRef.current = true;
+        updateTextStats();
+      }
+    }
+  }, [initialText, sessionId, session, isSessionLoading, getSessionText, updateTextStats, cleanTextColors, setCurrentSession]);
 
   // Ensure text colors match theme when theme changes
   useEffect(() => {
@@ -631,8 +724,114 @@ export function AnalysisEditor({
     textStats
   });
 
+  // Create breadcrumb items
+  const breadcrumbItems = useMemo(() => {
+    if (!session) return [];
+    return createBreadcrumbItems('/analysis', sessionId, session.title);
+  }, [session, sessionId]);
+
   return (
     <div className={`h-full flex flex-col ${className}`}>
+      {/* Breadcrumb Navigation - Desktop */}
+      {sessionId && session && (
+        <div className="hidden sm:block border-b bg-muted/20 px-4 py-2">
+          <ResponsiveBreadcrumb items={breadcrumbItems} />
+        </div>
+      )}
+
+      {/* Breadcrumb Navigation - Mobile */}
+      {sessionId && session && (
+        <div className="sm:hidden border-b bg-muted/20 px-4 py-2">
+          <MobileBreadcrumb items={breadcrumbItems} />
+        </div>
+      )}
+
+      {/* Session Header */}
+      {sessionId && (
+        <div className="border-b bg-muted/30 p-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigateToSessions()}
+                className="h-7 px-2 flex-shrink-0"
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                <span className="hidden sm:inline">Quay lại</span>
+                <span className="sm:hidden">←</span>
+              </Button>
+              
+              {session && (
+                <div className="flex items-center gap-2 min-w-0">
+                  <Badge variant="outline" className="bg-primary/10 border-primary/30 truncate max-w-[150px] sm:max-w-none">
+                    <FolderOpen className="h-3 w-3 mr-1 flex-shrink-0" />
+                    <span className="truncate">{session.title}</span>
+                  </Badge>
+                  <Badge variant="secondary" className="text-xs flex-shrink-0">
+                    {session.session_type === 'word' ? 'Từ' :
+                     session.session_type === 'sentence' ? 'Câu' :
+                     session.session_type === 'paragraph' ? 'Đoạn' : 'Hỗn hợp'}
+                  </Badge>
+                  <Badge variant="outline" className="text-xs flex-shrink-0">
+                    {analyses.length} phân tích
+                  </Badge>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigateToSessions()}
+                className="h-7 px-2"
+              >
+                <FolderOpen className="h-4 w-4 mr-1" />
+                <span className="hidden sm:inline">Danh sách</span>
+                <span className="sm:hidden">📋</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  // Create new session and redirect
+                  createSession({
+                    title: `Session mới - ${new Date().toLocaleDateString('vi-VN')}`,
+                    session_type: 'mixed'
+                  }).then(newSession => {
+                    navigateToAnalysis(newSession.id);
+                  });
+                }}
+                className="h-7 px-2"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                <span className="hidden sm:inline">Mới</span>
+                <span className="sm:hidden">+</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Error Display */}
+      {sessionError && (
+        <Alert className="m-4 border-destructive/50 bg-destructive/10 text-destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Không thể tải session: {sessionError.message}
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {/* Loading State */}
+      {isSessionLoading && (
+        <div className="flex items-center justify-center p-8">
+          <Loader2 className="h-6 w-6 animate-spin mr-2" />
+          <span>Đang tải session...</span>
+        </div>
+      )}
+      
       <Card className="flex-1 flex flex-col">
         {/* Toolbar */}
         <div className="border-b p-2 flex items-center gap-1 flex-wrap">
@@ -711,17 +910,24 @@ export function AnalysisEditor({
               </Badge>
             )}
             
-            {/* Auto-save toggle */}
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="auto-save"
-                checked={autoSaveEnabled}
-                onCheckedChange={(checked) => setAutoSaveEnabled(checked as boolean)}
-                className="h-4 w-4"
+            {/* Auto-save status and toggle */}
+            <div className="flex items-center gap-3">
+              <AutoSaveStatusIndicator
+                status={autoSaveStatus}
+                compact={true}
               />
-              <Label htmlFor="auto-save" className="text-xs cursor-pointer">
-                Tự động lưu
-              </Label>
+              
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="auto-save"
+                  checked={autoSaveEnabled}
+                  onCheckedChange={(checked) => setAutoSaveEnabled(checked as boolean)}
+                  className="h-4 w-4"
+                />
+                <Label htmlFor="auto-save" className="text-xs cursor-pointer">
+                  Tự động lưu
+                </Label>
+              </div>
             </div>
             
             <Button
@@ -735,27 +941,11 @@ export function AnalysisEditor({
               Auto: {autoAnalysisEnabled ? "ON" : "OFF"}
             </Button>
             
-            {/* Save status indicator */}
-            {isSaving && (
-              <Badge variant="outline" className="text-xs bg-blue-100 border-blue-300 text-blue-800">
-                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                Đang lưu...
-              </Badge>
-            )}
-            
-            {isSaveSuccess && (
-              <Badge variant="outline" className="text-xs bg-green-100 border-green-300 text-green-800">
-                <CheckCircle className="h-3 w-3 mr-1" />
-                Đã lưu
-              </Badge>
-            )}
-            
-            {saveError && (
-              <Badge variant="outline" className="text-xs bg-red-100 border-red-300 text-red-800">
-                <AlertTriangle className="h-3 w-3 mr-1" />
-                Lưu thất bại
-              </Badge>
-            )}
+            {/* Enhanced save status indicator */}
+            <AutoSaveStatusIndicator
+              status={autoSaveStatus}
+              compact={true}
+            />
           </div>
         </div>
 
@@ -876,23 +1066,34 @@ export function AnalysisEditor({
                 console.log('🔍 [DEBUG] AnalysisEditor - Manual save triggered', {
                   text: lastAnalysisResult.text,
                   type: lastAnalysisResult.type,
+                  hasSessionId: !!sessionId,
                 });
                 
-                saveAnalysis({
-                  type: lastAnalysisResult.type,
-                  text: lastAnalysisResult.text,
-                  analysisData: lastAnalysisResult.data,
-                  // sessionId: selectedSessionId || undefined,
-                });
+                if (sessionId) {
+                  // Save to current session
+                  forceSave({
+                    type: lastAnalysisResult.type,
+                    text: lastAnalysisResult.text,
+                    analysisData: lastAnalysisResult.data,
+                    sessionId,
+                  });
+                } else {
+                  // Save without session (fallback)
+                  saveAnalysis({
+                    type: lastAnalysisResult.type,
+                    text: lastAnalysisResult.text,
+                    analysisData: lastAnalysisResult.data,
+                  });
+                }
               }}
-              disabled={isSaving}
+              disabled={isSaving || isAutoSaving}
               className="h-7 px-2 text-xs"
-              title="Lưu kết quả phân tích"
+              title={sessionId ? "Lưu kết quả phân tích vào session" : "Lưu kết quả phân tích"}
             >
-              {isSaving ? (
+              {(isSaving || isAutoSaving) ? (
                 <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Đang lưu...</>
               ) : (
-                <><Save size={12} className="mr-1" />Lưu</>
+                <><Save size={12} className="mr-1" />{sessionId ? 'Lưu vào session' : 'Lưu'}</>
               )}
             </Button>
           )}

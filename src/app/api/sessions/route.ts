@@ -35,13 +35,34 @@ export async function GET(request: NextRequest) {
     // Parse query parameters
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
-    const perPage = parseInt(searchParams.get('per_page') || '20');
+    const perPage = Math.min(50, Math.max(1, parseInt(searchParams.get('per_page') || '20')));
     const status = searchParams.get('status') || 'all';
     const type = searchParams.get('type') || 'all';
     const search = searchParams.get('search') || '';
     const tags = searchParams.get('tags')?.split(',').filter(Boolean) || [];
     const dateFrom = searchParams.get('date_from');
     const dateTo = searchParams.get('date_to');
+    const sortBy = searchParams.get('sort_by') || 'last_accessed_at';
+    const sortOrder = searchParams.get('sort_order') || 'desc';
+    const includeEmpty = searchParams.get('include_empty') === 'true';
+
+    // Validate sort parameters
+    const validSortFields = ['created_at', 'updated_at', 'last_accessed_at', 'title', 'total_analyses'];
+    const validSortOrders = ['asc', 'desc'];
+    
+    if (!validSortFields.includes(sortBy)) {
+      return NextResponse.json(
+        { error: 'Invalid sort field. Must be one of: ' + validSortFields.join(', ') },
+        { status: 400 }
+      );
+    }
+    
+    if (!validSortOrders.includes(sortOrder)) {
+      return NextResponse.json(
+        { error: 'Invalid sort order. Must be asc or desc' },
+        { status: 400 }
+      );
+    }
 
     // Build query
     let query = supabase
@@ -77,6 +98,11 @@ export async function GET(request: NextRequest) {
       query = query.lte('created_at', dateTo);
     }
 
+    // Filter out empty sessions unless explicitly requested
+    if (!includeEmpty) {
+      query = query.gte('total_analyses', 1);
+    }
+
     // Get total count
     const { count } = await query;
     const totalSessions = count || 0;
@@ -84,8 +110,8 @@ export async function GET(request: NextRequest) {
     // Apply pagination and ordering
     const offset = (page - 1) * perPage;
     const { data: sessions, error: fetchError } = await query
-      .order('last_accessed_at', { ascending: false })
-      .range(offset, perPage - 1);
+      .order(sortBy as any, { ascending: sortOrder === 'asc' })
+      .range(offset, offset + perPage - 1);
 
     if (fetchError) {
       throw fetchError;

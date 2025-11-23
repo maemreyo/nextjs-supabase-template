@@ -1,0 +1,200 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { Database } from '@/lib/database.types';
+
+interface SessionAnalyticsResponse {
+  success: boolean;
+  data?: {
+    session: Database['public']['Tables']['analysis_sessions']['Row'];
+    statistics: {
+      totalAnalyses: number;
+      wordAnalyses: number;
+      sentenceAnalyses: number;
+      paragraphAnalyses: number;
+      averageAnalysesPerDay: number;
+      mostActiveDay: string;
+      sessionDuration: number; // in hours
+      completionRate: number; // percentage
+    };
+    breakdown: {
+      byType: {
+        word: number;
+        sentence: number;
+        paragraph: number;
+      };
+      byDay: Array<{
+        date: string;
+        count: number;
+      }>;
+    };
+    recentActivity: Array<{
+      id: string;
+      type: 'word' | 'sentence' | 'paragraph';
+      title: string;
+      created_at: string;
+    }>;
+  };
+  error?: string;
+}
+
+// GET /api/sessions/[id]/analytics - Get analytics for a specific session
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    // Get user ID from authentication
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader) {
+      return NextResponse.json(
+        { error: 'Authorization header required' },
+        { status: 401 }
+      );
+    }
+
+    const supabase = await createClient();
+    const token = authHeader.replace('Bearer ', '');
+    
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    
+    if (error || !user) {
+      return NextResponse.json(
+        { error: 'Invalid or expired token' },
+        { status: 401 }
+      );
+    }
+
+    const { id: sessionId } = await params;
+
+    if (!sessionId) {
+      return NextResponse.json(
+        { error: 'Session ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Get session details
+    const { data: session, error: sessionError } = await supabase
+      .from('analysis_sessions')
+      .select('*')
+      .eq('id', sessionId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (sessionError || !session) {
+      return NextResponse.json(
+        { error: 'Session not found or access denied' },
+        { status: 404 }
+      );
+    }
+
+    // Get all analyses for this session
+    const { data: sessionAnalyses, error: analysesError } = await supabase
+      .from('session_analyses')
+      .select(`
+        *,
+        word_analyses!inner(created_at),
+        sentence_analyses!inner(created_at),
+        paragraph_analyses!inner(created_at)
+      `)
+      .eq('session_id', sessionId)
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (analysesError) {
+      console.error('Error fetching session analyses:', analysesError);
+      return NextResponse.json(
+        { error: 'Failed to fetch session analyses' },
+        { status: 500 }
+      );
+    }
+
+    // Calculate statistics
+    const totalAnalyses = sessionAnalyses?.length || 0;
+    const wordAnalyses = sessionAnalyses?.filter(a => a.analysis_type === 'word').length || 0;
+    const sentenceAnalyses = sessionAnalyses?.filter(a => a.analysis_type === 'sentence').length || 0;
+    const paragraphAnalyses = sessionAnalyses?.filter(a => a.analysis_type === 'paragraph').length || 0;
+
+    // Calculate session duration in hours
+    const createdDate = new Date(session.created_at || session.created_at!);
+    const lastAccessedDate = new Date(session.last_accessed_at || session.updated_at || session.updated_at!);
+    const sessionDurationHours = Math.max(1, (lastAccessedDate.getTime() - createdDate.getTime()) / (1000 * 60 * 60));
+
+    // Calculate average analyses per day
+    const sessionDays = Math.max(1, sessionDurationHours / 24);
+    const averageAnalysesPerDay = totalAnalyses / sessionDays;
+
+    // Find most active day
+    const analysesByDay: Record<string, number> = {};
+    sessionAnalyses?.forEach(analysis => {
+      const date = new Date(analysis.created_at || analysis.created_at!).toISOString().split('T')[0];
+      analysesByDay[date] = (analysesByDay[date] || 0) + 1;
+    });
+
+    const mostActiveDay = Object.keys(analysesByDay).length > 0
+      ? Object.keys(analysesByDay).reduce((a, b) =>
+          (analysesByDay[a] || 0) > (analysesByDay[b] || 0) ? a : b
+        )
+      : new Date().toISOString().split('T')[0];
+
+    // Calculate completion rate (based on session status and activity)
+    let completionRate = 0;
+    if (session.status === 'active' && totalAnalyses > 0) {
+      completionRate = Math.min(100, (totalAnalyses / 10) * 100); // Assume 10 analyses is a complete session
+    } else if (session.status === 'archived') {
+      completionRate = 100;
+    }
+
+    // Prepare breakdown data
+    const breakdown = {
+      byType: {
+        word: wordAnalyses,
+        sentence: sentenceAnalyses,
+        paragraph: paragraphAnalyses
+      },
+      byDay: Object.entries(analysesByDay).map(([date, count]) => ({
+        date,
+        count
+      })).sort((a, b) => a.date.localeCompare(b.date))
+    };
+
+    // Prepare recent activity (last 5 analyses)
+    const recentActivity = sessionAnalyses?.slice(0, 5).map(analysis => ({
+      id: analysis.id,
+      type: analysis.analysis_type as 'word' | 'sentence' | 'paragraph',
+      title: analysis.analysis_title || `${analysis.analysis_type} analysis`,
+      created_at: analysis.created_at || ''
+    })) || [];
+
+    const response: SessionAnalyticsResponse = {
+      success: true,
+      data: {
+        session,
+        statistics: {
+          totalAnalyses,
+          wordAnalyses,
+          sentenceAnalyses,
+          paragraphAnalyses,
+          averageAnalysesPerDay: Math.round(averageAnalysesPerDay * 100) / 100,
+          mostActiveDay,
+          sessionDuration: Math.round(sessionDurationHours * 100) / 100,
+          completionRate: Math.round(completionRate)
+        },
+        breakdown,
+        recentActivity
+      }
+    };
+
+    return NextResponse.json(response);
+
+  } catch (error) {
+    console.error('Error in session analytics GET:', error);
+    return NextResponse.json(
+      { 
+        error: error instanceof Error ? error.message : 'Internal server error',
+        success: false 
+      },
+      { status: 500 }
+    );
+  }
+}
