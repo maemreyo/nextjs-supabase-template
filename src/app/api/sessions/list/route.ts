@@ -85,9 +85,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Filter out empty sessions unless explicitly requested
-    if (!includeEmpty) {
+    // Note: We're temporarily allowing empty sessions to show newly created ones
+    // This can be controlled by a query parameter if needed
+    if (includeEmpty) {
+      // Only apply this filter if explicitly requested
       query = query.gte('total_analyses', 1);
     }
+    // Otherwise, show all sessions including empty ones
 
     // Apply sorting and pagination
     query = query

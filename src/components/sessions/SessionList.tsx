@@ -204,14 +204,16 @@ export function SessionList({
               <span className="sm:hidden">Làm mới</span>
             </Button>
           )}
-          <Button
-            onClick={onCreateSession}
-            className="flex-1 sm:flex-none"
-            aria-label="Tạo phiên phân tích mới"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Tạo phiên mới
-          </Button>
+          {onCreateSession && (
+            <Button
+              onClick={onCreateSession}
+              className="flex-1 sm:flex-none"
+              aria-label="Tạo phiên phân tích mới"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Tạo phiên mới
+            </Button>
+          )}
         </div>
       </div>
 

@@ -121,11 +121,28 @@ export function useSessions(params: ListSessionsParams = {}, options: UseSession
           );
         }
 
-        const result: SessionsListResponse = await response.json();
+        const apiResponse = await response.json();
+        
+        // Handle different response formats
+        let result: SessionsListResponse;
+        if (apiResponse.success && apiResponse.data) {
+          // API returns { success: true, data: { sessions: [], total: 0 } }
+          result = {
+            sessions: apiResponse.data.sessions || [],
+            total: apiResponse.data.total || 0,
+          };
+        } else {
+          // API returns { sessions: [], total: 0 } directly
+          result = {
+            sessions: apiResponse.sessions || [],
+            total: apiResponse.total || 0,
+          };
+        }
         
         console.log('🔍 [DEBUG] useSessions - Fetch successful', {
           sessionsCount: result.sessions?.length,
           total: result.total,
+          responseFormat: apiResponse.success ? 'wrapped' : 'direct',
         });
 
         return result;

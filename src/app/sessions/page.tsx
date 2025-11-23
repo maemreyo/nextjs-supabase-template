@@ -50,7 +50,7 @@ export default function SessionsPage() {
     if (!createFormData.title.trim()) return;
 
     try {
-      await createSession({
+      const newSession = await createSession({
         title: createFormData.title,
         description: createFormData.description,
         session_type: createFormData.session_type
@@ -66,6 +66,12 @@ export default function SessionsPage() {
       
       // Refetch sessions list
       refetch();
+      
+      // Redirect to the newly created session detail page
+      if (newSession?.id) {
+        setSelectedSessionId(newSession.id);
+        setCurrentView('detail');
+      }
     } catch (error) {
       console.error('Failed to create session:', error);
     }
@@ -181,7 +187,6 @@ export default function SessionsPage() {
           <main className="space-y-6">
             {currentView === 'list' && (
               <SessionList
-                onCreateSession={() => setIsCreateDialogOpen(true)}
                 onOpenSession={handleOpenSession}
                 onEditSession={handleEditSession}
                 onSessionSettings={handleSessionSettings}
