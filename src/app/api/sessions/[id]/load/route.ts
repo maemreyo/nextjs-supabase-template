@@ -16,7 +16,7 @@ interface SessionLoadResponse {
 // GET /api/sessions/[id]/load - Load session details with all analyses
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get user ID from authentication
@@ -40,7 +40,7 @@ export async function GET(
       );
     }
 
-    const { id: sessionId } = params;
+    const { id: sessionId } = await params;
 
     if (!sessionId) {
       return NextResponse.json(
@@ -49,7 +49,7 @@ export async function GET(
       );
     }
 
-    // Get session details
+    // Get session details including content column
     const { data: session, error: sessionError } = await supabase
       .from('analysis_sessions')
       .select('*')

@@ -4,6 +4,7 @@ export interface AnalysisSession {
   user_id: string;
   title: string;
   description?: string | null;
+  content?: string | null; // Session content stored in the content column
   session_type: 'word' | 'sentence' | 'paragraph' | 'mixed';
   status: 'active' | 'archived' | 'deleted';
   total_analyses: number;
@@ -19,6 +20,7 @@ export interface AnalysisSessionInsert {
   user_id?: string;
   title: string;
   description?: string | null;
+  content?: string | null; // Session content stored in the content column
   session_type: 'word' | 'sentence' | 'paragraph' | 'mixed';
   status?: 'active' | 'archived' | 'deleted';
   total_analyses?: number;
@@ -30,6 +32,7 @@ export interface AnalysisSessionInsert {
 export interface AnalysisSessionUpdate {
   title?: string;
   description?: string | null;
+  content?: string | null; // Session content stored in the content column
   session_type?: 'word' | 'sentence' | 'paragraph' | 'mixed';
   status?: 'active' | 'archived' | 'deleted';
   total_analyses?: number;

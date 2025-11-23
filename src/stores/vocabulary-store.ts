@@ -26,6 +26,7 @@ import type {
   VocabularyFilters,
   PracticeSessionRequest
 } from '@/types/vocabulary';
+import { createClient } from '@/lib/supabase/client';
 
 // Tạo vocabulary store với Zustand
 export const useVocabularyStore = create<VocabularyState & VocabularyActions>((set, get) => ({
@@ -66,9 +67,22 @@ export const useVocabularyStore = create<VocabularyState & VocabularyActions>((s
     set({ isLoading: true, error: null });
     
     try {
+      // Get auth token
+      const { data: { session } } = await createClient().auth.getSession();
+      const token = session?.access_token;
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Add authorization header if token is available
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch('/api/vocabulary/words', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(wordData),
       });
 
@@ -101,9 +115,22 @@ export const useVocabularyStore = create<VocabularyState & VocabularyActions>((s
     set({ isLoading: true, error: null });
     
     try {
+      // Get auth token
+      const { data: { session } } = await createClient().auth.getSession();
+      const token = session?.access_token;
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Add authorization header if token is available
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`/api/vocabulary/words/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(updates),
       });
 
@@ -139,8 +166,20 @@ export const useVocabularyStore = create<VocabularyState & VocabularyActions>((s
     set({ isLoading: true, error: null });
     
     try {
+      // Get auth token
+      const { data: { session } } = await createClient().auth.getSession();
+      const token = session?.access_token;
+      
+      const headers: Record<string, string> = {};
+      
+      // Add authorization header if token is available
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`/api/vocabulary/words/${id}`, {
         method: 'DELETE',
+        headers,
       });
 
       if (!response.ok) {
@@ -288,9 +327,22 @@ export const useVocabularyStore = create<VocabularyState & VocabularyActions>((s
     set({ isLoading: true, error: null });
     
     try {
+      // Get auth token
+      const { data: { session } } = await createClient().auth.getSession();
+      const token = session?.access_token;
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Add authorization header if token is available
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch('/api/vocabulary/collections', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(collectionData),
       });
 

@@ -32,7 +32,8 @@ import {
   CheckCircle,
   AlertTriangle,
   Plus,
-  ArrowLeft
+  ArrowLeft,
+  Clock
 } from 'lucide-react';
 import type { AnalysisEditorProps, WordAnalysis, SentenceAnalysis, ParagraphAnalysis } from './types';
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
@@ -52,7 +53,10 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { toast } from 'sonner';
 import SessionWordList from './SessionWordList';
+import SessionQuickActions from './SessionQuickActions';
+import { useSupabase } from '@/components/providers/supabase-provider';
 
 export function AnalysisEditor({
   onTextSelect,
@@ -88,7 +92,7 @@ export function AnalysisEditor({
   // Use parent's isAnalyzing state if provided, otherwise use local state
   const effectiveIsAnalyzing = parentIsAnalyzing || isAnalyzing;
   const [autoAnalysisEnabled, setAutoAnalysisEnabled] = useState(true);
-  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true); // Bật auto-save theo mặc định
   const [lastAnalysisResult, setLastAnalysisResult] = useState<{
     text: string;
     type: 'word' | 'sentence' | 'paragraph';
@@ -98,6 +102,7 @@ export function AnalysisEditor({
   const [saveToSessionDialogOpen, setSaveToSessionDialogOpen] = useState(false);
   const [sessionTitle, setSessionTitle] = useState('');
   const [selectedSessionId, setSelectedSessionId] = useState('');
+  const [sessionQuickActionsOpen, setSessionQuickActionsOpen] = useState(false);
   
   const [activeFormats, setActiveFormats] = useState({
     bold: false,
@@ -122,6 +127,7 @@ export function AnalysisEditor({
 
   const { sessions, createSession, addAnalysisToSession, setCurrentSession } = useSessionStore();
   const { theme, systemTheme } = useTheme();
+  const { getAccessToken } = useSupabase();
   
   // Hook for loading session data
   const {
@@ -137,18 +143,26 @@ export function AnalysisEditor({
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
   
-  // Hook for auto-saving to session
+  // Hook for auto-saving to session - DISABLED BY DEFAULT
   const { autoSave, forceSave, isSaving: isAutoSaving, autoSaveStatus, hasUnsavedChanges, markAsChanged } = useSessionAutoSave({
     enabled: autoSaveEnabled && !!sessionId,
     debounceMs: 3000, // 3 seconds
     intervalMs: 5 * 60 * 1000, // 5 minutes
-    enableBeforeUnload: true,
-    enableNavigationSave: true,
+    enableBeforeUnload: false, // Tắt beforeunload auto-save
+    enableNavigationSave: false, // Tắt navigation auto-save
     onSuccess: (data) => {
-      console.log('🔍 [DEBUG] AnalysisEditor - Auto-save successful', data);
+      console.log('🔍 [DEBUG] AnalysisEditor - Save successful', data);
+      toast.success('Đã lưu', {
+        description: 'Session của bạn đã được lưu thành công.',
+        duration: 2000,
+      });
     },
     onError: (error) => {
-      console.error('🔍 [DEBUG] AnalysisEditor - Auto-save failed', error);
+      console.error('🔍 [DEBUG] AnalysisEditor - Save failed', error);
+      toast.error('Lưu thất bại', {
+        description: 'Không thể lưu session. Vui lòng thử lại.',
+        duration: 5000,
+      });
     }
   });
   
@@ -281,32 +295,13 @@ export function AnalysisEditor({
             // Call the completion callback
             onAnalysisComplete?.(analysisData);
             
-            // Auto-save if enabled
-            if (autoSaveEnabled) {
-              console.log('🔍 [DEBUG] AnalysisEditor - Auto-saving analysis', {
-                text: textToAnalyze,
-                type,
-                hasData: !!result,
-                hasSessionId: !!sessionId
-              });
-              
-              if (sessionId) {
-                // Save to current session
-                autoSave({
-                  type,
-                  text: textToAnalyze,
-                  analysisData: result,
-                  sessionId,
-                });
-              } else {
-                // Save without session (fallback)
-                saveAnalysis({
-                  type,
-                  text: textToAnalyze,
-                  analysisData: result,
-                });
-              }
-            }
+            // Auto-save đã bị tắt, chỉ lưu khi người dùng nhấn nút lưu
+            console.log('🔍 [DEBUG] AnalysisEditor - Auto-save disabled, analysis completed but not saved', {
+              text: textToAnalyze,
+              type,
+              hasData: !!result,
+              hasSessionId: !!sessionId
+            });
           }
         } catch (err) {
           // Error is now handled at page level
@@ -509,32 +504,13 @@ export function AnalysisEditor({
         // Call the completion callback
         onAnalysisComplete?.(analysisData);
         
-        // Auto-save if enabled
-        if (autoSaveEnabled) {
-          console.log('🔍 [DEBUG] AnalysisEditor - Auto-saving manual analysis', {
-            text: textToAnalyze,
-            type: analysisType,
-            hasData: !!result,
-            hasSessionId: !!sessionId
-          });
-          
-          if (sessionId) {
-            // Save to current session
-            autoSave({
-              type: analysisType,
-              text: textToAnalyze,
-              analysisData: result,
-              sessionId,
-            });
-          } else {
-            // Save without session (fallback)
-            saveAnalysis({
-              type: analysisType,
-              text: textToAnalyze,
-              analysisData: result,
-            });
-          }
-        }
+        // Auto-save đã bị tắt, chỉ lưu khi người dùng nhấn nút lưu
+        console.log('🔍 [DEBUG] AnalysisEditor - Auto-save disabled, manual analysis completed but not saved', {
+          text: textToAnalyze,
+          type: analysisType,
+          hasData: !!result,
+          hasSessionId: !!sessionId
+        });
       }
       
       setBubbleMenuPosition(prev => ({ ...prev, show: false }));
@@ -673,6 +649,103 @@ export function AnalysisEditor({
       }
     };
 
+    // Keyboard shortcuts
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+S or Cmd+S for save
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        console.log('🔍 [DEBUG] AnalysisEditor - Save shortcut triggered');
+        
+        if (lastAnalysisResult) {
+          if (sessionId) {
+            forceSave({
+              type: lastAnalysisResult.type,
+              text: lastAnalysisResult.text,
+              analysisData: lastAnalysisResult.data,
+              sessionId,
+            });
+          } else {
+            saveAnalysis({
+              type: lastAnalysisResult.type,
+              text: lastAnalysisResult.text,
+              analysisData: lastAnalysisResult.data,
+            });
+          }
+        } else {
+          // Save current editor content
+          const editorText = editorRef.current?.innerText || '';
+          if (editorText.trim()) {
+            console.log('🔍 [DEBUG] AnalysisEditor - Saving editor content from keyboard shortcut', {
+              textLength: editorText.length,
+              hasSessionId: !!sessionId,
+            });
+            
+            if (sessionId) {
+              // Create a simple analysis data for editor content
+              const simpleAnalysisData = {
+                meta: {
+                  sentence: editorText,
+                  complexity_level: 'Intermediate' as const,
+                  sentence_type: 'declarative',
+                },
+                semantics: {
+                  main_idea: editorText.substring(0, 100), // First 100 chars as main idea
+                  subtext: '',
+                  sentiment: 'Neutral' as const,
+                },
+                grammar_breakdown: {
+                  subject: 'Unknown',
+                  main_verb: 'Unknown',
+                  object: 'Unknown',
+                  clauses: [],
+                },
+                contextual_role: {
+                  function: 'content',
+                  relation_to_previous: 'none',
+                },
+                translation: {
+                  literal: editorText,
+                  natural: editorText,
+                },
+                key_components: [],
+                rewrite_suggestions: [],
+              };
+              
+              // Save the editor content as a sentence analysis
+              forceSave({
+                type: 'sentence',
+                text: editorText,
+                analysisData: simpleAnalysisData,
+                sessionId,
+              });
+            } else {
+              toast.error('Không có session để lưu', {
+                description: 'Vui lòng tạo hoặc chọn session trước khi lưu.',
+                duration: 3000,
+              });
+            }
+          } else {
+            toast.error('Không có nội dung để lưu', {
+              description: 'Vui lòng nhập nội dung trước khi lưu.',
+              duration: 3000,
+            });
+          }
+        }
+      }
+      
+      // Ctrl+Shift+S or Cmd+Shift+S for save as new session
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'S') {
+        e.preventDefault();
+        console.log('🔍 [DEBUG] AnalysisEditor - Save as new session shortcut triggered');
+        // We'll implement this later
+      }
+      
+      // Escape to hide bubble menu
+      if (e.key === 'Escape') {
+        setBubbleMenuPosition(prev => ({ ...prev, show: false }));
+      }
+    };
+
     // Click outside to hide bubble menu
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
@@ -683,15 +756,17 @@ export function AnalysisEditor({
     
     document.addEventListener('mouseup', handleMouseUp);
     document.addEventListener('keyup', handleKeyUp);
+    document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('mousedown', handleClickOutside);
     
     return () => {
       document.removeEventListener('mouseup', handleMouseUp);
       document.removeEventListener('keyup', handleKeyUp);
+      document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('mousedown', handleClickOutside);
       if (analysisTimeoutRef.current) clearTimeout(analysisTimeoutRef.current);
     };
-  }, [handleTextSelection]);
+  }, [handleTextSelection, lastAnalysisResult, sessionId, forceSave, saveAnalysis, markAsChanged]);
 
   // Toolbar button
   const ToolBtn = ({ onClick, active, disabled, children, title }: {
@@ -835,6 +910,165 @@ export function AnalysisEditor({
       <Card className="flex-1 flex flex-col">
         {/* Toolbar */}
         <div className="border-b p-2 flex items-center gap-1 flex-wrap">
+          {/* Save Controls Section */}
+          <div className="flex items-center gap-2 border-r pr-2 mr-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                // Manual save trigger
+                if (lastAnalysisResult) {
+                  console.log('🔍 [DEBUG] AnalysisEditor - Manual save button clicked', {
+                    text: lastAnalysisResult.text,
+                    type: lastAnalysisResult.type,
+                    hasSessionId: !!sessionId,
+                  });
+                  
+                  if (sessionId) {
+                    forceSave({
+                      type: lastAnalysisResult.type,
+                      text: lastAnalysisResult.text,
+                      analysisData: lastAnalysisResult.data,
+                      sessionId,
+                    });
+                  } else {
+                    saveAnalysis({
+                      type: lastAnalysisResult.type,
+                      text: lastAnalysisResult.text,
+                      analysisData: lastAnalysisResult.data,
+                    });
+                  }
+                } else {
+                  // Save current editor content
+                  const editorText = editorRef.current?.innerText || '';
+                  if (editorText.trim()) {
+                    console.log('🔍 [DEBUG] AnalysisEditor - Saving editor content', {
+                      textLength: editorText.length,
+                      hasSessionId: !!sessionId,
+                    });
+                    
+                    if (sessionId) {
+                      // Create a simple analysis data for the editor content
+                      const simpleAnalysisData = {
+                        meta: {
+                          sentence: editorText,
+                          complexity_level: 'Intermediate' as const,
+                          sentence_type: 'declarative',
+                        },
+                        semantics: {
+                          main_idea: editorText.substring(0, 100), // First 100 chars as main idea
+                          subtext: '',
+                          sentiment: 'Neutral' as const,
+                        },
+                        grammar_breakdown: {
+                          subject: 'Unknown',
+                          main_verb: 'Unknown',
+                          object: 'Unknown',
+                          clauses: [],
+                        },
+                        contextual_role: {
+                          function: 'content',
+                          relation_to_previous: 'none',
+                        },
+                        translation: {
+                          literal: editorText,
+                          natural: editorText,
+                        },
+                        key_components: [],
+                        rewrite_suggestions: [],
+                      };
+                      
+                      // Save editor content directly to session
+                      const saveSessionContent = async () => {
+                        try {
+                          // Get access token for authentication
+                          const token = await getAccessToken();
+                          
+                          const headers: Record<string, string> = {
+                            'Content-Type': 'application/json',
+                          };
+                          
+                          // Add authorization header if token is available
+                          if (token) {
+                            headers['Authorization'] = `Bearer ${token}`;
+                          }
+
+                          const response = await fetch(`/api/sessions/${sessionId}/content`, {
+                            method: 'PATCH',
+                            headers,
+                            body: JSON.stringify({
+                              content: editorText,
+                            }),
+                          });
+
+                          if (response.ok) {
+                            const result = await response.json();
+                            console.log('🔍 [DEBUG] AnalysisEditor - Session content saved', result);
+                            toast.success('Đã lưu nội dung session', {
+                              description: 'Nội dung của bạn đã được lưu thành công.',
+                              duration: 2000,
+                            });
+                            // Mark as saved in auto-save hook
+                            markAsChanged();
+                          } else {
+                            const errorData = await response.json().catch(() => ({}));
+                            throw new Error(errorData.error || 'Failed to save session content');
+                          }
+                        } catch (error) {
+                          console.error('🔍 [DEBUG] AnalysisEditor - Failed to save session content', error);
+                          toast.error('Lưu thất bại', {
+                            description: error instanceof Error ? error.message : 'Không thể lưu nội dung session. Vui lòng thử lại.',
+                            duration: 5000,
+                          });
+                        }
+                      };
+
+                      saveSessionContent();
+                    } else {
+                      toast.error('Không có session để lưu', {
+                        description: 'Vui lòng tạo hoặc chọn session trước khi lưu.',
+                        duration: 3000,
+                      });
+                    }
+                  } else {
+                    toast.error('Không có nội dung để lưu', {
+                      description: 'Vui lòng nhập nội dung trước khi lưu.',
+                      duration: 3000,
+                    });
+                  }
+                }
+              }}
+              disabled={isSaving || isAutoSaving || (!lastAnalysisResult && !editorRef.current?.innerText)}
+              className="h-7 px-2"
+              title={sessionId ? "Lưu kết quả phân tích vào session (Ctrl+S)" : "Lưu kết quả phân tích (Ctrl+S)"}
+            >
+              {(isSaving || isAutoSaving) ? (
+                <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Đang lưu...</>
+              ) : (
+                <><Save className="h-3 w-3 mr-1" />Lưu</>
+              )}
+            </Button>
+            
+            {/* Session Management Dropdown */}
+            {sessionId && (
+              <Button
+                variant="outline"
+                size="sm"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  // Open session management dialog
+                  console.log('🔍 [DEBUG] AnalysisEditor - Session management clicked');
+                  setSessionQuickActionsOpen(true);
+                }}
+                className="h-7 px-2"
+                title="Quản lý session"
+              >
+                <FolderOpen className="h-3 w-3 mr-1" />
+                Session
+              </Button>
+            )}
+          </div>
           <div className="flex items-center gap-0.5 border-r pr-2 mr-2">
             <ToolBtn onClick={() => formatText('bold')} active={activeFormats.bold} title="Bold">
               <Bold size={16} />
@@ -910,24 +1144,27 @@ export function AnalysisEditor({
               </Badge>
             )}
             
-            {/* Auto-save status and toggle */}
+            {/* Save status indicator - không có checkbox auto-save */}
             <div className="flex items-center gap-3">
               <AutoSaveStatusIndicator
                 status={autoSaveStatus}
                 compact={true}
               />
               
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="auto-save"
-                  checked={autoSaveEnabled}
-                  onCheckedChange={(checked) => setAutoSaveEnabled(checked as boolean)}
-                  className="h-4 w-4"
-                />
-                <Label htmlFor="auto-save" className="text-xs cursor-pointer">
-                  Tự động lưu
-                </Label>
-              </div>
+              {/* Enhanced save status indicator */}
+              {hasUnsavedChanges && (
+                <Badge variant="outline" className="bg-orange-100 border-orange-300 text-orange-800 text-xs animate-pulse">
+                  <AlertTriangle className="h-3 w-3 mr-1" />
+                  Có thay đổi chưa lưu
+                </Badge>
+              )}
+              
+              {!hasUnsavedChanges && lastAnalysisResult && (
+                <Badge variant="outline" className="bg-green-100 border-green-300 text-green-800 text-xs">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Đã lưu
+                </Badge>
+              )}
             </div>
             
             <Button
@@ -971,8 +1208,25 @@ export function AnalysisEditor({
 
         {/* Status bar */}
         <div className="border-t p-3 flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            {textStats.characters} ký tự • {textStats.words} từ • {textStats.sentences} câu • {textStats.paragraphs} đoạn
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-muted-foreground">
+              {textStats.characters} ký tự • {textStats.words} từ • {textStats.sentences} câu • {textStats.paragraphs} đoạn
+            </div>
+            
+            {/* Save status in status bar */}
+            {hasUnsavedChanges && (
+              <div className="flex items-center gap-2 text-orange-600 text-sm">
+                <AlertTriangle className="h-4 w-4" />
+                <span>Có thay đổi chưa lưu (Ctrl+S để lưu)</span>
+              </div>
+            )}
+            
+            {!hasUnsavedChanges && lastAnalysisResult && (
+              <div className="flex items-center gap-2 text-green-600 text-sm">
+                <CheckCircle className="h-4 w-4" />
+                <span>Đã lưu</span>
+              </div>
+            )}
           </div>
           
           <Button onClick={handleAnalyze} disabled={effectiveIsAnalyzing} size="sm">
@@ -1122,6 +1376,13 @@ export function AnalysisEditor({
 
     </div>
   );
+
+  {/* Session Quick Actions Dialog */}
+  <SessionQuickActions
+    currentSession={session}
+    isOpen={sessionQuickActionsOpen}
+    onOpenChange={setSessionQuickActionsOpen}
+  />
   
   console.log('🔍 [DEBUG] AnalysisEditor - Component finished');
 }

@@ -296,6 +296,7 @@ export type Database = {
       }
       analysis_sessions: {
         Row: {
+          content: string | null
           created_at: string | null
           description: string | null
           id: string
@@ -311,6 +312,7 @@ export type Database = {
           word_analyses_count: number | null
         }
         Insert: {
+          content?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
@@ -326,6 +328,7 @@ export type Database = {
           word_analyses_count?: number | null
         }
         Update: {
+          content?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
@@ -2003,6 +2006,7 @@ export type Database = {
           actual_paragraph_count: number | null
           actual_sentence_count: number | null
           actual_word_count: number | null
+          content: string | null
           created_at: string | null
           description: string | null
           id: string | null

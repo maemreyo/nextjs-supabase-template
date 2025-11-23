@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import type { 
-  AnalysisSession, 
-  AnalysisSessionInsert, 
+import type {
+  AnalysisSession,
+  AnalysisSessionInsert,
   AnalysisSessionUpdate,
   SessionAnalysis,
   SessionAnalysisInsert,
@@ -13,6 +13,7 @@ import type {
   SessionState,
   SessionActions
 } from '@/types/sessions';
+import { createClient } from '@/lib/supabase/client';
 
 // Tạo session store với Zustand
 export const useSessionStore = create<SessionState & SessionActions>((set, get) => ({
@@ -40,9 +41,22 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
     set({ isLoading: true, error: null });
     
     try {
+      // Get auth token
+      const { data: { session } } = await createClient().auth.getSession();
+      const token = session?.access_token;
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Add authorization header if token is available
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch('/api/sessions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(sessionData),
       });
 
@@ -76,9 +90,22 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
     set({ isLoading: true, error: null });
     
     try {
+      // Get auth token
+      const { data: { session } } = await createClient().auth.getSession();
+      const token = session?.access_token;
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Add authorization header if token is available
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`/api/sessions/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(updates),
       });
 
@@ -114,8 +141,20 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
     set({ isLoading: true, error: null });
     
     try {
+      // Get auth token
+      const { data: { session } } = await createClient().auth.getSession();
+      const token = session?.access_token;
+      
+      const headers: Record<string, string> = {};
+      
+      // Add authorization header if token is available
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`/api/sessions/${id}`, {
         method: 'DELETE',
+        headers,
       });
 
       if (!response.ok) {
@@ -275,9 +314,22 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
     set({ isLoading: true, error: null });
     
     try {
+      // Get auth token
+      const { data: { session } } = await createClient().auth.getSession();
+      const token = session?.access_token;
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Add authorization header if token is available
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`/api/sessions/${sessionId}/analyses`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(analysis),
       });
 
@@ -310,8 +362,20 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
     set({ isLoading: true, error: null });
     
     try {
+      // Get auth token
+      const { data: { session } } = await createClient().auth.getSession();
+      const token = session?.access_token;
+      
+      const headers: Record<string, string> = {};
+      
+      // Add authorization header if token is available
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`/api/sessions/${sessionId}/analyses/${analysisId}`, {
         method: 'DELETE',
+        headers,
       });
 
       if (!response.ok) {
@@ -339,9 +403,22 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
     set({ isLoading: true, error: null });
     
     try {
+      // Get auth token
+      const { data: { session } } = await createClient().auth.getSession();
+      const token = session?.access_token;
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Add authorization header if token is available
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`/api/sessions/${sessionId}/analyses/reorder`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ analysis_ids: analysisIds }),
       });
 
@@ -413,9 +490,16 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
     set({ isLoading: true, error: null });
     
     try {
+      // Get auth token
+      const { data: { session } } = await (await import('@/lib/supabase/client')).createClient().auth.getSession();
+      const token = session?.access_token;
+
       const response = await fetch(`/api/sessions/${sessionId}/settings`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify(settings),
       });
 
@@ -448,7 +532,13 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
     set({ isLoading: true, error: null });
     
     try {
-      const response = await fetch(`/api/sessions/${sessionId}/settings`);
+      // Get auth token
+      const { data: { session } } = await (await import('@/lib/supabase/client')).createClient().auth.getSession();
+      const token = session?.access_token;
+
+      const response = await fetch(`/api/sessions/${sessionId}/settings`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       
       if (!response.ok) {
         throw new Error(`Failed to load session settings: ${response.statusText}`);
@@ -476,9 +566,22 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
     set({ isLoading: true, error: null });
     
     try {
+      // Get auth token
+      const { data: { session } } = await createClient().auth.getSession();
+      const token = session?.access_token;
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Add authorization header if token is available
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch('/api/sessions/tags', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(tag),
       });
 
@@ -511,9 +614,22 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
     set({ isLoading: true, error: null });
     
     try {
+      // Get auth token
+      const { data: { session } } = await createClient().auth.getSession();
+      const token = session?.access_token;
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Add authorization header if token is available
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`/api/sessions/tags/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(updates),
       });
 
@@ -548,8 +664,20 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
     set({ isLoading: true, error: null });
     
     try {
+      // Get auth token
+      const { data: { session } } = await createClient().auth.getSession();
+      const token = session?.access_token;
+      
+      const headers: Record<string, string> = {};
+      
+      // Add authorization header if token is available
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`/api/sessions/tags/${id}`, {
         method: 'DELETE',
+        headers,
       });
 
       if (!response.ok) {
@@ -577,9 +705,22 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
     set({ isLoading: true, error: null });
     
     try {
+      // Get auth token
+      const { data: { session } } = await createClient().auth.getSession();
+      const token = session?.access_token;
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Add authorization header if token is available
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`/api/sessions/${sessionId}/tags`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ tag_id: tagId }),
       });
 
@@ -612,8 +753,20 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
     set({ isLoading: true, error: null });
     
     try {
+      // Get auth token
+      const { data: { session } } = await createClient().auth.getSession();
+      const token = session?.access_token;
+      
+      const headers: Record<string, string> = {};
+      
+      // Add authorization header if token is available
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`/api/sessions/${sessionId}/tags/${tagId}`, {
         method: 'DELETE',
+        headers,
       });
 
       if (!response.ok) {
@@ -638,7 +791,20 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
     set({ isLoading: true, error: null });
     
     try {
-      const response = await fetch('/api/sessions/tags');
+      // Get auth token
+      const { data: { session } } = await createClient().auth.getSession();
+      const token = session?.access_token;
+      
+      const headers: Record<string, string> = {};
+      
+      // Add authorization header if token is available
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch('/api/sessions/tags', {
+        headers,
+      });
       
       if (!response.ok) {
         throw new Error(`Failed to load session tags: ${response.statusText}`);

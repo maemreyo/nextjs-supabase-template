@@ -118,11 +118,16 @@ export function useSessionData(sessionId: string | undefined, options: UseSessio
     });
   };
 
-  // Extract session text content from analyses
+  // Extract session text content from content column first, then fallback to analyses
   const getSessionText = useCallback(() => {
+    // First, try to get content from the session content column
+    if (data?.session?.content) {
+      return data.session.content;
+    }
+    
+    // Fallback: Extract text from different analysis types
     if (!data?.analyses) return '';
     
-    // Extract text from different analysis types
     const textParts: string[] = [];
     
     data.analyses.forEach(analysis => {

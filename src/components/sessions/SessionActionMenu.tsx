@@ -31,6 +31,7 @@ import DeleteSessionDialog from './DeleteSessionDialog';
 import DuplicateSessionDialog from './DuplicateSessionDialog';
 import ExportSessionDialog from './ExportSessionDialog';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useSupabase } from '@/components/providers/supabase-provider';
 
 interface SessionActionMenuProps {
   session: AnalysisSession;
@@ -68,6 +69,7 @@ export function SessionActionMenu({
   
   const { navigateToAnalysis } = useAppNavigation();
   const { success, error, loading, dismiss } = useNotifications();
+  const { getAccessToken } = useSupabase();
 
   const handleAction = (action: () => void) => {
     setIsOpen(false);
@@ -87,11 +89,21 @@ export function SessionActionMenu({
   const handleRename = async (sessionId: string, title: string, description?: string) => {
     setActionLoading('rename');
     try {
+      // Get access token for authentication
+      const token = await getAccessToken();
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Add authorization header if token is available
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`/api/sessions/${sessionId}/rename`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({ title, description }),
       });
 
@@ -126,11 +138,21 @@ export function SessionActionMenu({
   }) => {
     setActionLoading('duplicate');
     try {
+      // Get access token for authentication
+      const token = await getAccessToken();
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Add authorization header if token is available
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`/api/sessions/${sessionId}/duplicate`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(options),
       });
 
@@ -142,8 +164,8 @@ export function SessionActionMenu({
       const result = await response.json();
       onDuplicate?.(result.data.duplicatedSession);
       success('Nhân bản session thành công');
-    } catch (error) {
-      console.error('Failed to duplicate session:', error);
+    } catch (err) {
+      console.error('Failed to duplicate session:', err);
       error('Không thể nhân bản session. Vui lòng thử lại.', {
         duration: 5000,
         action: {
@@ -165,11 +187,21 @@ export function SessionActionMenu({
   }) => {
     setActionLoading('export');
     try {
+      // Get access token for authentication
+      const token = await getAccessToken();
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Add authorization header if token is available
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`/api/sessions/${sessionId}/export`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(options),
       });
 
@@ -193,8 +225,19 @@ export function SessionActionMenu({
   const handleDelete = async (sessionId: string) => {
     setActionLoading('delete');
     try {
+      // Get access token for authentication
+      const token = await getAccessToken();
+      
+      const headers: Record<string, string> = {};
+      
+      // Add authorization header if token is available
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`/api/sessions/${sessionId}`, {
         method: 'DELETE',
+        headers,
       });
 
       if (!response.ok) {

@@ -36,11 +36,11 @@ export interface AutoSaveStatus {
  */
 export function useSessionAutoSave(options: UseSessionAutoSaveOptions = {}) {
   const {
-    enabled = true,
+    enabled = false, // Tắt auto-save theo mặc định
     debounceMs = 2000, // 2 seconds debounce
     intervalMs = 5 * 60 * 1000, // 5 minutes
-    enableBeforeUnload = true,
-    enableNavigationSave = true,
+    enableBeforeUnload = false, // Tắt beforeunload auto-save theo mặc định
+    enableNavigationSave = false, // Tắt navigation save theo mặc định
     onSuccess,
     onError,
   } = options;
@@ -89,11 +89,9 @@ export function useSessionAutoSave(options: UseSessionAutoSaveOptions = {}) {
 
   // Force save immediately (without debounce)
   const forceSave = useCallback((params: AutoSaveParams) => {
-    if (!enabled) {
-      console.log('🔍 [DEBUG] useSessionAutoSave - Auto-save disabled');
-      return;
-    }
-
+    // Force save should work even when auto-save is disabled
+    // This allows manual save via button click
+    
     // Use current session ID if not provided
     const sessionId = params.sessionId || currentSession?.id;
     
@@ -112,6 +110,7 @@ export function useSessionAutoSave(options: UseSessionAutoSaveOptions = {}) {
       type: params.type,
       textLength: params.text.length,
       sessionId,
+      autoSaveEnabled: enabled,
     });
 
     saveAnalysis({
@@ -209,63 +208,32 @@ export function useSessionAutoSave(options: UseSessionAutoSaveOptions = {}) {
     }
   }, [enabled, currentSession?.id, updateSession, onError]);
 
-  // Setup periodic auto-save
+  // Setup periodic auto-save - DISABLED
   useEffect(() => {
-    if (!enabled || !currentSession?.id || intervalMs <= 0) {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-      return;
+    // Periodic auto-save đã bị vô hiệu hóa để tránh spam
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
+    return;
+  }, []);
 
-    // Calculate next auto-save time
-    const updateNextAutoSaveTime = () => {
-      nextAutoSaveTimeRef.current = new Date(Date.now() + intervalMs);
-      setAutoSaveStatus(prev => ({
-        ...prev,
-        nextAutoSave: nextAutoSaveTimeRef.current,
-      }));
-    };
-
-    updateNextAutoSaveTime();
-
-    intervalRef.current = setInterval(() => {
-      performPeriodicSave();
-      updateNextAutoSaveTime();
-    }, intervalMs);
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [enabled, currentSession?.id, intervalMs, performPeriodicSave]);
-
-  // Handle beforeunload event
+  // Handle beforeunload event - DISABLED AUTO-SAVE BUT KEEP WARNING
   useEffect(() => {
+    // Beforeunload auto-save đã bị vô hiệu hóa
+    // Chỉ hiển thị cảnh báo mà không tự động lưu
     if (!enableBeforeUnload || !enabled || !currentSession?.id) {
       return;
     }
 
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChangesRef.current || pendingSaveRef.current) {
-        console.log('🔍 [DEBUG] useSessionAutoSave - Before unload detected, showing warning');
+        console.log('🔍 [DEBUG] useSessionAutoSave - Before unload detected, showing warning only');
         
-        // Force save any pending changes
-        if (pendingSaveRef.current) {
-          saveAnalysis({
-            type: pendingSaveRef.current.type,
-            text: pendingSaveRef.current.text,
-            analysisData: pendingSaveRef.current.analysisData,
-            sessionId: pendingSaveRef.current.sessionId,
-          });
-        }
-
-        // Show browser warning
+        // Show browser warning without auto-saving
+        const message = 'Bạn có các thay đổi chưa được lưu. Mọi thay đổi sẽ bị mất nếu bạn rời đi. Bạn có chắc muốn rời đi?';
         e.preventDefault();
-        e.returnValue = 'Bạn có các thay đổi chưa được lưu. Bạn có chắc muốn rời đi?';
+        e.returnValue = message;
         return e.returnValue;
       }
     };
@@ -275,39 +243,13 @@ export function useSessionAutoSave(options: UseSessionAutoSaveOptions = {}) {
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [enableBeforeUnload, enabled, currentSession?.id, saveAnalysis]);
+  }, [enableBeforeUnload, enabled, currentSession?.id]);
 
-  // Handle navigation away
+  // Handle navigation away - DISABLED
   useEffect(() => {
-    if (!enableNavigationSave || !enabled || !currentSession?.id) {
-      return;
-    }
-
-    const currentPath = pathname;
-    
-    // Check if we're navigating away from analysis page
-    const isAnalysisPage = currentPath.includes('/analysis');
-    
-    return () => {
-      const newPath = pathname;
-      
-      // If we navigated away from analysis page and have unsaved changes
-      if (isAnalysisPage && newPath !== currentPath &&
-          (hasUnsavedChangesRef.current || pendingSaveRef.current)) {
-        console.log('🔍 [DEBUG] useSessionAutoSave - Navigation away detected, saving changes');
-        
-        // Force save any pending changes
-        if (pendingSaveRef.current) {
-          saveAnalysis({
-            type: pendingSaveRef.current.type,
-            text: pendingSaveRef.current.text,
-            analysisData: pendingSaveRef.current.analysisData,
-            sessionId: pendingSaveRef.current.sessionId,
-          });
-        }
-      }
-    };
-  }, [enableNavigationSave, enabled, currentSession?.id, pathname, saveAnalysis]);
+    // Navigation auto-save đã bị vô hiệu hóa
+    return;
+  }, []);
 
   // Enhanced auto-save that marks content as changed
   const enhancedAutoSave = useCallback((params: AutoSaveParams) => {
