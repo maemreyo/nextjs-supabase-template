@@ -1,5 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { withAuth, createSuccessResponse, createErrorResponse } from '@/lib/api-client';
 import { generateHTML } from '@tiptap/html/server';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
@@ -137,38 +136,8 @@ function tiptapToPlainText(data: any): string {
 }
 
 // PATCH /api/sessions/[id]/content - Update session content
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    // Get user ID from authentication
-    const authHeader = request.headers.get('authorization');
-    console.log('🔍 [DEBUG] API content route - Auth header:', !!authHeader);
-    
-    if (!authHeader) {
-      console.error('🔍 [DEBUG] API content route - No auth header found');
-      return NextResponse.json(
-        { error: 'Authorization header required' },
-        { status: 401 }
-      );
-    }
-
-    const supabase = await createClient();
-    const token = authHeader.replace('Bearer ', '');
-    console.log('🔍 [DEBUG] API content route - Token extracted:', token.substring(0, 20) + '...');
-    
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    console.log('🔍 [DEBUG] API content route - User verification:', { hasUser: !!user, error: !!error });
-    
-    if (error || !user) {
-      console.error('🔍 [DEBUG] API content route - Auth failed:', { error: error?.message, hasUser: !!user });
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      );
-    }
-
+export const PATCH = withAuth(
+  async (request, { user, supabase }, { params }) => {
     // Parse request body
     const body: UpdateSessionContentRequest = await request.json();
     console.log('🔍 [DEBUG] API content route - Request body keys:', Object.keys(body));
@@ -178,27 +147,18 @@ export async function PATCH(
     const hasContent = body.content_data || body.content_html || body.content_plain || body.content;
     if (!hasContent) {
       console.error('🔍 [DEBUG] API content route - No content provided');
-      return NextResponse.json(
-        { error: 'At least one content format is required' },
-        { status: 400 }
-      );
+      return createErrorResponse('At least one content format is required', 400);
     }
 
     // Validate TipTap JSON if provided
     if (body.content_data && !isValidTipTapJSON(body.content_data)) {
-      return NextResponse.json(
-        { error: 'Invalid TipTap JSON structure' },
-        { status: 400 }
-      );
+      return createErrorResponse('Invalid TipTap JSON structure', 400);
     }
 
     const { id: sessionId } = await params;
 
     if (!sessionId) {
-      return NextResponse.json(
-        { error: 'Session ID is required' },
-        { status: 400 }
-      );
+      return createErrorResponse('Session ID is required', 400);
     }
 
     // Determine content format and prepare update data
@@ -246,10 +206,7 @@ export async function PATCH(
 
     if (updateError) {
       console.error('Error updating session content:', updateError);
-      return NextResponse.json(
-        { error: 'Failed to update session content' },
-        { status: 500 }
-      );
+      return createErrorResponse('Failed to update session content', 500);
     }
 
     console.log(`Session content updated successfully: ${sessionId} with format: ${contentFormat}`);
@@ -266,59 +223,17 @@ export async function PATCH(
     if (updatedSession.content_plain) responseData.content_plain = updatedSession.content_plain;
     if (updatedSession.content) responseData.content = updatedSession.content; // Legacy support
 
-    const response: UpdateSessionContentResponse = {
-      success: true,
-      data: responseData,
-    };
-
-    return NextResponse.json(response);
-
-  } catch (error) {
-    console.error('Error in session content PATCH:', error);
-    return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : 'Internal server error',
-        success: false 
-      },
-      { status: 500 }
-    );
+    return createSuccessResponse(responseData);
   }
-}
+);
 
 // GET /api/sessions/[id]/content - Get session content
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    // Get user ID from authentication
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: 'Authorization header required' },
-        { status: 401 }
-      );
-    }
-
-    const supabase = await createClient();
-    const token = authHeader.replace('Bearer ', '');
-    
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    
-    if (error || !user) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      );
-    }
-
+export const GET = withAuth(
+  async (request, { user, supabase }, { params }) => {
     const { id: sessionId } = await params;
 
     if (!sessionId) {
-      return NextResponse.json(
-        { error: 'Session ID is required' },
-        { status: 400 }
-      );
+      return createErrorResponse('Session ID is required', 400);
     }
 
     // Get session content with all format columns
@@ -331,10 +246,7 @@ export async function GET(
 
     if (fetchError) {
       console.error('Error fetching session content:', fetchError);
-      return NextResponse.json(
-        { error: 'Session not found or access denied' },
-        { status: 404 }
-      );
+      return createErrorResponse('Session not found or access denied', 404);
     }
 
     // Handle migration for old content format
@@ -371,21 +283,6 @@ export async function GET(
       }
     }
 
-    const response: GetSessionContentResponse = {
-      success: true,
-      data: responseData,
-    };
-
-    return NextResponse.json(response);
-
-  } catch (error) {
-    console.error('Error in session content GET:', error);
-    return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : 'Internal server error',
-        success: false
-      },
-      { status: 500 }
-    );
+    return createSuccessResponse(responseData);
   }
-}
+);

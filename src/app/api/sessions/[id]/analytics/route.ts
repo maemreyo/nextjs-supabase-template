@@ -1,5 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { withAuth, createSuccessResponse, createErrorResponse } from '@/lib/api-client';
 import { Database } from '@/lib/database.types';
 
 interface SessionAnalyticsResponse {
@@ -38,39 +37,12 @@ interface SessionAnalyticsResponse {
 }
 
 // GET /api/sessions/[id]/analytics - Get analytics for a specific session
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    // Get user ID from authentication
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: 'Authorization header required' },
-        { status: 401 }
-      );
-    }
-
-    const supabase = await createClient();
-    const token = authHeader.replace('Bearer ', '');
-    
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    
-    if (error || !user) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      );
-    }
-
+export const GET = withAuth(
+  async (request, { user, supabase }, { params }) => {
     const { id: sessionId } = await params;
 
     if (!sessionId) {
-      return NextResponse.json(
-        { error: 'Session ID is required' },
-        { status: 400 }
-      );
+      return createErrorResponse('Session ID is required', 400);
     }
 
     // Get session details
@@ -82,10 +54,7 @@ export async function GET(
       .single();
 
     if (sessionError || !session) {
-      return NextResponse.json(
-        { error: 'Session not found or access denied' },
-        { status: 404 }
-      );
+      return createErrorResponse('Session not found or access denied', 404);
     }
 
     // Get all analyses for this session
@@ -103,10 +72,7 @@ export async function GET(
 
     if (analysesError) {
       console.error('Error fetching session analyses:', analysesError);
-      return NextResponse.json(
-        { error: 'Failed to fetch session analyses' },
-        { status: 500 }
-      );
+      return createErrorResponse('Failed to fetch session analyses', 500);
     }
 
     // Calculate statistics
@@ -187,16 +153,6 @@ export async function GET(
       }
     };
 
-    return NextResponse.json(response);
-
-  } catch (error) {
-    console.error('Error in session analytics GET:', error);
-    return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : 'Internal server error',
-        success: false 
-      },
-      { status: 500 }
-    );
+    return createSuccessResponse(response.data);
   }
-}
+);

@@ -1,34 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { withAuth, createSuccessResponse, createErrorResponse } from '@/lib/api-client';
 import type { SessionSettings, SessionSettingsInsert } from '@/types/sessions';
 
 // GET /api/sessions/[id]/settings - Get session settings
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    // Get user ID from authentication
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: 'Authorization header required' },
-        { status: 401 }
-      );
-    }
-
-    const supabase = await createClient();
-    const token = authHeader.replace('Bearer ', '');
-    
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    
-    if (error || !user) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      );
-    }
-
+export const GET = withAuth(
+  async (request, { user, supabase }, { params }) => {
     const { id: sessionId } = await params;
 
     // Get session settings
@@ -43,58 +18,23 @@ export async function GET(
       throw fetchError;
     }
 
-    return NextResponse.json({
-      success: true,
-      data: settings || {
-        session_id: sessionId,
-        user_id: user.id,
-        auto_save: true,
-        show_progress: true,
-        enable_notifications: false,
-        theme_preference: 'light',
-        language_preference: 'en'
-      }
-    });
+    const responseData = settings || {
+      session_id: sessionId,
+      user_id: user.id,
+      auto_save: true,
+      show_progress: true,
+      enable_notifications: false,
+      theme_preference: 'light',
+      language_preference: 'en'
+    };
 
-  } catch (error) {
-    console.error('Error in session settings GET:', error);
-    return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : 'Internal server error',
-        success: false 
-      },
-      { status: 500 }
-    );
+    return createSuccessResponse(responseData);
   }
-}
+);
 
 // POST /api/sessions/[id]/settings - Create or update session settings
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    // Get user ID from authentication
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: 'Authorization header required' },
-        { status: 401 }
-      );
-    }
-
-    const supabase = await createClient();
-    const token = authHeader.replace('Bearer ', '');
-    
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    
-    if (error || !user) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      );
-    }
-
+export const POST = withAuth(
+  async (request, { user, supabase }, { params }) => {
     const { id: sessionId } = await params;
     const settingsData: Partial<SessionSettingsInsert> = await request.json();
 
@@ -144,50 +84,13 @@ export async function POST(
       result = updatedSettings;
     }
 
-    return NextResponse.json({
-      success: true,
-      data: result
-    });
-
-  } catch (error) {
-    console.error('Error in session settings POST:', error);
-    return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : 'Internal server error',
-        success: false 
-      },
-      { status: 500 }
-    );
+    return createSuccessResponse(result);
   }
-}
+);
 
 // PATCH /api/sessions/[id]/settings - Update session settings
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    // Get user ID from authentication
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: 'Authorization header required' },
-        { status: 401 }
-      );
-    }
-
-    const supabase = await createClient();
-    const token = authHeader.replace('Bearer ', '');
-    
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    
-    if (error || !user) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      );
-    }
-
+export const PATCH = withAuth(
+  async (request, { user, supabase }, { params }) => {
     const { id: sessionId } = await params;
     const settingsData: Partial<SessionSettingsInsert> = await request.json();
 
@@ -204,50 +107,13 @@ export async function PATCH(
       throw updateError;
     }
 
-    return NextResponse.json({
-      success: true,
-      data: updatedSettings
-    });
-
-  } catch (error) {
-    console.error('Error in session settings PATCH:', error);
-    return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : 'Internal server error',
-        success: false 
-      },
-      { status: 500 }
-    );
+    return createSuccessResponse(updatedSettings);
   }
-}
+);
 
 // DELETE /api/sessions/[id]/settings - Delete session settings
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    // Get user ID from authentication
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: 'Authorization header required' },
-        { status: 401 }
-      );
-    }
-
-    const supabase = await createClient();
-    const token = authHeader.replace('Bearer ', '');
-    
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    
-    if (error || !user) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      );
-    }
-
+export const DELETE = withAuth(
+  async (request, { user, supabase }, { params }) => {
     const { id: sessionId } = await params;
 
     // Delete settings
@@ -261,19 +127,6 @@ export async function DELETE(
       throw deleteError;
     }
 
-    return NextResponse.json({
-      success: true,
-      data: { deleted: true }
-    });
-
-  } catch (error) {
-    console.error('Error in session settings DELETE:', error);
-    return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : 'Internal server error',
-        success: false 
-      },
-      { status: 500 }
-    );
+    return createSuccessResponse({ deleted: true });
   }
-}
+);

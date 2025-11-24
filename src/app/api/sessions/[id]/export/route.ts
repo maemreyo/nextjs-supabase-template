@@ -1,5 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { withAuth, createSuccessResponse, createErrorResponse } from '@/lib/api-client';
 import { Database } from '@/lib/database.types';
 
 interface ExportSessionRequest {
@@ -21,39 +20,12 @@ interface ExportSessionResponse {
 }
 
 // POST /api/sessions/[id]/export - Export a session in various formats
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    // Get user ID from authentication
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: 'Authorization header required' },
-        { status: 401 }
-      );
-    }
-
-    const supabase = await createClient();
-    const token = authHeader.replace('Bearer ', '');
-    
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    
-    if (error || !user) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      );
-    }
-
+export const POST = withAuth(
+  async (request, { user, supabase }, { params }) => {
     const { id: sessionId } = await params;
 
     if (!sessionId) {
-      return NextResponse.json(
-        { error: 'Session ID is required' },
-        { status: 400 }
-      );
+      return createErrorResponse('Session ID is required', 400);
     }
 
     // Parse request body
@@ -65,10 +37,7 @@ export async function POST(
 
     // Validate format
     if (!['json', 'csv', 'markdown', 'pdf'].includes(format)) {
-      return NextResponse.json(
-        { error: 'Format must be json, csv, markdown, or pdf' },
-        { status: 400 }
-      );
+      return createErrorResponse('Format must be json, csv, markdown, or pdf', 400);
     }
 
     // Get session details
@@ -80,10 +49,7 @@ export async function POST(
       .single();
 
     if (sessionError || !session) {
-      return NextResponse.json(
-        { error: 'Session not found or access denied' },
-        { status: 404 }
-      );
+      return createErrorResponse('Session not found or access denied', 404);
     }
 
     let exportData: any = {
@@ -198,38 +164,22 @@ export async function POST(
       case 'pdf':
         // For PDF, we'll return JSON for now as PDF generation requires additional libraries
         // In a real implementation, you would use a library like puppeteer or jsPDF
-        return NextResponse.json(
-          { error: 'PDF export not yet implemented. Please use JSON, CSV, or Markdown format.' },
-          { status: 501 }
-        );
+        return createErrorResponse('PDF export not yet implemented. Please use JSON, CSV, or Markdown format.', 501);
 
       default:
         throw new Error('Unsupported format');
     }
 
-    const response: ExportSessionResponse = {
-      success: true,
-      data: {
-        content,
-        filename,
-        mimeType,
-        format,
-      }
+    const responseData = {
+      content,
+      filename,
+      mimeType,
+      format,
     };
 
-    return NextResponse.json(response);
-
-  } catch (error) {
-    console.error('Error in session export POST:', error);
-    return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : 'Internal server error',
-        success: false 
-      },
-      { status: 500 }
-    );
+    return createSuccessResponse(responseData);
   }
-}
+);
 
 // Helper function to convert export data to CSV
 function convertToCSV(data: any): string {

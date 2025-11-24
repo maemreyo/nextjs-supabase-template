@@ -1,5 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { withAuth, createSuccessResponse, createErrorResponse } from '@/lib/api-client';
 import { Database } from '@/lib/database.types';
 
 interface DuplicateSessionRequest {
@@ -23,39 +22,12 @@ interface DuplicateSessionResponse {
 }
 
 // POST /api/sessions/[id]/duplicate - Duplicate a session with optional content
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    // Get user ID from authentication
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: 'Authorization header required' },
-        { status: 401 }
-      );
-    }
-
-    const supabase = await createClient();
-    const token = authHeader.replace('Bearer ', '');
-    
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    
-    if (error || !user) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      );
-    }
-
+export const POST = withAuth(
+  async (request, { user, supabase }, { params }) => {
     const { id: sessionId } = await params;
 
     if (!sessionId) {
-      return NextResponse.json(
-        { error: 'Session ID is required' },
-        { status: 400 }
-      );
+      return createErrorResponse('Session ID is required', 400);
     }
 
     // Parse request body
@@ -70,10 +42,7 @@ export async function POST(
       .single();
 
     if (sessionError || !originalSession) {
-      return NextResponse.json(
-        { error: 'Session not found or access denied' },
-        { status: 404 }
-      );
+      return createErrorResponse('Session not found or access denied', 404);
     }
 
     // Create duplicated session
@@ -97,10 +66,7 @@ export async function POST(
 
     if (duplicateError || !duplicatedSession) {
       console.error('Error duplicating session:', duplicateError);
-      return NextResponse.json(
-        { error: 'Failed to duplicate session' },
-        { status: 500 }
-      );
+      return createErrorResponse('Failed to duplicate session', 500);
     }
 
     let duplicatedAnalyses = 0;
@@ -211,27 +177,14 @@ export async function POST(
       }
     }
 
-    const response: DuplicateSessionResponse = {
-      success: true,
-      data: {
-        originalSession,
-        duplicatedSession,
-        duplicatedAnalyses: body.includeAnalyses ? duplicatedAnalyses : undefined,
-        duplicatedSettings: body.includeSettings ? duplicatedSettings : undefined,
-        duplicatedTags: body.includeTags ? duplicatedTags : undefined,
-      }
+    const responseData = {
+      originalSession,
+      duplicatedSession,
+      duplicatedAnalyses: body.includeAnalyses ? duplicatedAnalyses : undefined,
+      duplicatedSettings: body.includeSettings ? duplicatedSettings : undefined,
+      duplicatedTags: body.includeTags ? duplicatedTags : undefined,
     };
 
-    return NextResponse.json(response);
-
-  } catch (error) {
-    console.error('Error in session duplicate POST:', error);
-    return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : 'Internal server error',
-        success: false 
-      },
-      { status: 500 }
-    );
+    return createSuccessResponse(responseData);
   }
-}
+);

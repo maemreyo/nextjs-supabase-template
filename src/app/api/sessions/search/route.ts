@@ -1,81 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { withAuth, createSuccessResponse, createErrorResponse } from '@/lib/api-client';
 import { Database } from '@/lib/database.types';
 
-interface SearchSessionsRequest {
-  query: string;
-  filters?: {
-    type?: 'word' | 'sentence' | 'paragraph' | 'mixed' | 'all';
-    status?: 'active' | 'archived' | 'deleted' | 'all';
-    dateFrom?: string;
-    dateTo?: string;
-    tags?: string[];
-    minAnalyses?: number;
-    maxAnalyses?: number;
-  };
-  sort?: {
-    field?: 'title' | 'created_at' | 'updated_at' | 'last_accessed_at' | 'total_analyses';
-    direction?: 'asc' | 'desc';
-  };
-  pagination?: {
-    page?: number;
-    perPage?: number;
-  };
-}
-
-interface SearchSessionsResponse {
-  success: boolean;
-  data?: {
-    sessions: Database['public']['Tables']['analysis_sessions']['Row'][];
-    pagination: {
-      page: number;
-      perPage: number;
-      total: number;
-      totalPages: number;
-    };
-    facets?: {
-      types: Array<{ type: string; count: number }>;
-      statuses: Array<{ status: string; count: number }>;
-      tags: Array<{ tag: string; count: number }>;
-    };
-  };
-  error?: string;
-}
-
 // GET /api/sessions/search - Search sessions with advanced filters and faceting
-export async function GET(request: NextRequest) {
-  try {
-    // Get user ID from authentication
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: 'Authorization header required' },
-        { status: 401 }
-      );
-    }
+export const GET = withAuth(
+  async (request, { user, supabase }) => {
+    try {
 
-    const supabase = await createClient();
-    const token = authHeader.replace('Bearer ', '');
-    
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    
-    if (error || !user) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      );
-    }
-
-    // Parse query parameters
-    const { searchParams } = new URL(request.url);
-    const searchQuery = searchParams.get('query') || '';
-    
-    if (!searchQuery.trim()) {
-      return NextResponse.json(
-        { error: 'Search query is required' },
-        { status: 400 }
-      );
-    }
+      // Parse query parameters
+      const { searchParams } = new URL(request.url);
+      const searchQuery = searchParams.get('query') || '';
+      
+      if (!searchQuery.trim()) {
+        return createErrorResponse('Search query is required', 400);
+      }
 
     // Parse filters
     const type = searchParams.get('type') || 'all';
@@ -94,34 +31,22 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const perPage = Math.min(50, Math.max(1, parseInt(searchParams.get('per_page') || '20')));
 
-    // Validate parameters
-    if (!['word', 'sentence', 'paragraph', 'mixed', 'all'].includes(type)) {
-      return NextResponse.json(
-        { error: 'Invalid type filter' },
-        { status: 400 }
-      );
-    }
+      // Validate parameters
+      if (!['word', 'sentence', 'paragraph', 'mixed', 'all'].includes(type)) {
+        return createErrorResponse('Invalid type filter', 400);
+      }
 
-    if (!['active', 'archived', 'deleted', 'all'].includes(status)) {
-      return NextResponse.json(
-        { error: 'Invalid status filter' },
-        { status: 400 }
-      );
-    }
+      if (!['active', 'archived', 'deleted', 'all'].includes(status)) {
+        return createErrorResponse('Invalid status filter', 400);
+      }
 
-    if (!['title', 'created_at', 'updated_at', 'last_accessed_at', 'total_analyses'].includes(sortField)) {
-      return NextResponse.json(
-        { error: 'Invalid sort field' },
-        { status: 400 }
-      );
-    }
+      if (!['title', 'created_at', 'updated_at', 'last_accessed_at', 'total_analyses'].includes(sortField)) {
+        return createErrorResponse('Invalid sort field', 400);
+      }
 
-    if (!['asc', 'desc'].includes(sortDirection)) {
-      return NextResponse.json(
-        { error: 'Invalid sort direction' },
-        { status: 400 }
-      );
-    }
+      if (!['asc', 'desc'].includes(sortDirection)) {
+        return createErrorResponse('Invalid sort direction', 400);
+      }
 
     // Build main query
     let dbQuery = supabase
@@ -192,13 +117,10 @@ export async function GET(request: NextRequest) {
       .order(sortField as any, { ascending: sortDirection === 'asc' })
       .range(offset, offset + perPage - 1);
 
-    if (sessionsError) {
-      console.error('Error searching sessions:', sessionsError);
-      return NextResponse.json(
-        { error: 'Failed to search sessions' },
-        { status: 500 }
-      );
-    }
+      if (sessionsError) {
+        console.error('Error searching sessions:', sessionsError);
+        return createErrorResponse('Failed to search sessions', 500);
+      }
 
     // Generate facets (optional - for advanced search UI)
     let facets = undefined;
@@ -234,9 +156,7 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    const response: SearchSessionsResponse = {
-      success: true,
-      data: {
+      return createSuccessResponse({
         sessions: sessions || [],
         pagination: {
           page,
@@ -245,19 +165,14 @@ export async function GET(request: NextRequest) {
           totalPages: Math.ceil(totalSessions / perPage)
         },
         facets
-      }
-    };
+      });
 
-    return NextResponse.json(response);
-
-  } catch (error) {
-    console.error('Error in sessions search GET:', error);
-    return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : 'Internal server error',
-        success: false 
-      },
-      { status: 500 }
-    );
+    } catch (error) {
+      console.error('Error in sessions search GET:', error);
+      return createErrorResponse(
+        error instanceof Error ? error.message : 'Internal server error',
+        500
+      );
+    }
   }
-}
+);

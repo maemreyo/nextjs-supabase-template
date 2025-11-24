@@ -1,34 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { withAuth, createSuccessResponse, createErrorResponse } from '@/lib/api-client';
 import type { SessionAnalysis, SessionAnalysisInsert } from '@/types/sessions';
 
 // GET /api/sessions/[id]/analyses - Get session analyses
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    // Get user ID from authentication
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: 'Authorization header required' },
-        { status: 401 }
-      );
-    }
-
-    const supabase = await createClient();
-    const token = authHeader.replace('Bearer ', '');
-    
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    
-    if (error || !user) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      );
-    }
-
+export const GET = withAuth(
+  async (request, { user, supabase }, { params }) => {
     const { id: sessionId } = await params;
 
     // Get session analyses
@@ -43,59 +18,19 @@ export async function GET(
       throw fetchError;
     }
 
-    return NextResponse.json({
-      success: true,
-      data: analyses || []
-    });
-
-  } catch (error) {
-    console.error('Error in session analyses GET:', error);
-    return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : 'Internal server error',
-        success: false 
-      },
-      { status: 500 }
-    );
+    return createSuccessResponse(analyses || []);
   }
-}
+);
 
 // POST /api/sessions/[id]/analyses - Add analysis to session
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    // Get user ID from authentication
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: 'Authorization header required' },
-        { status: 401 }
-      );
-    }
-
-    const supabase = await createClient();
-    const token = authHeader.replace('Bearer ', '');
-    
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    
-    if (error || !user) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      );
-    }
-
+export const POST = withAuth(
+  async (request, { user, supabase }, { params }) => {
     const { id: sessionId } = await params;
     const analysisData: SessionAnalysisInsert = await request.json();
 
     // Validate required fields
     if (!analysisData.analysis_type || !analysisData.analysis_id) {
-      return NextResponse.json(
-        { error: 'analysis_type and analysis_id are required' },
-        { status: 400 }
-      );
+      return createErrorResponse('analysis_type and analysis_id are required', 400);
     }
 
     // Get next position
@@ -127,50 +62,13 @@ export async function POST(
       throw insertError;
     }
 
-    return NextResponse.json({
-      success: true,
-      data: analysis
-    });
-
-  } catch (error) {
-    console.error('Error in session analyses POST:', error);
-    return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : 'Internal server error',
-        success: false 
-      },
-      { status: 500 }
-    );
+    return createSuccessResponse(analysis);
   }
-}
+);
 
 // DELETE /api/sessions/[id]/analyses/[analysisId] - Remove analysis from session
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    // Get user ID from authentication
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: 'Authorization header required' },
-        { status: 401 }
-      );
-    }
-
-    const supabase = await createClient();
-    const token = authHeader.replace('Bearer ', '');
-    
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    
-    if (error || !user) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      );
-    }
-
+export const DELETE = withAuth(
+  async (request, { user, supabase }, { params }) => {
     // For DELETE, we need to extract analysisId from the URL
     const url = new URL(request.url);
     const pathSegments = url.pathname.split('/');
@@ -178,10 +76,7 @@ export async function DELETE(
     const { id: sessionId } = await params;
     
     if (!analysisId) {
-      return NextResponse.json(
-        { error: 'Analysis ID is required' },
-        { status: 400 }
-      );
+      return createErrorResponse('Analysis ID is required', 400);
     }
 
     // Check if user owns the analysis
@@ -192,10 +87,7 @@ export async function DELETE(
       .single();
 
     if (checkError || !analysis || analysis.user_id !== user.id) {
-      return NextResponse.json(
-        { error: 'Analysis not found or access denied' },
-        { status: 404 }
-      );
+      return createErrorResponse('Analysis not found or access denied', 404);
     }
 
     // Delete analysis
@@ -209,58 +101,18 @@ export async function DELETE(
       throw deleteError;
     }
 
-    return NextResponse.json({
-      success: true,
-      data: { id: analysisId }
-    });
-
-  } catch (error) {
-    console.error('Error in session analyses DELETE:', error);
-    return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : 'Internal server error',
-        success: false 
-      },
-      { status: 500 }
-    );
+    return createSuccessResponse({ id: analysisId });
   }
-}
+);
 
 // PATCH /api/sessions/[id]/analyses/reorder - Reorder session analyses
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    // Get user ID from authentication
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: 'Authorization header required' },
-        { status: 401 }
-      );
-    }
-
-    const supabase = await createClient();
-    const token = authHeader.replace('Bearer ', '');
-    
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    
-    if (error || !user) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      );
-    }
-
+export const PATCH = withAuth(
+  async (request, { user, supabase }, { params }) => {
     const { id: sessionId } = await params;
     const { analysis_ids } = await request.json();
 
     if (!Array.isArray(analysis_ids) || analysis_ids.length === 0) {
-      return NextResponse.json(
-        { error: 'analysis_ids array is required' },
-        { status: 400 }
-      );
+      return createErrorResponse('analysis_ids array is required', 400);
     }
 
     // Update positions individually since we don't have the RPC function
@@ -277,19 +129,6 @@ export async function PATCH(
       }
     }
 
-    return NextResponse.json({
-      success: true,
-      data: { updated: true }
-    });
-
-  } catch (error) {
-    console.error('Error in session analyses reorder:', error);
-    return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : 'Internal server error',
-        success: false
-      },
-      { status: 500 }
-    );
+    return createSuccessResponse({ updated: true });
   }
-}
+);
