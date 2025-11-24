@@ -57,8 +57,6 @@ import { Breadcrumb, ResponsiveBreadcrumb, MobileBreadcrumb } from '@/components
  * Trang cải tiến cho AI Semantic Analysis Editor
  */
 function ImprovedAnalysisPageContent() {
-  console.log('🔍 [DEBUG] ImprovedAnalysisPageContent - Component started');
-
   // Get sessionId from URL parameters
   const searchParams = useSearchParams();
   const sessionId = NavigationValidation.getValidatedSessionId(searchParams);
@@ -123,11 +121,6 @@ function ImprovedAnalysisPageContent() {
 
   // Sync local state với store state
   useEffect(() => {
-    console.log('🔍 [DEBUG] ImprovedAnalysisPageContent - Sync effect triggered', {
-      storeSelectedText,
-      storeSelectedType,
-      storeActiveTab
-    });
     if (storeSelectedText) {
       setSelectedText(storeSelectedText);
       setAnalysisType(storeSelectedType);
@@ -144,7 +137,6 @@ function ImprovedAnalysisPageContent() {
   }, []);
 
   const handleAnalyze = useCallback(async (text: string, type: 'word' | 'sentence' | 'paragraph') => {
-    console.log('🔍 [DEBUG] ImprovedAnalysisPageContent - handleAnalyze called', { text, type });
     if (!text.trim()) return;
 
     // Check if this is a duplicate request (same text and type within last 2 seconds)
@@ -154,11 +146,7 @@ function ImprovedAnalysisPageContent() {
       lastAnalysis.text === text &&
       lastAnalysis.type === type &&
       (now - lastAnalysis.timestamp) < 2000) {
-      console.log('🔍 [DEBUG] ImprovedAnalysisPageContent - Skipping duplicate analysis request', {
-        text,
-        type,
-        timeSinceLast: now - lastAnalysis.timestamp
-      });
+
       return;
     }
 
@@ -169,7 +157,6 @@ function ImprovedAnalysisPageContent() {
       timestamp: now
     };
 
-    console.log('🔍 [DEBUG] ImprovedAnalysisPageContent - Executing analysis from parent', { text, type });
     setIsAnalyzing(true);
     setError(null);
 
@@ -268,17 +255,6 @@ function ImprovedAnalysisPageContent() {
 
   const currentLoading = isAnalyzing || currentMutation.isPending;
 
-  console.log('🔍 [DEBUG] ImprovedAnalysisPageContent - About to render', {
-    selectedText,
-    analysisType,
-    activeTab,
-    isAnalyzing,
-    error,
-    lastError,
-    analysisResult,
-    currentLoading,
-    analysisPanelOpen
-  });
 
   // Create breadcrumb items
   const breadcrumbItems = useMemo(() => {
@@ -286,7 +262,6 @@ function ImprovedAnalysisPageContent() {
     return createBreadcrumbItems('/analysis', sessionId, session.title);
   }, [session, sessionId]);
 
-  console.log('🔍 [DEBUG] ImprovedAnalysisPageContent - About to render main container');
   return (
     <div
       className="container mx-auto px-4 py-4 sm:px-6 lg:px-8 max-w-7xl h-[calc(100vh-2rem)] flex flex-col"
@@ -355,10 +330,6 @@ function ImprovedAnalysisPageContent() {
         <div
           className="lg:col-span-2 min-h-0"
         >
-          {(() => {
-            console.log('🔍 [DEBUG] ImprovedAnalysisPageContent - Rendering AnalysisEditor');
-            return null;
-          })()}
           <AnalysisEditor
             onTextSelect={handleTextSelect}
             onAnalyze={handleAnalyze}
@@ -561,15 +532,6 @@ function ImprovedAnalysisPageContent() {
           {/* Analysis Panel */}
           {analysisPanelOpen && analysisResult && (
             <>
-              {(() => {
-                console.log('🔍 [DEBUG] ImprovedAnalysisPageContent - Rendering AnalysisPanel', {
-                  analysisPanelOpen,
-                  analysisResult,
-                  analysisType: activeTab,
-                  selectedText
-                });
-                return null;
-              })()}
               <AnalysisPanel
                 analysisPanelOpen={analysisPanelOpen}
                 setAnalysisPanelOpen={setAnalysisPanelOpen}

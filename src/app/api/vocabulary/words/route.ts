@@ -1,30 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { NextRequest } from 'next/server';
+import { withAuth, createSuccessResponse, createErrorResponse } from '@/lib/api-client';
 import type { VocabularyWord, VocabularyWordInsert } from '@/types/vocabulary';
 
 // GET /api/vocabulary/words - Get vocabulary words
-export async function GET(request: NextRequest) {
-  try {
-    // Get user ID from authentication
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: 'Authorization header required' },
-        { status: 401 }
-      );
-    }
-
-    const supabase = await createClient();
-    const token = authHeader.replace('Bearer ', '');
-    
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    
-    if (error || !user) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      );
-    }
+export const GET = withAuth(
+  async (request: NextRequest, { user, supabase }: { user: any; supabase: any }) => {
+    try {
 
     // Get query parameters
     const { searchParams } = new URL(request.url);
@@ -82,62 +63,40 @@ export async function GET(request: NextRequest) {
       throw fetchError;
     }
 
-    return NextResponse.json({
-      success: true,
-      data: words || [],
-      pagination: {
-        total: count || 0,
-        limit,
-        offset,
-        hasMore: (count || 0) > offset + limit
-      }
-    });
+      return createSuccessResponse({
+        words: words || [],
+        pagination: {
+          total: count || 0,
+          limit,
+          offset,
+          hasMore: (count || 0) > offset + limit
+        }
+      });
 
-  } catch (error) {
-    console.error('Error in vocabulary words GET:', error);
-    return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : 'Internal server error',
-        success: false 
-      },
-      { status: 500 }
-    );
+    } catch (error) {
+      console.error('Error in vocabulary words GET:', error);
+      return createErrorResponse(
+        error instanceof Error ? error.message : 'Internal server error',
+        500
+      );
+    }
   }
-}
+);
 
 // POST /api/vocabulary/words - Create vocabulary word
-export async function POST(request: NextRequest) {
-  try {
-    // Get user ID from authentication
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: 'Authorization header required' },
-        { status: 401 }
-      );
-    }
-
-    const supabase = await createClient();
-    const token = authHeader.replace('Bearer ', '');
-    
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    
-    if (error || !user) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      );
-    }
+export const POST = withAuth(
+  async (request: NextRequest, { user, supabase }: { user: any; supabase: any }) => {
+    try {
 
     const wordData: VocabularyWordInsert = await request.json();
 
-    // Validate required fields
-    if (!wordData.word || !wordData.definition_en) {
-      return NextResponse.json(
-        { error: 'word and definition_en are required' },
-        { status: 400 }
-      );
-    }
+      // Validate required fields
+      if (!wordData.word || !wordData.definition_en) {
+        return createErrorResponse(
+          'word and definition_en are required',
+          400
+        );
+      }
 
     // Check if word already exists for this user
     const { data: existingWord, error: checkError } = await supabase
@@ -151,12 +110,12 @@ export async function POST(request: NextRequest) {
       throw checkError;
     }
 
-    if (existingWord) {
-      return NextResponse.json(
-        { error: 'Word already exists in your vocabulary' },
-        { status: 409 }
-      );
-    }
+      if (existingWord) {
+        return createErrorResponse(
+          'Word already exists in your vocabulary',
+          409
+        );
+      }
 
     // Insert word
     const { data: word, error: insertError } = await supabase
@@ -173,19 +132,14 @@ export async function POST(request: NextRequest) {
       throw insertError;
     }
 
-    return NextResponse.json({
-      success: true,
-      data: word
-    });
+      return createSuccessResponse(word);
 
-  } catch (error) {
-    console.error('Error in vocabulary words POST:', error);
-    return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : 'Internal server error',
-        success: false 
-      },
-      { status: 500 }
-    );
+    } catch (error) {
+      console.error('Error in vocabulary words POST:', error);
+      return createErrorResponse(
+        error instanceof Error ? error.message : 'Internal server error',
+        500
+      );
+    }
   }
-}
+);

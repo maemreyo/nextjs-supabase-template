@@ -1,36 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import type { 
-  AnalysisSession, 
+import { NextRequest } from 'next/server';
+import { withAuth, createSuccessResponse, createErrorResponse } from '@/lib/api-client';
+import type {
+  AnalysisSession,
   AnalysisSessionInsert,
   CreateSessionRequest,
   SessionFilters,
-  SessionsListResponse 
+  SessionsListResponse
 } from '@/types/sessions';
 
 // GET /api/sessions - List sessions with filters and pagination
-export async function GET(request: NextRequest) {
-  try {
-    // Get user ID from authentication
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: 'Authorization header required' },
-        { status: 401 }
-      );
-    }
-
-    const supabase = await createClient();
-    const token = authHeader.replace('Bearer ', '');
-    
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    
-    if (error || !user) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      );
-    }
+export const GET = withAuth(
+  async (request: NextRequest, { user, supabase }: { user: any; supabase: any }) => {
+    try {
 
     // Parse query parameters
     const { searchParams } = new URL(request.url);
@@ -51,16 +32,16 @@ export async function GET(request: NextRequest) {
     const validSortOrders = ['asc', 'desc'];
     
     if (!validSortFields.includes(sortBy)) {
-      return NextResponse.json(
-        { error: 'Invalid sort field. Must be one of: ' + validSortFields.join(', ') },
-        { status: 400 }
+      return createErrorResponse(
+        'Invalid sort field. Must be one of: ' + validSortFields.join(', '),
+        400
       );
     }
     
     if (!validSortOrders.includes(sortOrder)) {
-      return NextResponse.json(
-        { error: 'Invalid sort order. Must be asc or desc' },
-        { status: 400 }
+      return createErrorResponse(
+        'Invalid sort order. Must be asc or desc',
+        400
       );
     }
 
@@ -134,57 +115,33 @@ export async function GET(request: NextRequest) {
       }
     };
 
-    return NextResponse.json({
-      success: true,
-      data: response
-    });
+      return createSuccessResponse(response);
 
-  } catch (error) {
-    console.error('Error in sessions GET:', error);
-    return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : 'Internal server error',
-        success: false 
-      },
-      { status: 500 }
-    );
+    } catch (error) {
+      console.error('Error in sessions GET:', error);
+      return createErrorResponse(
+        error instanceof Error ? error.message : 'Internal server error',
+        500
+      );
+    }
   }
-}
+);
 
 // POST /api/sessions - Create new session
-export async function POST(request: NextRequest) {
-  try {
-    // Get user ID from authentication
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: 'Authorization header required' },
-        { status: 401 }
-      );
-    }
-
-    const supabase = await createClient();
-    const token = authHeader.replace('Bearer ', '');
-    
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    
-    if (error || !user) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      );
-    }
+export const POST = withAuth(
+  async (request: NextRequest, { user, supabase }: { user: any; supabase: any }) => {
+    try {
 
     // Parse request body
     const body: CreateSessionRequest = await request.json();
 
-    // Validate required fields
-    if (!body.title || !body.session_type) {
-      return NextResponse.json(
-        { error: 'Title and session_type are required' },
-        { status: 400 }
-      );
-    }
+      // Validate required fields
+      if (!body.title || !body.session_type) {
+        return createErrorResponse(
+          'Title and session_type are required',
+          400
+        );
+      }
 
     // Create session data
     const sessionData: AnalysisSessionInsert = {
@@ -245,19 +202,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({
-      success: true,
-      data: session
-    });
+      return createSuccessResponse(session);
 
-  } catch (error) {
-    console.error('Error in sessions POST:', error);
-    return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : 'Internal server error',
-        success: false 
-      },
-      { status: 500 }
-    );
+    } catch (error) {
+      console.error('Error in sessions POST:', error);
+      return createErrorResponse(
+        error instanceof Error ? error.message : 'Internal server error',
+        500
+      );
+    }
   }
-}
+);

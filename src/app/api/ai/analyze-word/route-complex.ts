@@ -17,8 +17,8 @@ import { rateLimitMiddleware } from '@/lib/security/rate-limiter'
 const rateLimitedHandler = rateLimitMiddleware('analysis', (req) => {
   // Get client IP for rate limiting
   const forwarded = req.headers.get('x-forwarded-for')
-  const ip = forwarded ? forwarded.split(',')[0] : 
-               req.headers.get('x-real-ip') || 
+  const ip = forwarded ? forwarded.split(',')[0] :
+               req.headers.get('x-real-ip') ||
                'unknown'
   return `analyze-word:${ip}`
 })
@@ -35,7 +35,6 @@ export async function POST(request: NextRequest) {
     if (rateLimitResponse.status === 429) {
       return rateLimitResponse
     }
-
     // Get user ID from authentication
     const authHeader = request.headers.get('authorization')
     if (!authHeader) {
@@ -133,7 +132,7 @@ export async function POST(request: NextRequest) {
     const analysisRequest: AnalyzeWordRequest = {
       word: wordValidation.sanitized || word,
       sentenceContext: contextValidation.sanitized || sentenceContext,
-      paragraphContext: paragraphContext ? 
+      paragraphContext: paragraphContext ?
         validateAndSanitizeContent(paragraphContext, { type: 'text' }).sanitized || paragraphContext : '',
       maxItems: maxItemsValidation.parsedValue || 5
     }
@@ -151,7 +150,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Cache result
+    // Cache the result
     if (result.success && result.data) {
       analysisCache.set(cacheKey, result.data, 30 * 60 * 1000) // 30 minutes
     }
@@ -174,9 +173,9 @@ export async function POST(request: NextRequest) {
     console.error('Error in analyze-word API:', error)
     
     return NextResponse.json(
-      { 
+      {
         error: error instanceof Error ? error.message : 'Internal server error',
-        success: false 
+        success: false
       },
       { status: 500 }
     )
@@ -211,7 +210,7 @@ export async function GET(request: NextRequest) {
     
     const userId = user.id
     const aiService = createAIServiceServer()
-    
+
     // Check user limits
     const usageCheck = await aiService.checkUsage(userId)
     

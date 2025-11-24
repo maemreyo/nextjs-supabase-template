@@ -20,26 +20,9 @@ export default function AuthGuard({
   const router = useRouter()
   const { user, isLoading, isInitialized } = useAuthStore()
 
-  console.log('🔍 [DEBUG] AuthGuard - Component state:', {
-    user: !!user,
-    userId: user?.id,
-    isLoading,
-    isInitialized,
-    requireAuth,
-    redirectTo
-  })
-
   useEffect(() => {
-    console.log('🔍 [DEBUG] AuthGuard - useEffect triggered:', {
-      isLoading,
-      isInitialized,
-      hasUser: !!user,
-      requireAuth
-    })
-    
     // Skip check while loading or not initialized
     if (isLoading || !isInitialized) {
-      console.log('🔍 [DEBUG] AuthGuard - Still loading or not initialized, skipping check')
       return
     }
 
@@ -48,14 +31,12 @@ export default function AuthGuard({
 
     // If user is not authenticated and auth is required, redirect
     if (!user) {
-      console.log('🔍 [DEBUG] AuthGuard - Redirecting to:', redirectTo)
       router.push(redirectTo)
     }
   }, [user, isLoading, isInitialized, requireAuth, redirectTo])
 
   // Show loading state while checking authentication or waiting for initialization
   if (isLoading || !isInitialized) {
-    console.log('🔍 [DEBUG] AuthGuard - Showing loading state', { isLoading, isInitialized })
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
@@ -70,11 +51,9 @@ export default function AuthGuard({
 
   // If authentication is required but user is not authenticated, show nothing (will redirect)
   if (requireAuth && !user) {
-    console.log('🔍 [DEBUG] AuthGuard - No user, returning null')
     return null
   }
 
-  console.log('🔍 [DEBUG] AuthGuard - Rendering children')
   // If all checks pass, render children
   return <>{children}</>
 }

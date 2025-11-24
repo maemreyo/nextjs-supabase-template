@@ -12,7 +12,7 @@ interface SessionAnalyticsResponse {
       sentenceAnalyses: number;
       paragraphAnalyses: number;
       averageAnalysesPerDay: number;
-      mostActiveDay: string;
+      mostActiveDay?: string;
       sessionDuration: number; // in hours
       completionRate: number; // percentage
     };
@@ -127,12 +127,14 @@ export async function GET(
     // Find most active day
     const analysesByDay: Record<string, number> = {};
     sessionAnalyses?.forEach(analysis => {
-      const date = new Date(analysis.created_at || analysis.created_at!).toISOString().split('T')[0];
-      analysesByDay[date] = (analysesByDay[date] || 0) + 1;
+      const dateStr = new Date(analysis.created_at || analysis.created_at!).toISOString().split('T')[0];
+      if (dateStr) {
+        analysesByDay[dateStr] = (analysesByDay[dateStr] || 0) + 1;
+      }
     });
 
     const mostActiveDay = Object.keys(analysesByDay).length > 0
-      ? Object.keys(analysesByDay).reduce((a, b) =>
+      ? Object.keys(analysesByDay).reduce((a: string, b: string) =>
           (analysesByDay[a] || 0) > (analysesByDay[b] || 0) ? a : b
         )
       : new Date().toISOString().split('T')[0];
@@ -176,7 +178,7 @@ export async function GET(
           sentenceAnalyses,
           paragraphAnalyses,
           averageAnalysesPerDay: Math.round(averageAnalysesPerDay * 100) / 100,
-          mostActiveDay,
+          mostActiveDay: mostActiveDay || new Date().toISOString().split('T')[0],
           sessionDuration: Math.round(sessionDurationHours * 100) / 100,
           completionRate: Math.round(completionRate)
         },

@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { NextRequest } from 'next/server';
+import { withAuth, createSuccessResponse, createErrorResponse } from '@/lib/api-client';
 import { Database } from '@/lib/database.types';
-import type { 
-  WordAnalysis, 
-  SentenceAnalysis, 
-  ParagraphAnalysis 
+import type {
+  WordAnalysis,
+  SentenceAnalysis,
+  ParagraphAnalysis
 } from '@/lib/ai/types';
 
 interface SaveAnalysisRequest {
@@ -131,47 +131,28 @@ function createSessionAnalysisEntry(
 }
 
 // POST /api/analyses/save - Save analysis result to database
-export async function POST(request: NextRequest) {
-  try {
-    // Get user ID from authentication
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: 'Authorization header required' },
-        { status: 401 }
-      );
-    }
-
-    const supabase = await createClient();
-    const token = authHeader.replace('Bearer ', '');
-    
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    
-    if (error || !user) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      );
-    }
+export const POST = withAuth(
+  async (request: NextRequest, { user, supabase }: { user: any; supabase: any }) => {
+    try {
 
     // Parse request body
     const body: SaveAnalysisRequest = await request.json();
 
-    // Validate required fields
-    if (!body.type || !body.text || !body.analysisData) {
-      return NextResponse.json(
-        { error: 'Type, text, and analysisData are required' },
-        { status: 400 }
-      );
-    }
+      // Validate required fields
+      if (!body.type || !body.text || !body.analysisData) {
+        return createErrorResponse(
+          'Type, text, and analysisData are required',
+          400
+        );
+      }
 
-    // Validate analysis type
-    if (!['word', 'sentence', 'paragraph'].includes(body.type)) {
-      return NextResponse.json(
-        { error: 'Type must be word, sentence, or paragraph' },
-        { status: 400 }
-      );
-    }
+      // Validate analysis type
+      if (!['word', 'sentence', 'paragraph'].includes(body.type)) {
+        return createErrorResponse(
+          'Type must be word, sentence, or paragraph',
+          400
+        );
+      }
 
     let analysisId: string = '';
     let analysisData: any;
@@ -453,27 +434,22 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log(`Analysis saved successfully: ${body.type} analysis with ID ${analysisId}`);
+      console.log(`Analysis saved successfully: ${body.type} analysis with ID ${analysisId}`);
 
-    const response: SaveAnalysisResponse = {
-      success: true,
-      data: {
+      const response = {
         analysisId,
         sessionAnalysisId,
         type: body.type,
-      },
-    };
+      };
 
-    return NextResponse.json(response);
+      return createSuccessResponse(response);
 
-  } catch (error) {
-    console.error('Error in analyses save POST:', error);
-    return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : 'Internal server error',
-        success: false 
-      },
-      { status: 500 }
-    );
+    } catch (error) {
+      console.error('Error in analyses save POST:', error);
+      return createErrorResponse(
+        error instanceof Error ? error.message : 'Internal server error',
+        500
+      );
+    }
   }
-}
+);

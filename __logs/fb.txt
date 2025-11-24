@@ -1,5 +1,27 @@
-Tôi thấy API /load session về:
-```
-{"success":true,"data":{"session":{"id":"bfd6ec15-e9ca-46e9-8995-ebec4072c0fe","user_id":"dfca20d1-83a6-402b-a7a3-8ef819ca4670","title":"DDDD","description":null,"session_type":"mixed","status":"active","total_analyses":0,"word_analyses_count":0,"sentence_analyses_count":0,"paragraph_analyses_count":0,"created_at":"2025-11-23T15:28:53.850053+00:00","updated_at":"2025-11-24T02:17:57.407815+00:00","last_accessed_at":"2025-11-24T02:17:48.28+00:00","content":"Phân tích chi tiết từ, câu và đoạn văn bằng AI\n\nPhân tích chi tiết từ, câu và đoạn văn bằng AI\n\nPhân tích chi tiết từ, câu và đoạn văn bằng AI\n\nPhân tích chi tiết từ, câu và đoạn văn bằng AI\n\nPhân tích chi tiết từ, câu và đoạn văn bằng AI","content_data":{"type":"doc","content":[{"type":"paragraph","attrs":{"textAlign":null},"content":[{"text":"Phân tích chi tiết từ, câu và đoạn văn","type":"text"},{"text":" bằng AI","type":"text","marks":[{"type":"strike"}]}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"text":"Phân tích chi tiết từ, câu và đoạn văn bằng AI","type":"text","marks":[{"type":"strike"}]}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"text":"Phân tích chi tiết từ, câu và đoạn văn bằn","type":"text","marks":[{"type":"strike"}]},{"text":"g AI","type":"text"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"text":"Phân tích chi tiết từ, câu và đoạn văn bằng AI","type":"text"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"text":"Phân tích chi tiết từ, câu và đoạn văn bằng AI","type":"text"}]}]},"content_html":"<p xmlns=\"http://www.w3.org/1999/xhtml\">Phân tích chi tiết từ, câu và đoạn văn<s> bằng AI</s></p><p xmlns=\"http://www.w3.org/1999/xhtml\"><s>Phân tích chi tiết từ, câu và đoạn văn bằng AI</s></p><p xmlns=\"http://www.w3.org/1999/xhtml\"><s>Phân tích chi tiết từ, câu và đoạn văn bằn</s>g AI</p><p xmlns=\"http://www.w3.org/1999/xhtml\">Phân tích chi tiết từ, câu và đoạn văn bằng AI</p><p xmlns=\"http://www.w3.org/1999/xhtml\">Phân tích chi tiết từ, câu và đoạn văn bằng AI</p>","content_plain":"Phân tích chi tiết từ, câu và đoạn văn bằng AI\n\nPhân tích chi tiết từ, câu và đoạn văn bằng AI\n\nPhân tích chi tiết từ, câu và đoạn văn bằng AI\n\nPhân tích chi tiết từ, câu và đoạn văn bằng AI\n\nPhân tích chi tiết từ, câu và đoạn văn bằng AI","content_format":"tiptap"},"analyses":[],"tags":[]}}
-```
-có content html chuẩn rồi, nhưng Editor không load cái đó à? tôi không thấy format
+## Error Type
+Build Error
+
+## Error Message
+Ecmascript file had an error
+
+## Build Output
+./src/lib/performance/memo-helpers.ts:6:40
+Ecmascript file had an error
+  4 |  */
+  5 |
+> 6 | import { useCallback, useMemo, useRef, useEffect } from 'react';
+    |                                        ^^^^^^^^^
+  7 |
+  8 | /**
+  9 |  * Safe stringification function that handles circular references
+
+You're importing a component that needs `useEffect`. This React Hook only works in a Client Component. To fix, mark the file (or its parent) with the `"use client"` directive.
+
+ Learn more: https://nextjs.org/docs/app/api-reference/directives/use-client
+
+Import trace:
+  App Route:
+    ./src/lib/performance/memo-helpers.ts
+    ./src/app/api/ai/analyze-word/route.ts
+
+Next.js version: 16.0.3 (Turbopack)
