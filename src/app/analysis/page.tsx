@@ -347,104 +347,6 @@ function ImprovedAnalysisPageContent() {
         <div
           className="lg:col-span-1 space-y-3 lg:space-y-4 overflow-y-auto"
         >
-          {/* Analysis Type Selector */}
-          <Card className="p-3 sm:p-4 sticky top-6" title="Chọn loại phân tích phù hợp với văn bản">
-            <div
-              className="flex items-center justify-between mb-3 cursor-pointer"
-              onClick={() => setIsAnalysisTypeOpen(!isAnalysisTypeOpen)}
-              title={isAnalysisTypeOpen ? "Thu gọn" : "Mở rộng"}
-            >
-              <h3 className="font-semibold text-foreground flex items-center gap-2">
-                <BookOpen className="h-4 w-4" />
-                <span className="hidden sm:inline">Loại phân tích</span>
-                <span className="sm:hidden">Phân tích</span>
-              </h3>
-              <div className="flex items-center gap-2">
-                {selectedText && (
-                  <Badge variant="outline" className="text-xs" title={`${selectedText.length} ký tự đã chọn`}>
-                    <MousePointer className="h-3 w-3 mr-1" />
-                    {selectedText.length}
-                  </Badge>
-                )}
-                {isAnalysisTypeOpen ? (
-                  <ChevronUp className="h-4 w-4" />
-                ) : (
-                  <ChevronDown className="h-4 w-4" />
-                )}
-              </div>
-            </div>
-            {isAnalysisTypeOpen && (
-              <Tabs value={activeTab} onValueChange={(value) => handleTabChange(value as any)}>
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="word" className="flex items-center gap-2" title="Phân tích từ vựng">
-                    <BookOpen className="h-4 w-4" />
-                    <span className="hidden sm:inline">Từ</span>
-                  </TabsTrigger>
-
-                  <TabsTrigger value="sentence" className="flex items-center gap-2" title="Phân tích câu">
-                    <FileText className="h-4 w-4" />
-                    <span className="hidden sm:inline">Câu</span>
-                  </TabsTrigger>
-
-                  <TabsTrigger value="paragraph" className="flex items-center gap-2" title="Phân tích đoạn văn">
-                    <FilePlus className="h-4 w-4" />
-                    <span className="hidden sm:inline">Đoạn</span>
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            )}
-          </Card>
-
-          {/* Selected Text Display */}
-          {selectedText && (
-            <Card className="p-3 sm:p-4 bg-primary/5 border-primary/20">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold text-foreground text-sm">Văn bản đã chọn</h3>
-                <Badge variant="outline" className="text-xs">{selectedText.length} ký tự</Badge>
-              </div>
-
-              <div className="bg-background p-2 rounded border-l-4 border-primary mb-3">
-                <p className="text-xs italic text-foreground line-clamp-3">"{selectedText}"</p>
-              </div>
-
-              <div className="flex justify-end gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedText('');
-                    setAnalysisResult(null);
-                    setError(null);
-                  }}
-                  className="text-xs h-7 px-2"
-                >
-                  Xóa
-                </Button>
-
-                <Button
-                  onClick={() => {
-                    handleAnalyze(selectedText, activeTab as 'word' | 'sentence' | 'paragraph');
-                  }}
-                  disabled={currentLoading}
-                  size="sm"
-                  className="text-xs h-7 px-2"
-                >
-                  {currentLoading ? (
-                    <>
-                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                      Đang phân tích...
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="h-3 w-3 mr-1" />
-                      Phân tích
-                    </>
-                  )}
-                </Button>
-              </div>
-            </Card>
-          )}
-
           {/* Compact Analysis Results */}
           {selectedText && (
             <CompactResultCard
@@ -559,7 +461,6 @@ function ImprovedAnalysisPageContent() {
  * Trang cải tiến cho AI Semantic Analysis Editor với authentication guard
  */
 export default function ImprovedAnalysisPage() {
-  console.log('🔍 [DEBUG] ImprovedAnalysisPage - Main page component started');
   return (
     <AuthGuard redirectTo="/auth/signin">
       <AnalysisErrorBoundary>

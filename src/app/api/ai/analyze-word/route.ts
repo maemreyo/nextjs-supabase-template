@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json()
-    const { word, sentenceContext, paragraphContext, maxItems = 5 } = body
+    const { word, sentenceContext, paragraphContext, maxItems = 5, sessionId } = body
 
     // Enhanced validation with security utilities
     const wordValidation = validateWord(word)
@@ -110,6 +110,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validate sessionId if provided
+    if (sessionId) {
+      const sessionIdValidation = validateInput(sessionId, 'sessionId', {
+        allowEmpty: true
+      })
+      if (!sessionIdValidation.isValid) {
+        return NextResponse.json(
+          { error: 'Invalid session ID', details: sessionIdValidation.errors },
+          { status: 400 }
+        )
+      }
+    }
+
     // Check cache first
     const cacheKey = cacheKeys.api.wordAnalysis(
       wordValidation.sanitized || word,
@@ -133,9 +146,10 @@ export async function POST(request: NextRequest) {
     const analysisRequest: AnalyzeWordRequest = {
       word: wordValidation.sanitized || word,
       sentenceContext: contextValidation.sanitized || sentenceContext,
-      paragraphContext: paragraphContext ? 
+      paragraphContext: paragraphContext ?
         validateAndSanitizeContent(paragraphContext, { type: 'text' }).sanitized || paragraphContext : '',
-      maxItems: maxItemsValidation.parsedValue || 5
+      maxItems: maxItemsValidation.parsedValue || 5,
+      sessionId: sessionId
     }
 
     // Perform analysis with performance monitoring

@@ -18,8 +18,8 @@ interface RenameSessionResponse {
 
 // PUT /api/sessions/[id]/rename - Rename a session
 export const PUT = withAuth(
-  async (request, { user, supabase }, { params }) => {
-    const { id: sessionId } = await params;
+  async (request, { user, supabase, params }) => {
+    const sessionId = params?.id;
 
     if (!sessionId) {
       return createErrorResponse('Session ID is required', 400);

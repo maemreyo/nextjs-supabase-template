@@ -106,7 +106,6 @@ export const useAuthStore = create<AuthStore>()(
     devtools(
       persist(
         (set, get) => {
-          console.log('🔍 [DEBUG] AuthStore - Initializing store with state:', initialState);
           return {
             ...initialState,
 

@@ -363,15 +363,18 @@ export interface AnalyzeWordRequest {
   sentenceContext: string;
   paragraphContext?: string;
   maxItems?: number;
+  sessionId?: string;
 }
 
 export interface AnalyzeSentenceRequest {
   sentence: string;
   paragraphContext?: string;
+  sessionId?: string;
 }
 
 export interface AnalyzeParagraphRequest {
   paragraph: string;
+  sessionId?: string;
 }
 
 export interface AnalysisResponse<T> {
@@ -384,6 +387,7 @@ export interface AnalysisResponse<T> {
     cost: number;
     model: string;
     provider: string;
+    analysisId?: string;
   };
 }
 

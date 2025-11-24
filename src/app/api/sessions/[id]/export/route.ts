@@ -21,8 +21,8 @@ interface ExportSessionResponse {
 
 // POST /api/sessions/[id]/export - Export a session in various formats
 export const POST = withAuth(
-  async (request, { user, supabase }, { params }) => {
-    const { id: sessionId } = await params;
+  async (request, { user, supabase, params }) => {
+    const sessionId = params?.id;
 
     if (!sessionId) {
       return createErrorResponse('Session ID is required', 400);

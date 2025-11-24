@@ -1,9 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAIService } from './ai-service'
-import { 
-  GenerateTextParams, 
-  GenerateTextResponse, 
-  GenerateEmbeddingParams, 
+import {
+  GenerateTextParams,
+  GenerateTextResponse,
+  GenerateEmbeddingParams,
   GenerateEmbeddingResponse,
   UsageCheckResponse,
   UserTier,
@@ -16,6 +16,13 @@ import {
   AnalyzeParagraphRequest,
   AnalysisResponse
 } from './types'
+import {
+  addAnalysisToSession,
+  generateAnalysisTitle,
+  generateAnalysisSummary,
+  validateSessionAnalysisOptions,
+  SessionAnalysisOptions
+} from '@/lib/session-analysis-utils'
 
 // Server-side AI service with database integration
 export class AIServiceServer {
@@ -357,7 +364,30 @@ export class AIServiceServer {
       const analysis = require('./prompt-utils').validateWordAnalysis(analysisResult)
       
       // Save to database
-      await this.saveWordAnalysis(userId, request, analysis)
+      const wordAnalysisId = await this.saveWordAnalysis(userId, request, analysis)
+      
+      // Add to session if sessionId is provided
+      if (request.sessionId && wordAnalysisId) {
+        const sessionOptions: SessionAnalysisOptions = {
+          sessionId: request.sessionId,
+          analysisId: wordAnalysisId,
+          analysisType: 'word',
+          userId: userId,
+          analysisData: analysis,
+          analysisTitle: generateAnalysisTitle('word', request.word),
+          analysisSummary: generateAnalysisSummary('word', request.word)
+        }
+
+        const validationErrors = validateSessionAnalysisOptions(sessionOptions)
+        if (validationErrors.length === 0) {
+          const sessionResult = await addAnalysisToSession(sessionOptions)
+          if (!sessionResult.success) {
+            console.warn('Failed to add word analysis to session:', sessionResult.error)
+          }
+        } else {
+          console.warn('Session analysis validation errors:', validationErrors)
+        }
+      }
       
       return {
         success: true,
@@ -367,7 +397,8 @@ export class AIServiceServer {
           tokensUsed: aiResponse.usage.totalTokens,
           cost: aiResponse.cost,
           model: aiResponse.model,
-          provider: aiResponse.provider
+          provider: aiResponse.provider,
+          analysisId: wordAnalysisId || undefined
         }
       }
     } catch (error) {
@@ -405,7 +436,30 @@ export class AIServiceServer {
       const analysis = require('./prompt-utils').validateSentenceAnalysis(analysisResult)
       
       // Save to database
-      await this.saveSentenceAnalysis(userId, request, analysis)
+      const sentenceAnalysisId = await this.saveSentenceAnalysis(userId, request, analysis)
+      
+      // Add to session if sessionId is provided
+      if (request.sessionId && sentenceAnalysisId) {
+        const sessionOptions: SessionAnalysisOptions = {
+          sessionId: request.sessionId,
+          analysisId: sentenceAnalysisId,
+          analysisType: 'sentence',
+          userId: userId,
+          analysisData: analysis,
+          analysisTitle: generateAnalysisTitle('sentence', request.sentence),
+          analysisSummary: generateAnalysisSummary('sentence', request.sentence)
+        }
+
+        const validationErrors = validateSessionAnalysisOptions(sessionOptions)
+        if (validationErrors.length === 0) {
+          const sessionResult = await addAnalysisToSession(sessionOptions)
+          if (!sessionResult.success) {
+            console.warn('Failed to add sentence analysis to session:', sessionResult.error)
+          }
+        } else {
+          console.warn('Session analysis validation errors:', validationErrors)
+        }
+      }
       
       return {
         success: true,
@@ -415,7 +469,8 @@ export class AIServiceServer {
           tokensUsed: aiResponse.usage.totalTokens,
           cost: aiResponse.cost,
           model: aiResponse.model,
-          provider: aiResponse.provider
+          provider: aiResponse.provider,
+          analysisId: sentenceAnalysisId || undefined
         }
       }
     } catch (error) {
@@ -453,7 +508,30 @@ export class AIServiceServer {
       const analysis = require('./prompt-utils').validateParagraphAnalysis(analysisResult)
       
       // Save to database
-      await this.saveParagraphAnalysis(userId, request, analysis)
+      const paragraphAnalysisId = await this.saveParagraphAnalysis(userId, request, analysis)
+      
+      // Add to session if sessionId is provided
+      if (request.sessionId && paragraphAnalysisId) {
+        const sessionOptions: SessionAnalysisOptions = {
+          sessionId: request.sessionId,
+          analysisId: paragraphAnalysisId,
+          analysisType: 'paragraph',
+          userId: userId,
+          analysisData: analysis,
+          analysisTitle: generateAnalysisTitle('paragraph', request.paragraph.substring(0, 50)),
+          analysisSummary: generateAnalysisSummary('paragraph', request.paragraph.substring(0, 100))
+        }
+
+        const validationErrors = validateSessionAnalysisOptions(sessionOptions)
+        if (validationErrors.length === 0) {
+          const sessionResult = await addAnalysisToSession(sessionOptions)
+          if (!sessionResult.success) {
+            console.warn('Failed to add paragraph analysis to session:', sessionResult.error)
+          }
+        } else {
+          console.warn('Session analysis validation errors:', validationErrors)
+        }
+      }
       
       return {
         success: true,
@@ -463,7 +541,8 @@ export class AIServiceServer {
           tokensUsed: aiResponse.usage.totalTokens,
           cost: aiResponse.cost,
           model: aiResponse.model,
-          provider: aiResponse.provider
+          provider: aiResponse.provider,
+          analysisId: paragraphAnalysisId || undefined
         }
       }
     } catch (error) {
@@ -477,10 +556,13 @@ export class AIServiceServer {
   }
 
   // Database save methods
-  private async saveWordAnalysis(userId: string, request: AnalyzeWordRequest, analysis: WordAnalysis): Promise<void> {
+  private async saveWordAnalysis(userId: string, request: AnalyzeWordRequest, analysis: WordAnalysis): Promise<string | null> {
+    console.log('DEBUG: Starting saveWordAnalysis for word:', analysis.meta.word)
     const supabase = await createClient()
+    let wordAnalysisId: string | null = null
     
     try {
+      console.log('DEBUG: Attempting to save main word analysis to database')
       // Save main word analysis
       const { data: wordAnalysisData, error: wordError } = await supabase
         .from('word_analyses')
@@ -505,11 +587,16 @@ export class AIServiceServer {
         .single()
 
       if (wordError || !wordAnalysisData) {
+        console.error('DEBUG: Database error when saving word analysis:', wordError)
         throw new Error('Failed to save word analysis')
       }
 
+      wordAnalysisId = wordAnalysisData.id
+      console.log('DEBUG: Successfully saved word analysis with ID:', wordAnalysisId)
+
       // Save synonyms
       if (analysis.relations.synonyms.length > 0) {
+        console.log('DEBUG: Saving', analysis.relations.synonyms.length, 'synonyms')
         const synonymsToInsert = analysis.relations.synonyms.map(synonym => ({
           word_analysis_id: wordAnalysisData.id,
           synonym_word: synonym.word,
@@ -523,6 +610,7 @@ export class AIServiceServer {
 
       // Save antonyms
       if (analysis.relations.antonyms.length > 0) {
+        console.log('DEBUG: Saving', analysis.relations.antonyms.length, 'antonyms')
         const antonymsToInsert = analysis.relations.antonyms.map(antonym => ({
           word_analysis_id: wordAnalysisData.id,
           antonym_word: antonym.word,
@@ -536,6 +624,7 @@ export class AIServiceServer {
 
       // Save collocations
       if (analysis.usage.collocations.length > 0) {
+        console.log('DEBUG: Saving', analysis.usage.collocations.length, 'collocations')
         const collocationsToInsert = analysis.usage.collocations.map(collocation => ({
           word_analysis_id: wordAnalysisData.id,
           phrase: collocation.phrase,
@@ -546,16 +635,25 @@ export class AIServiceServer {
 
         await supabase.from('word_collocations').insert(collocationsToInsert)
       }
+      
+      console.log('DEBUG: Successfully completed saveWordAnalysis, returning ID:', wordAnalysisId)
     } catch (error) {
-      console.error('Failed to save word analysis:', error)
+      console.error('DEBUG: Failed to save word analysis:', error)
+      console.error('DEBUG: wordAnalysisId at error time:', wordAnalysisId)
       throw error
     }
+
+    console.log('DEBUG: Final return statement, wordAnalysisId:', wordAnalysisId)
+    return wordAnalysisId
   }
 
-  private async saveSentenceAnalysis(userId: string, request: AnalyzeSentenceRequest, analysis: SentenceAnalysis): Promise<void> {
+  private async saveSentenceAnalysis(userId: string, request: AnalyzeSentenceRequest, analysis: SentenceAnalysis): Promise<string | null> {
+    console.log('DEBUG: Starting saveSentenceAnalysis for sentence:', analysis.meta.sentence)
     const supabase = await createClient()
+    let sentenceAnalysisId: string | null = null
     
     try {
+      console.log('DEBUG: Attempting to save main sentence analysis to database')
       // Save main sentence analysis
       const { data: sentenceAnalysisData, error: sentenceError } = await supabase
         .from('sentence_analyses')
@@ -581,11 +679,16 @@ export class AIServiceServer {
         .single()
 
       if (sentenceError || !sentenceAnalysisData) {
+        console.error('DEBUG: Database error when saving sentence analysis:', sentenceError)
         throw new Error('Failed to save sentence analysis')
       }
 
+      sentenceAnalysisId = sentenceAnalysisData.id
+      console.log('DEBUG: Successfully saved sentence analysis with ID:', sentenceAnalysisId)
+
       // Save key components
       if (analysis.key_components.length > 0) {
+        console.log('DEBUG: Saving', analysis.key_components.length, 'key components')
         const componentsToInsert = analysis.key_components.map(component => ({
           sentence_analysis_id: sentenceAnalysisData.id,
           phrase: component.phrase,
@@ -599,6 +702,7 @@ export class AIServiceServer {
 
       // Save rewrite suggestions
       if (analysis.rewrite_suggestions.length > 0) {
+        console.log('DEBUG: Saving', analysis.rewrite_suggestions.length, 'rewrite suggestions')
         const suggestionsToInsert = analysis.rewrite_suggestions.map(suggestion => ({
           sentence_analysis_id: sentenceAnalysisData.id,
           style: suggestion.style,
@@ -608,16 +712,25 @@ export class AIServiceServer {
 
         await supabase.from('sentence_rewrite_suggestions').insert(suggestionsToInsert)
       }
+      
+      console.log('DEBUG: Successfully completed saveSentenceAnalysis, returning ID:', sentenceAnalysisId)
     } catch (error) {
-      console.error('Failed to save sentence analysis:', error)
+      console.error('DEBUG: Failed to save sentence analysis:', error)
+      console.error('DEBUG: sentenceAnalysisId at error time:', sentenceAnalysisId)
       throw error
     }
+
+    console.log('DEBUG: Final return statement, sentenceAnalysisId:', sentenceAnalysisId)
+    return sentenceAnalysisId
   }
 
-  private async saveParagraphAnalysis(userId: string, request: AnalyzeParagraphRequest, analysis: ParagraphAnalysis): Promise<void> {
+  private async saveParagraphAnalysis(userId: string, request: AnalyzeParagraphRequest, analysis: ParagraphAnalysis): Promise<string | null> {
+    console.log('DEBUG: Starting saveParagraphAnalysis for paragraph length:', request.paragraph.length)
     const supabase = await createClient()
+    let paragraphAnalysisId: string | null = null
     
     try {
+      console.log('DEBUG: Attempting to save main paragraph analysis to database')
       // Save main paragraph analysis
       const { data: paragraphAnalysisData, error: paragraphError } = await supabase
         .from('paragraph_analyses')
@@ -644,11 +757,16 @@ export class AIServiceServer {
         .single()
 
       if (paragraphError || !paragraphAnalysisData) {
+        console.error('DEBUG: Database error when saving paragraph analysis:', paragraphError)
         throw new Error('Failed to save paragraph analysis')
       }
 
+      paragraphAnalysisId = paragraphAnalysisData.id
+      console.log('DEBUG: Successfully saved paragraph analysis with ID:', paragraphAnalysisId)
+
       // Save structure breakdown
       if (analysis.structure_breakdown.length > 0) {
+        console.log('DEBUG: Saving', analysis.structure_breakdown.length, 'structure breakdown items')
         const structureToInsert = analysis.structure_breakdown.map(item => ({
           paragraph_analysis_id: paragraphAnalysisData.id,
           sentence_index: item.sentence_index,
@@ -662,6 +780,7 @@ export class AIServiceServer {
 
       // Save constructive feedback
       if (analysis.constructive_feedback.critiques.length > 0) {
+        console.log('DEBUG: Saving', analysis.constructive_feedback.critiques.length, 'critiques')
         const feedbackToInsert = analysis.constructive_feedback.critiques.map(critique => ({
           paragraph_analysis_id: paragraphAnalysisData.id,
           issue_type: critique.issue_type,
@@ -671,10 +790,16 @@ export class AIServiceServer {
 
         await supabase.from('paragraph_constructive_feedback').insert(feedbackToInsert)
       }
+      
+      console.log('DEBUG: Successfully completed saveParagraphAnalysis, returning ID:', paragraphAnalysisId)
     } catch (error) {
-      console.error('Failed to save paragraph analysis:', error)
+      console.error('DEBUG: Failed to save paragraph analysis:', error)
+      console.error('DEBUG: paragraphAnalysisId at error time:', paragraphAnalysisId)
       throw error
     }
+
+    console.log('DEBUG: Final return statement, paragraphAnalysisId:', paragraphAnalysisId)
+    return paragraphAnalysisId
   }
 
   // Cache methods for optimization

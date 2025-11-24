@@ -3,8 +3,8 @@ import type { SessionSettings, SessionSettingsInsert } from '@/types/sessions';
 
 // GET /api/sessions/[id]/settings - Get session settings
 export const GET = withAuth(
-  async (request, { user, supabase }, { params }) => {
-    const { id: sessionId } = await params;
+  async (request, { user, supabase, params }) => {
+    const sessionId = params?.id;
 
     // Get session settings
     const { data: settings, error: fetchError } = await supabase
@@ -34,8 +34,8 @@ export const GET = withAuth(
 
 // POST /api/sessions/[id]/settings - Create or update session settings
 export const POST = withAuth(
-  async (request, { user, supabase }, { params }) => {
-    const { id: sessionId } = await params;
+  async (request, { user, supabase, params }) => {
+    const sessionId = params?.id;
     const settingsData: Partial<SessionSettingsInsert> = await request.json();
 
     // Check if settings already exist
@@ -90,8 +90,8 @@ export const POST = withAuth(
 
 // PATCH /api/sessions/[id]/settings - Update session settings
 export const PATCH = withAuth(
-  async (request, { user, supabase }, { params }) => {
-    const { id: sessionId } = await params;
+  async (request, { user, supabase, params }) => {
+    const sessionId = params?.id;
     const settingsData: Partial<SessionSettingsInsert> = await request.json();
 
     // Update settings
@@ -113,8 +113,8 @@ export const PATCH = withAuth(
 
 // DELETE /api/sessions/[id]/settings - Delete session settings
 export const DELETE = withAuth(
-  async (request, { user, supabase }, { params }) => {
-    const { id: sessionId } = await params;
+  async (request, { user, supabase, params }) => {
+    const sessionId = params?.id;
 
     // Delete settings
     const { error: deleteError } = await supabase

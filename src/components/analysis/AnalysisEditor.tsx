@@ -438,13 +438,13 @@ export function AnalysisEditor({
           />
 
           {/* Status bar */}
-          <EditorStatusBar
+          {/* <EditorStatusBar
             textStats={textStats}
             hasUnsavedChanges={hasUnsavedChanges}
             isAnalyzing={effectiveIsAnalyzing}
             lastAnalysisResult={lastAnalysisResult}
             onAnalyze={handleAnalyze}
-          />
+          /> */}
         </Card>
 
         {/* Bubble Menu */}

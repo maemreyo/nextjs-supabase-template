@@ -23,8 +23,8 @@ interface DuplicateSessionResponse {
 
 // POST /api/sessions/[id]/duplicate - Duplicate a session with optional content
 export const POST = withAuth(
-  async (request, { user, supabase }, { params }) => {
-    const { id: sessionId } = await params;
+  async (request, { user, supabase, params }) => {
+    const sessionId = params?.id;
 
     if (!sessionId) {
       return createErrorResponse('Session ID is required', 400);

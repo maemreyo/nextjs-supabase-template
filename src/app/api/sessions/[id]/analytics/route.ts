@@ -38,8 +38,8 @@ interface SessionAnalyticsResponse {
 
 // GET /api/sessions/[id]/analytics - Get analytics for a specific session
 export const GET = withAuth(
-  async (request, { user, supabase }, { params }) => {
-    const { id: sessionId } = await params;
+  async (request, { user, supabase, params }) => {
+    const sessionId = params?.id;
 
     if (!sessionId) {
       return createErrorResponse('Session ID is required', 400);

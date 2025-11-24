@@ -282,18 +282,6 @@ export function AnalysisResultDialog({
                  </div>
             </ScrollArea>
             
-            {/* 3. Footer / Status Bar */}
-            {metadata && (
-                <div className="bg-background border-t px-4 py-1.5 flex justify-between items-center text-[10px] text-muted-foreground">
-                    <div className="flex gap-4">
-                         {metadata.processingTime && <span>Time: {metadata.processingTime}ms</span>}
-                         {metadata.tokensUsed && <span>Tokens: {metadata.tokensUsed}</span>}
-                    </div>
-                    <div>
-                         Generated at {new Date().toLocaleTimeString()}
-                    </div>
-                </div>
-            )}
         </div>
         
         {/* Resize Handle - Only show when not in fullscreen and on larger screens */}

@@ -48,7 +48,14 @@ export function withAuth<T extends any[]>(
   return async (request: any, context: Record<string, any>, ...args: T): Promise<Response> => {
     try {
       const { user, supabase } = await authenticateRequest(request);
-      return await handler(request, { user, supabase, ...context }, ...args);
+      
+      // Handle Next.js 15+ async params
+      let resolvedContext = { ...context };
+      if (context.params && typeof context.params.then === 'function') {
+        resolvedContext.params = await context.params;
+      }
+      
+      return await handler(request, { user, supabase, ...resolvedContext }, ...args);
     } catch (error) {
       console.error('Authentication error:', error);
       

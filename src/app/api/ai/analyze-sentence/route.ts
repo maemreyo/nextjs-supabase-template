@@ -10,7 +10,7 @@ export const POST = withAuth(
 
       // Parse request body
       const body = await request.json()
-      const { sentence, paragraphContext } = body
+      const { sentence, paragraphContext, sessionId } = body
 
       // Validate input
       if (!sentence || !sentence.trim()) {
@@ -36,13 +36,26 @@ export const POST = withAuth(
         )
       }
 
+      // Validate sessionId if provided
+      if (sessionId) {
+        // Basic UUID validation
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+        if (!uuidRegex.test(sessionId)) {
+          return createErrorResponse(
+            'Invalid session ID format',
+            400
+          )
+        }
+      }
+
       // Get AI service instance
       const aiService = createAIServiceServer()
 
       // Create analysis request
       const analysisRequest: AnalyzeSentenceRequest = {
         sentence: sentence.trim(),
-        paragraphContext: paragraphContext?.trim() || ''
+        paragraphContext: paragraphContext?.trim() || '',
+        sessionId: sessionId
       }
 
       // Perform analysis
