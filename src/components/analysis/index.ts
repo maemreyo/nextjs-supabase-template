@@ -45,6 +45,12 @@ export { default as CompactResultCard } from './CompactResultCard';
 export { default as CollapsibleAnalysisPanel } from './CollapsibleAnalysisPanel';
 export { SessionActions } from './SessionActions';
 
+// New components for refactored page
+export { default as AnalysisHeader } from './AnalysisHeader';
+export { default as AnalysisSidebar } from './AnalysisSidebar';
+export { default as RecentHistoryCard } from './RecentHistoryCard';
+export { default as AnalysisErrorAlert } from './AnalysisErrorAlert';
+
 // Export utility functions
 export {
   mapWordAnalysisToVocabulary,

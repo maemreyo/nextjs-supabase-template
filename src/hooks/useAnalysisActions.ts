@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { WordAnalysis, SentenceAnalysis, ParagraphAnalysis } from '@/lib/ai/types';
+import { WordAnalysis, SentenceAnalysis, ParagraphAnalysis, PhraseAnalysis } from '@/lib/ai/types';
 
 type AnalysisType = 'word' | 'phrase' | 'sentence' | 'paragraph';
 
@@ -11,7 +11,7 @@ interface AnalysisMetadata {
 }
 
 interface UseAnalysisActionsProps {
-  analysis: WordAnalysis | SentenceAnalysis | ParagraphAnalysis | null;
+  analysis: WordAnalysis | SentenceAnalysis | ParagraphAnalysis | PhraseAnalysis | null;
   analysisType: AnalysisType;
   contentRef: React.RefObject<HTMLDivElement>;
   metadata?: AnalysisMetadata;
@@ -189,8 +189,8 @@ export function useAnalysisActions({
         const wordAnalysis = analysis as WordAnalysis;
         shareText = `Word: ${wordAnalysis.meta.word} (${wordAnalysis.meta.pos})\nMeaning: ${wordAnalysis.definitions.vietnamese_translation}\nCEFR Level: ${wordAnalysis.meta.cefr}`;
       } else if (analysisType === 'phrase') {
-        const wordAnalysis = analysis as WordAnalysis;
-        shareText = `Phrase Analysis:\nPhrase: ${wordAnalysis.meta.word}\nMeaning: ${wordAnalysis.definitions.vietnamese_translation}\nCEFR Level: ${wordAnalysis.meta.cefr}`;
+        const phraseAnalysis = analysis as PhraseAnalysis;
+        shareText = `Phrase Analysis:\nPhrase: ${phraseAnalysis.meta.phrase}\nType: ${phraseAnalysis.meta.type}\nMeaning: ${phraseAnalysis.definitions.vietnamese_translation}`;
       } else if (analysisType === 'sentence') {
         const sentenceAnalysis = analysis as SentenceAnalysis;
         shareText = `Sentence Analysis:\nMain Idea: ${sentenceAnalysis.semantics.main_idea}\nTranslation: ${sentenceAnalysis.translation.natural}\nComplexity: ${sentenceAnalysis.meta.complexity_level}`;

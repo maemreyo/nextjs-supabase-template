@@ -16,11 +16,11 @@ import {
   Lightbulb,
   Star
 } from 'lucide-react';
-import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis } from '@/lib/ai/types';
+import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis, PhraseAnalysis } from '@/lib/ai/types';
 import { cn } from '@/lib/utils';
 
 interface CompactResultCardProps {
-  analysis: WordAnalysis | SentenceAnalysis | ParagraphAnalysis | null;
+  analysis: WordAnalysis | SentenceAnalysis | ParagraphAnalysis | PhraseAnalysis | null;
   analysisType: 'word' | 'phrase' | 'sentence' | 'paragraph';
   isLoading: boolean;
   error: string | null;
@@ -100,6 +100,48 @@ export function CompactResultCard({
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Target className="h-3 w-3" />
             <span>{wordAnalysis.relations.synonyms.length} đồng nghĩa • {wordAnalysis.relations.antonyms.length} trái nghĩa</span>
+          </div>
+        </div>
+        
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1 text-xs text-green-600">
+            <CheckCircle className="h-3 w-3" />
+            <span>Phân tích hoàn tất</span>
+          </div>
+          <Button variant="ghost" size="sm" onClick={onViewDetails} className="h-7 px-2 text-xs">
+            <Eye className="h-3 w-3 mr-1" />
+            Chi tiết
+          </Button>
+        </div>
+      </Card>
+    );
+  }
+
+  // Phrase Analysis Summary
+  if (analysisType === 'phrase') {
+    const phraseAnalysis = analysis as PhraseAnalysis;
+    return (
+      <Card className={cn("p-3", className)}>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <BookOpen className="h-4 w-4 text-orange-500" />
+            <Badge variant="outline" className="text-xs">Cụm từ</Badge>
+            <span className="font-medium text-sm">{phraseAnalysis.meta.phrase}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Badge variant="secondary" className="text-xs">{phraseAnalysis.meta.pos}</Badge>
+            <Badge variant="outline" className="text-xs">{phraseAnalysis.meta.cefr}</Badge>
+          </div>
+        </div>
+        
+        <div className="space-y-1 mb-2">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Lightbulb className="h-3 w-3" />
+            <span className="truncate">{phraseAnalysis.definitions.vietnamese_translation}</span>
+          </div>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Target className="h-3 w-3" />
+            <span>{phraseAnalysis.components.words.length} từ thành phần</span>
           </div>
         </div>
         
