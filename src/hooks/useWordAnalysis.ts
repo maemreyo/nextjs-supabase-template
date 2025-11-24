@@ -89,9 +89,10 @@ export function useWordAnalysis(
 export function useWordAnalysisMutation() {
   const queryClient = useQueryClient();
   const { getAccessToken } = useSupabase();
-
+  
   return useMutation({
     mutationFn: async (params: AnalyzeWordRequest): Promise<WordAnalysis> => {
+      console.log('DEBUG: useWordAnalysisMutation - params received:', params);
       // Get access token for authentication
       const token = await getAccessToken();
       

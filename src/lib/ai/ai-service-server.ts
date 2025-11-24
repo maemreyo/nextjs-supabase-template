@@ -558,11 +558,13 @@ export class AIServiceServer {
   // Database save methods
   private async saveWordAnalysis(userId: string, request: AnalyzeWordRequest, analysis: WordAnalysis): Promise<string | null> {
     console.log('DEBUG: Starting saveWordAnalysis for word:', analysis.meta.word)
+    console.log('DEBUG: sessionId in request:', request.sessionId)
     const supabase = await createClient()
     let wordAnalysisId: string | null = null
     
     try {
       console.log('DEBUG: Attempting to save main word analysis to database')
+      console.log('DEBUG: Will save with document_id:', request.sessionId || null)
       // Save main word analysis
       const { data: wordAnalysisData, error: wordError } = await supabase
         .from('word_analyses')
@@ -581,7 +583,8 @@ export class AIServiceServer {
           sentence_context: request.sentenceContext,
           paragraph_context: request.paragraphContext,
           example_sentence: analysis.usage.example_sentence,
-          example_translation: analysis.usage.example_translation
+          example_translation: analysis.usage.example_translation,
+          document_id: request.sessionId || null
         })
         .select()
         .single()
@@ -673,7 +676,8 @@ export class AIServiceServer {
           literal_translation: analysis.translation.literal,
           natural_translation: analysis.translation.natural,
           paragraph_context: request.paragraphContext,
-          clauses: analysis.grammar_breakdown.clauses
+          clauses: analysis.grammar_breakdown.clauses,
+          document_id: request.sessionId || null
         })
         .select()
         .single()
@@ -751,7 +755,8 @@ export class AIServiceServer {
           gap_analysis: analysis.coherence_and_cohesion.gap_analysis,
           vocabulary_level: analysis.stylistic_evaluation.vocabulary_level,
           sentence_variety: analysis.stylistic_evaluation.sentence_variety,
-          better_version: analysis.constructive_feedback.better_version
+          better_version: analysis.constructive_feedback.better_version,
+          document_id: request.sessionId || null
         })
         .select()
         .single()

@@ -1,0 +1,62 @@
+Sửa các lỗi này nữa:
+```
+## Error Type
+Console Error
+
+## Error Message
+params are being enumerated. `params` is a Promise and must be unwrapped with `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+
+
+    at safeStringify (src/lib/performance/server-utils.ts:19:19)
+    at generateSafeKey/< (src/lib/performance/server-utils.ts:62:28)
+    at generateSafeKey (src/lib/performance/server-utils.ts:42:17)
+    at memoizedFn (src/lib/performance/server-utils.ts:245:56)
+    at button (unknown:0:0)
+    at Button (src/components/ui/button.tsx:52:5)
+    at BubbleMenu (src/components/analysis/BubbleMenu.tsx:52:7)
+    at AnalysisEditor (src/components/analysis/AnalysisEditor.tsx:451:9)
+    at ImprovedAnalysisPageContent (src/app/analysis/page.tsx:333:11)
+    at ImprovedAnalysisPage (src/app/analysis/page.tsx:467:9)
+
+## Code Frame
+  17 |       // Handle circular reference by creating a safe representation
+  18 |       const seen = new WeakSet();
+> 19 |       return JSON.stringify(obj, (key, val) => {
+     |                   ^
+  20 |         if (val != null && typeof val === 'object') {
+  21 |           if (seen.has(val)) {
+  22 |             return '[Circular]';
+
+Next.js version: 16.0.3 (Turbopack)
+```
+và
+```
+## Error Type
+Console Error
+
+## Error Message
+The keys of `searchParams` were accessed directly. `searchParams` is a Promise and must be unwrapped with `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+
+
+    at safeStringify (src/lib/performance/server-utils.ts:19:19)
+    at generateSafeKey/< (src/lib/performance/server-utils.ts:62:28)
+    at generateSafeKey (src/lib/performance/server-utils.ts:42:17)
+    at memoizedFn (src/lib/performance/server-utils.ts:245:56)
+    at button (unknown:0:0)
+    at Button (src/components/ui/button.tsx:52:5)
+    at BubbleMenu (src/components/analysis/BubbleMenu.tsx:52:7)
+    at AnalysisEditor (src/components/analysis/AnalysisEditor.tsx:451:9)
+    at ImprovedAnalysisPageContent (src/app/analysis/page.tsx:333:11)
+    at ImprovedAnalysisPage (src/app/analysis/page.tsx:467:9)
+
+## Code Frame
+  17 |       // Handle circular reference by creating a safe representation
+  18 |       const seen = new WeakSet();
+> 19 |       return JSON.stringify(obj, (key, val) => {
+     |                   ^
+  20 |         if (val != null && typeof val === 'object') {
+  21 |           if (seen.has(val)) {
+  22 |             return '[Circular]';
+
+Next.js version: 16.0.3 (Turbopack)
+```

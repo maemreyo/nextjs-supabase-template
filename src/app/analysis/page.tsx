@@ -177,19 +177,22 @@ function ImprovedAnalysisPageContent() {
           result = await wordAnalysisMutation.mutateAsync({
             word: wordToAnalyze,
             sentenceContext,
-            paragraphContext: ''
+            paragraphContext: '',
+            sessionId: sessionId || undefined
           });
           break;
 
         case 'sentence':
           result = await sentenceAnalysisMutation.mutateAsync({
-            sentence: text
+            sentence: text,
+            sessionId: sessionId || undefined
           });
           break;
 
         case 'paragraph':
           result = await paragraphAnalysisMutation.mutateAsync({
-            paragraph: text
+            paragraph: text,
+            sessionId: sessionId || undefined
           });
           break;
 
