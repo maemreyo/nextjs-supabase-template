@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-keys';
-import { useSupabase } from '@/components/providers/supabase-provider';
+import { api } from '@/lib/api-client-client';
 import type { AnalysisSession, SessionAnalysis, SessionSettings, SessionTag } from '@/types/sessions';
 
 interface SessionDataResponse {
@@ -23,6 +23,7 @@ interface UseSessionDataOptions {
 /**
  * Hook để tải dữ liệu chi tiết của một session
  * Bao gồm thông tin session, danh sách analyses, settings và tags
+ * Sử dụng API client mới để giảm code duplication
  */
 export function useSessionData(sessionId: string | undefined, options: UseSessionDataOptions = {}) {
   const {
@@ -31,7 +32,6 @@ export function useSessionData(sessionId: string | undefined, options: UseSessio
     staleTime = 5 * 60 * 1000, // 5 minutes
   } = options;
 
-  const { getAccessToken } = useSupabase();
   const queryClient = useQueryClient();
 
   const queryKey = queryKeys.api.withParams('/api/sessions/load', { sessionId });
@@ -54,31 +54,8 @@ export function useSessionData(sessionId: string | undefined, options: UseSessio
       console.log('🔍 [DEBUG] useSessionData - Fetching session data', { sessionId });
 
       try {
-        // Get access token for authentication
-        const token = await getAccessToken();
-        
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-        };
-        
-        // Add authorization header if token is available
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
-
-        const response = await fetch(`/api/sessions/${sessionId}/load`, {
-          method: 'GET',
-          headers,
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(
-            errorData.error || `Failed to fetch session data: ${response.status} ${response.statusText}`
-          );
-        }
-
-        const apiResponse = await response.json();
+        // Use the new API client instead of manual fetch
+        const apiResponse = await api.sessions.get(sessionId);
         
         // Handle different response formats
         let result: SessionDataResponse;
@@ -91,14 +68,6 @@ export function useSessionData(sessionId: string | undefined, options: UseSessio
           result = apiResponse;
         }
         
-        console.log('🔍 [DEBUG] useSessionData - Fetch successful', {
-          sessionId,
-          sessionTitle: result.session.title,
-          analysesCount: result.analyses.length,
-          hasSettings: !!result.settings,
-          tagsCount: result.tags?.length || 0,
-        });
-
         return result;
       } catch (error) {
         console.error('🔍 [DEBUG] useSessionData - Fetch failed', error);
@@ -119,8 +88,8 @@ export function useSessionData(sessionId: string | undefined, options: UseSessio
   };
 
   // Extract session text content from content column first, then fallback to analyses
-  const getSessionText = useCallback(() => {
-    // First, try to get content from the session content column
+  const getSessionText = () => {
+    // First, try to get content from session content column
     if (data?.session?.content) {
       return data.session.content;
     }
@@ -141,10 +110,10 @@ export function useSessionData(sessionId: string | undefined, options: UseSessio
     });
     
     return textParts.join('\n\n');
-  }, [data]);
+  };
 
   // Extract session HTML content for rich text editor
-  const getSessionHTML = useCallback(() => {
+  const getSessionHTML = () => {
     console.log('🔍 [DEBUG] getSessionHTML - Session data:', {
       hasContent: !!data?.session?.content,
       hasContentHTML: !!data?.session?.content_html,
@@ -187,17 +156,17 @@ export function useSessionData(sessionId: string | undefined, options: UseSessio
     });
     
     return textParts.join('');
-  }, [data]);
+  };
 
   // Get analyses by type
-  const getAnalysesByType = useCallback((type: 'word' | 'sentence' | 'paragraph') => {
+  const getAnalysesByType = (type: 'word' | 'sentence' | 'paragraph') => {
     if (!data?.analyses) return [];
     
     return data.analyses.filter(analysis => analysis.analysis_type === type);
-  }, [data]);
+  };
 
   // Get word list from word analyses
-  const getWordList = useCallback(() => {
+  const getWordList = () => {
     if (!data?.analyses) return [];
     
     const wordAnalyses = data.analyses.filter(analysis => 
@@ -212,7 +181,7 @@ export function useSessionData(sessionId: string | undefined, options: UseSessio
       sessionId: analysis.session_id,
       analysisId: analysis.id,
     }));
-  }, [data]);
+  };
 
   return {
     session: data?.session,
@@ -232,6 +201,3 @@ export function useSessionData(sessionId: string | undefined, options: UseSessio
     getWordList,
   };
 }
-
-// Helper function for useCallback import
-import { useCallback } from 'react';

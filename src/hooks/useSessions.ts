@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient, useMutation, useInfiniteQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-keys';
-import { useSupabase } from '@/components/providers/supabase-provider';
+import { api } from '@/lib/api-client-client';
 import type { AnalysisSession, SessionAnalysis, SessionSettings } from '@/types/sessions';
 
 interface ListSessionsParams {
@@ -33,6 +33,7 @@ interface UseSessionsOptions {
 
 /**
  * Hook để lấy danh sách các phiên làm việc
+ * Sử dụng API client mới để giảm code duplication
  */
 export function useSessions(params: ListSessionsParams = {}, options: UseSessionsOptions = {}) {
   const {
@@ -50,8 +51,6 @@ export function useSessions(params: ListSessionsParams = {}, options: UseSession
     refetchOnWindowFocus = false,
     staleTime = 5 * 60 * 1000, // 5 minutes
   } = options;
-
-  const { getAccessToken } = useSupabase();
 
   const queryKey = queryKeys.api.withParams('/api/sessions/list', {
     status,
@@ -83,45 +82,23 @@ export function useSessions(params: ListSessionsParams = {}, options: UseSession
       });
 
       try {
-        // Build query string
-        const queryParams = new URLSearchParams();
-        
-        if (status !== 'all') queryParams.append('status', status);
-        if (type !== 'all') queryParams.append('type', type);
-        if (search) queryParams.append('search', search);
-        if (page !== 1) queryParams.append('page', page.toString());
-        if (limit !== 20) queryParams.append('limit', limit.toString());
-        if (sortBy) queryParams.append('sort_by', sortBy);
-        if (sortOrder) queryParams.append('sort_order', sortOrder);
-
-        const queryString = queryParams.toString();
-        const url = `/api/sessions/list${queryString ? `?${queryString}` : ''}`;
-
-        // Get access token for authentication
-        const token = await getAccessToken();
-        
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
+        // Use new API client instead of manual fetch
+        const queryParams = {
+          status: status !== 'all' ? status : undefined,
+          type: type !== 'all' ? type : undefined,
+          search: search || undefined,
+          page: page !== 1 ? page : undefined,
+          limit: limit !== 20 ? limit : undefined,
+          sort_by: sortBy,
+          sort_order: sortOrder,
         };
-        
-        // Add authorization header if token is available
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
 
-        const response = await fetch(url, {
-          method: 'GET',
-          headers,
-        });
+        // Remove undefined values
+        Object.keys(queryParams).forEach(key => 
+          queryParams[key as keyof typeof queryParams] === undefined && delete queryParams[key as keyof typeof queryParams]
+        );
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(
-            errorData.error || `Failed to fetch sessions: ${response.status} ${response.statusText}`
-          );
-        }
-
-        const apiResponse = await response.json();
+        const apiResponse = await api.sessions.list(queryParams);
         
         // Handle different response formats
         let result: SessionsListResponse;
@@ -197,8 +174,6 @@ export function useSession(sessionId: string, options: UseSessionsOptions = {}) 
     staleTime = 5 * 60 * 1000, // 5 minutes
   } = options;
 
-  const { getAccessToken } = useSupabase();
-
   const queryKey = queryKeys.api.withParams('/api/sessions/load', { sessionId });
 
   const {
@@ -215,38 +190,19 @@ export function useSession(sessionId: string, options: UseSessionsOptions = {}) 
       console.log('🔍 [DEBUG] useSession - Fetching session', { sessionId });
 
       try {
-        // Get access token for authentication
-        const token = await getAccessToken();
+        // Use new API client instead of manual fetch
+        const apiResponse = await api.sessions.get(sessionId);
         
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-        };
-        
-        // Add authorization header if token is available
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
+        // Handle different response formats
+        let result: SessionLoadResponse;
+        if (apiResponse.success && apiResponse.data) {
+          // API returns { success: true, data: { session, analyses, settings, tags } }
+          result = apiResponse.data;
+        } else {
+          // API returns directly { session, analyses, settings, tags }
+          result = apiResponse;
         }
-
-        const response = await fetch(`/api/sessions/${sessionId}/load`, {
-          method: 'GET',
-          headers,
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(
-            errorData.error || `Failed to fetch session: ${response.status} ${response.statusText}`
-          );
-        }
-
-        const result: SessionLoadResponse = await response.json();
         
-        console.log('🔍 [DEBUG] useSession - Fetch successful', {
-          sessionId,
-          analysesCount: result.analyses.length,
-          hasSettings: !!result.settings,
-        });
-
         return result;
       } catch (error) {
         console.error('🔍 [DEBUG] useSession - Fetch failed', error);
@@ -277,7 +233,6 @@ export function useSession(sessionId: string, options: UseSessionsOptions = {}) 
  */
 export function useCreateSession() {
   const queryClient = useQueryClient();
-  const { getAccessToken } = useSupabase();
 
   const mutation = useMutation({
     mutationFn: async (sessionData: {
@@ -288,32 +243,8 @@ export function useCreateSession() {
       console.log('🔍 [DEBUG] useCreateSession - Creating session', sessionData);
 
       try {
-        // Get access token for authentication
-        const token = await getAccessToken();
-        
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-        };
-        
-        // Add authorization header if token is available
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
-
-        const response = await fetch('/api/sessions', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(sessionData),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(
-            errorData.error || `Failed to create session: ${response.status} ${response.statusText}`
-          );
-        }
-
-        const result = await response.json();
+        // Use new API client instead of manual fetch
+        const result = await api.sessions.create(sessionData);
         
         if (!result.success) {
           throw new Error(result.error || 'Failed to create session');
@@ -353,7 +284,6 @@ export function useCreateSession() {
  */
 export function useUpdateSession() {
   const queryClient = useQueryClient();
-  const { getAccessToken } = useSupabase();
 
   const mutation = useMutation({
     mutationFn: async ({ 
@@ -366,32 +296,8 @@ export function useUpdateSession() {
       console.log('🔍 [DEBUG] useUpdateSession - Updating session', { id, updates });
 
       try {
-        // Get access token for authentication
-        const token = await getAccessToken();
-        
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-        };
-        
-        // Add authorization header if token is available
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
-
-        const response = await fetch(`/api/sessions/${id}`, {
-          method: 'PATCH',
-          headers,
-          body: JSON.stringify(updates),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(
-            errorData.error || `Failed to update session: ${response.status} ${response.statusText}`
-          );
-        }
-
-        const result = await response.json();
+        // Use new API client instead of manual fetch
+        const result = await api.sessions.update(id, updates);
         
         if (!result.success) {
           throw new Error(result.error || 'Failed to update session');
@@ -434,38 +340,14 @@ export function useUpdateSession() {
  */
 export function useDeleteSession() {
   const queryClient = useQueryClient();
-  const { getAccessToken } = useSupabase();
 
   const mutation = useMutation({
     mutationFn: async (sessionId: string) => {
       console.log('🔍 [DEBUG] useDeleteSession - Deleting session', { sessionId });
 
       try {
-        // Get access token for authentication
-        const token = await getAccessToken();
-        
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-        };
-        
-        // Add authorization header if token is available
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
-
-        const response = await fetch(`/api/sessions/${sessionId}`, {
-          method: 'DELETE',
-          headers,
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(
-            errorData.error || `Failed to delete session: ${response.status} ${response.statusText}`
-          );
-        }
-
-        const result = await response.json();
+        // Use new API client instead of manual fetch
+        const result = await api.sessions.delete(sessionId);
         
         if (!result.success) {
           throw new Error(result.error || 'Failed to delete session');
