@@ -12,8 +12,8 @@ interface SelectionInfo {
 
 interface UseTipTapSelectionProps {
   editor: Editor | null;
-  onTextSelect?: (text: string, type: 'word' | 'sentence' | 'paragraph') => void;
-  onAnalysisRequest?: (text: string, type: 'word' | 'sentence' | 'paragraph') => void;
+  onTextSelect?: (text: string, type: 'word' | 'phrase' | 'sentence' | 'paragraph') => void;
+  onAnalysisRequest?: (text: string, type: 'word' | 'phrase' | 'sentence' | 'paragraph') => void;
   autoAnalysisEnabled?: boolean;
   analysisDebounceMs?: number;
 }
@@ -39,11 +39,11 @@ export function useTipTapSelection({
     show: false,
   });
 
-  const [analysisType, setAnalysisType] = useState<'word' | 'sentence' | 'paragraph'>('word');
+  const [analysisType, setAnalysisType] = useState<'word' | 'phrase' | 'sentence' | 'paragraph'>('word');
   const analysisTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastAnalysisRef = useRef<{
     text: string;
-    type: 'word' | 'sentence' | 'paragraph';
+    type: 'word' | 'phrase' | 'sentence' | 'paragraph';
     timestamp: number;
   } | null>(null);
 
@@ -89,7 +89,7 @@ export function useTipTapSelection({
   }, [editor]);
 
   // Debounced analysis function
-  const debouncedAnalysis = useCallback((textToAnalyze: string, type: 'word' | 'sentence' | 'paragraph') => {
+  const debouncedAnalysis = useCallback((textToAnalyze: string, type: 'word' | 'phrase' | 'sentence' | 'paragraph') => {
     // Clear any existing timeout
     if (analysisTimeoutRef.current) {
       clearTimeout(analysisTimeoutRef.current);
@@ -149,10 +149,11 @@ export function useTipTapSelection({
         });
       }
       
-      // Determine analysis type
-      let newAnalysisType: 'word' | 'sentence' | 'paragraph';
+      // Determine analysis type - keep phrase as phrase
+      let newAnalysisType: 'word' | 'phrase' | 'sentence' | 'paragraph';
       if (detectedType === 'word') newAnalysisType = 'word';
-      else if (detectedType === 'phrase' || detectedType === 'sentence') newAnalysisType = 'sentence';
+      else if (detectedType === 'phrase') newAnalysisType = 'phrase';
+      else if (detectedType === 'sentence') newAnalysisType = 'sentence';
       else newAnalysisType = 'paragraph';
       
       setAnalysisType(newAnalysisType);

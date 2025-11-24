@@ -1,10 +1,12 @@
-import { 
-  WordAnalysis, 
-  SentenceAnalysis, 
+import {
+  WordAnalysis,
+  SentenceAnalysis,
   ParagraphAnalysis,
+  PhraseAnalysis,
   AnalyzeWordRequest,
   AnalyzeSentenceRequest,
-  AnalyzeParagraphRequest 
+  AnalyzeParagraphRequest,
+  AnalyzePhraseRequest
 } from './types'
 
 // Word Analysis Prompt Builder
@@ -216,6 +218,103 @@ HƯỚNG DẪN JSON SCHEMA CHI TIẾT:
 `
 }
 
+// Phrase Analysis Prompt Builder
+export function buildPhraseAnalysisPrompt(request: AnalyzePhraseRequest): string {
+  const { phrase, sentenceContext, paragraphContext, maxItems = 5 } = request
+  
+  return `
+Bạn là một chuyên gia ngôn ngữ học và giáo dục. Nhiệm vụ của bạn là phân tích cụm từ "${phrase}" để giúp người học hiểu sâu về cách sử dụng, nghĩa và các sắc thái của nó.
+
+INPUT DATA:
+- Target Phrase: "${phrase}"
+- Sentence Context: "${sentenceContext}"
+- Paragraph Context: "${paragraphContext || ''}"
+- Max Items per list: ${maxItems}
+
+YÊU CẦU OUTPUT:
+1. Trả về duy nhất một chuỗi JSON hợp lệ (RFC 8259).
+2. Tuyệt đối KHÔNG kèm markdown (\`\`\`), không lời dẫn.
+3. Các trường giải thích chính dùng Tiếng Việt.
+4. Phần collocations và variations: Giới hạn tối đa ${maxItems} mục mỗi loại.
+
+JSON SCHEMA:
+{
+  "meta": {
+    "phrase": "${phrase}",
+    "ipa": "Phiên âm IPA của cả cụm từ",
+    "pos": "Từ loại của cụm từ (Noun Phrase/Verb Phrase/Phrasal Verb/Idiom...)",
+    "type": "Loại cụm từ (Idiom/Collocation/Phrasal Verb/Compound Noun...)",
+    "cefr": "Trình độ (A1-C2)",
+    "tone": "Sắc thái (Formal/Neutral/Irony...)",
+    "register": "Đăng ký (Formal/Informal/Academic...)"
+  },
+  "definitions": {
+    "literal_meaning": "Nghĩa đen (nếu có)",
+    "figurative_meaning": "Nghĩa bóng/nghĩa thực tế trong văn cảnh",
+    "vietnamese_translation": "Dịch sang tiếng Việt",
+    "usage_notes": "Lưu ý quan trọng về cách sử dụng"
+  },
+  "components": [
+    {
+      "word": "Từ riêng lẻ trong cụm",
+      "ipa": "Phiên âm của từ này",
+      "meaning": "Nghĩa của từ này khi đứng riêng",
+      "role": "Vai trò trong cụm từ (động từ chính, giới từ, bổ nghĩa...)"
+    }
+  ],
+  "grammar_and_structure": {
+    "pattern": "Mẫu ngữ pháp (VD: verb + preposition, adjective + noun)",
+    "variations": [
+      {
+        "phrase": "Biến thể của cụm từ",
+        "meaning": "Nghĩa của biến thể này",
+        "usage_example": "Ví dụ sử dụng biến thể"
+      }
+    ]
+  },
+  "usage": {
+    "collocations": [
+      {
+        "phrase": "Cụm từ collocation liên quan",
+        "meaning": "Nghĩa của collocation",
+        "usage_example": "Ví dụ sử dụng collocation",
+        "frequency_level": "common/uncommon/rare"
+      }
+    ],
+    "example_sentences": [
+      {
+        "sentence": "Câu ví dụ minh họa",
+        "translation": "Dịch câu ví dụ",
+        "context": "Văn cảnh sử dụng câu này"
+      }
+    ]
+  },
+  "pragmatics_and_culture": {
+    "formality_level": "Mức độ trang trọng (Very Formal/Formal/Neutral/Informal)",
+    "register_appropriateness": "Đăng ký phù hợp (Business/Academic/Casual...)",
+    "cultural_notes": "Lưu ý văn hóa (nếu có)",
+    "common_mistakes": [
+      {
+        "mistake": "Lỗi sai phổ biến",
+        "correction": "Cách sửa đúng",
+        "explanation": "Giải thích tại sao sai và cách sửa"
+      }
+    ]
+  },
+  "learning_aids": {
+    "memory_tips": "Mẹo ghi nhớ cụm từ",
+    "pronunciation_tips": "Mẹo phát âm",
+    "practice_suggestions": [
+      {
+        "exercise": "Bài tập luyện tập",
+        "instruction": "Hướng dẫn thực hiện bài tập"
+      }
+    ]
+  }
+}
+`
+}
+
 // JSON Validation Functions
 export function validateWordAnalysis(data: any): WordAnalysis {
   try {
@@ -314,6 +413,40 @@ export function validateParagraphAnalysis(data: any): ParagraphAnalysis {
   }
 }
 
+export function validatePhraseAnalysis(data: any): PhraseAnalysis {
+  try {
+    // Basic structure validation
+    if (!data.meta || !data.definitions || !data.components || !data.usage || !data.pragmatics_and_culture || !data.learning_aids) {
+      throw new Error('Invalid PhraseAnalysis structure')
+    }
+    
+    // Required fields validation
+    const requiredFields = [
+      'meta.phrase', 'meta.ipa', 'meta.pos', 'meta.type', 'meta.cefr', 'meta.tone', 'meta.register',
+      'definitions.literal_meaning', 'definitions.figurative_meaning', 'definitions.vietnamese_translation', 'definitions.usage_notes',
+      'grammar_and_structure.pattern',
+      'pragmatics_and_culture.formality_level', 'pragmatics_and_culture.register_appropriateness',
+      'learning_aids.memory_tips', 'learning_aids.pronunciation_tips'
+    ]
+    
+    for (const field of requiredFields) {
+      const [parent, child] = field.split('.')
+      const parentObj = data as Record<string, any>
+      const parentKey = parent as string
+      if (!parentObj[parentKey]) {
+        throw new Error(`Missing required field: ${field}`)
+      }
+      if (child && !parentObj[parentKey][child]) {
+        throw new Error(`Missing required field: ${field}`)
+      }
+    }
+    
+    return data as PhraseAnalysis
+  } catch (error) {
+    throw new Error(`PhraseAnalysis validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+  }
+}
+
 // Error handling utilities
 export function createFallbackWordAnalysis(word: string): WordAnalysis {
   return {
@@ -406,6 +539,48 @@ export function createFallbackParagraphAnalysis(paragraph: string): ParagraphAna
     constructive_feedback: {
       critiques: [],
       better_version: paragraph
+    }
+  }
+}
+
+export function createFallbackPhraseAnalysis(phrase: string): PhraseAnalysis {
+  return {
+    meta: {
+      phrase,
+      ipa: "",
+      pos: "unknown",
+      type: "unknown",
+      cefr: "unknown",
+      tone: "neutral",
+      register: "neutral"
+    },
+    definitions: {
+      literal_meaning: "Không thể xác định",
+      figurative_meaning: "Không thể xác định",
+      vietnamese_translation: "Không thể xác định",
+      usage_notes: "Không có dữ liệu"
+    },
+    components: {
+      words: []
+    },
+    grammar_and_structure: {
+      pattern: "Không thể xác định",
+      variations: []
+    },
+    usage: {
+      collocations: [],
+      example_sentences: []
+    },
+    pragmatics_and_culture: {
+      formality_level: "Không thể xác định",
+      register_appropriateness: "Không thể xác định",
+      cultural_notes: "Không có dữ liệu",
+      common_mistakes: []
+    },
+    learning_aids: {
+      memory_tips: "Không có dữ liệu",
+      pronunciation_tips: "Không có dữ liệu",
+      practice_suggestions: []
     }
   }
 }

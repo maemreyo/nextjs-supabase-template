@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { WordAnalysis, SentenceAnalysis, ParagraphAnalysis } from '@/lib/ai/types';
 
-type AnalysisType = 'word' | 'sentence' | 'paragraph';
+type AnalysisType = 'word' | 'phrase' | 'sentence' | 'paragraph';
 
 interface AnalysisMetadata {
   [key: string]: any;
@@ -188,6 +188,9 @@ export function useAnalysisActions({
       if (analysisType === 'word') {
         const wordAnalysis = analysis as WordAnalysis;
         shareText = `Word: ${wordAnalysis.meta.word} (${wordAnalysis.meta.pos})\nMeaning: ${wordAnalysis.definitions.vietnamese_translation}\nCEFR Level: ${wordAnalysis.meta.cefr}`;
+      } else if (analysisType === 'phrase') {
+        const wordAnalysis = analysis as WordAnalysis;
+        shareText = `Phrase Analysis:\nPhrase: ${wordAnalysis.meta.word}\nMeaning: ${wordAnalysis.definitions.vietnamese_translation}\nCEFR Level: ${wordAnalysis.meta.cefr}`;
       } else if (analysisType === 'sentence') {
         const sentenceAnalysis = analysis as SentenceAnalysis;
         shareText = `Sentence Analysis:\nMain Idea: ${sentenceAnalysis.semantics.main_idea}\nTranslation: ${sentenceAnalysis.translation.natural}\nComplexity: ${sentenceAnalysis.meta.complexity_level}`;

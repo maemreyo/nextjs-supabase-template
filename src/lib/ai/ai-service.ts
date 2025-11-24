@@ -12,21 +12,26 @@ import {
   WordAnalysis,
   SentenceAnalysis,
   ParagraphAnalysis,
+  PhraseAnalysis,
   AnalyzeWordRequest,
   AnalyzeSentenceRequest,
-  AnalyzeParagraphRequest
+  AnalyzeParagraphRequest,
+  AnalyzePhraseRequest
 } from './types'
 import { providerRegistry } from './providers'
 import {
   buildWordAnalysisPrompt,
   buildSentenceAnalysisPrompt,
   buildParagraphAnalysisPrompt,
+  buildPhraseAnalysisPrompt,
   validateWordAnalysis,
   validateSentenceAnalysis,
   validateParagraphAnalysis,
+  validatePhraseAnalysis,
   createFallbackWordAnalysis,
   createFallbackSentenceAnalysis,
-  createFallbackParagraphAnalysis
+  createFallbackParagraphAnalysis,
+  createFallbackPhraseAnalysis
 } from './prompt-utils'
 
 export class AIService {
@@ -425,6 +430,36 @@ export class AIService {
       
       // Return fallback response
       return createFallbackParagraphAnalysis(request.paragraph)
+    }
+  }
+
+  // Phrase Analysis Method
+  async analyzePhrase(request: AnalyzePhraseRequest): Promise<PhraseAnalysis> {
+    const startTime = Date.now()
+    
+    try {
+      const prompt = buildPhraseAnalysisPrompt(request)
+      const response = await this.generateText({
+        prompt,
+        temperature: 0.3,
+        maxTokens: 6000,
+        metadata: {
+          operation: 'phrase-analysis',
+          phrase: request.phrase,
+          context: request.sentenceContext
+        }
+      })
+      
+      // Parse and validate response
+      const analysisResult = JSON.parse(response.text)
+      const validatedAnalysis = validatePhraseAnalysis(analysisResult)
+      
+      return validatedAnalysis
+    } catch (error) {
+      console.error('Error analyzing phrase:', error)
+      
+      // Return fallback response
+      return createFallbackPhraseAnalysis(request.phrase)
     }
   }
 

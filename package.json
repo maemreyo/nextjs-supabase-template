@@ -16,7 +16,6 @@
     "db:push": "supabase db push",
     "db:reset": "supabase db reset",
     "db:migrate": "supabase db push",
-    "db:migrate-session-analyses": "node scripts/migrate-session-analyses.js",
     "db:seed": "node scripts/db-seed.js",
     "db:backup": "node scripts/db-backup.js",
     "db:restore": "node scripts/db-restore.js",

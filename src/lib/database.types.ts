@@ -306,6 +306,7 @@ export type Database = {
           id: string
           last_accessed_at: string | null
           paragraph_analyses_count: number | null
+          phrase_analyses_count: number | null
           sentence_analyses_count: number | null
           session_type: string
           status: string
@@ -326,6 +327,7 @@ export type Database = {
           id?: string
           last_accessed_at?: string | null
           paragraph_analyses_count?: number | null
+          phrase_analyses_count?: number | null
           sentence_analyses_count?: number | null
           session_type: string
           status?: string
@@ -346,6 +348,7 @@ export type Database = {
           id?: string
           last_accessed_at?: string | null
           paragraph_analyses_count?: number | null
+          phrase_analyses_count?: number | null
           sentence_analyses_count?: number | null
           session_type?: string
           status?: string
@@ -560,6 +563,120 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "paragraph_analyses"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      phrase_analyses: {
+        Row: {
+          antonyms: string[] | null
+          common_mistakes: string[] | null
+          complexity_level: string | null
+          contextual_meaning: string | null
+          created_at: string | null
+          cultural_notes: string | null
+          document_id: string | null
+          example_translations: string[] | null
+          frequency_level: string | null
+          grammatical_pattern: string | null
+          id: string
+          literal_meaning: string | null
+          memory_aid: string | null
+          natural_translation: string | null
+          paragraph_context: string | null
+          part_of_speech: string | null
+          phrase: string
+          phrase_type: string | null
+          register_explanation: string | null
+          register_level: string | null
+          sentence_context: string | null
+          structure_breakdown: Json | null
+          stylistic_notes: string | null
+          synonyms: string[] | null
+          updated_at: string | null
+          usage_examples: string[] | null
+          usage_tips: string[] | null
+          user_id: string | null
+          variations: string[] | null
+          vietnamese_translation: string | null
+        }
+        Insert: {
+          antonyms?: string[] | null
+          common_mistakes?: string[] | null
+          complexity_level?: string | null
+          contextual_meaning?: string | null
+          created_at?: string | null
+          cultural_notes?: string | null
+          document_id?: string | null
+          example_translations?: string[] | null
+          frequency_level?: string | null
+          grammatical_pattern?: string | null
+          id?: string
+          literal_meaning?: string | null
+          memory_aid?: string | null
+          natural_translation?: string | null
+          paragraph_context?: string | null
+          part_of_speech?: string | null
+          phrase: string
+          phrase_type?: string | null
+          register_explanation?: string | null
+          register_level?: string | null
+          sentence_context?: string | null
+          structure_breakdown?: Json | null
+          stylistic_notes?: string | null
+          synonyms?: string[] | null
+          updated_at?: string | null
+          usage_examples?: string[] | null
+          usage_tips?: string[] | null
+          user_id?: string | null
+          variations?: string[] | null
+          vietnamese_translation?: string | null
+        }
+        Update: {
+          antonyms?: string[] | null
+          common_mistakes?: string[] | null
+          complexity_level?: string | null
+          contextual_meaning?: string | null
+          created_at?: string | null
+          cultural_notes?: string | null
+          document_id?: string | null
+          example_translations?: string[] | null
+          frequency_level?: string | null
+          grammatical_pattern?: string | null
+          id?: string
+          literal_meaning?: string | null
+          memory_aid?: string | null
+          natural_translation?: string | null
+          paragraph_context?: string | null
+          part_of_speech?: string | null
+          phrase?: string
+          phrase_type?: string | null
+          register_explanation?: string | null
+          register_level?: string | null
+          sentence_context?: string | null
+          structure_breakdown?: Json | null
+          stylistic_notes?: string | null
+          synonyms?: string[] | null
+          updated_at?: string | null
+          usage_examples?: string[] | null
+          usage_tips?: string[] | null
+          user_id?: string | null
+          variations?: string[] | null
+          vietnamese_translation?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phrase_analyses_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phrase_analyses_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "ai_usage_analytics"
+            referencedColumns: ["user_id"]
           },
         ]
       }

@@ -357,6 +357,71 @@ export interface ParagraphAnalysis {
   };
 }
 
+export interface PhraseAnalysis {
+  meta: {
+    phrase: string;
+    ipa: string;
+    pos: string; // Part of speech for the phrase
+    type: string; // Idiom, collocation, phrasal verb, etc.
+    cefr: string;
+    tone: string;
+    register: string; // Formal, informal, neutral
+  };
+  definitions: {
+    literal_meaning: string;
+    figurative_meaning: string;
+    vietnamese_translation: string;
+    usage_notes: string;
+  };
+  components: {
+    words: Array<{
+      word: string;
+      ipa: string;
+      meaning: string;
+      role: string; // How it contributes to the phrase meaning
+    }>;
+  };
+  grammar_and_structure: {
+    pattern: string; // Grammatical pattern (e.g., verb + preposition)
+    variations: Array<{
+      phrase: string;
+      meaning: string;
+      usage_example: string;
+    }>;
+  };
+  usage: {
+    collocations: Array<{
+      phrase: string;
+      meaning: string;
+      usage_example: string;
+      frequency_level: 'common' | 'uncommon' | 'rare';
+    }>;
+    example_sentences: Array<{
+      sentence: string;
+      translation: string;
+      context: string;
+    }>;
+  };
+  pragmatics_and_culture: {
+    formality_level: string;
+    register_appropriateness: string;
+    cultural_notes: string;
+    common_mistakes: Array<{
+      mistake: string;
+      correction: string;
+      explanation: string;
+    }>;
+  };
+  learning_aids: {
+    memory_tips: string;
+    pronunciation_tips: string;
+    practice_suggestions: Array<{
+      exercise: string;
+      instruction: string;
+    }>;
+  };
+}
+
 // Analysis Request/Response Types
 export interface AnalyzeWordRequest {
   word: string;
@@ -374,6 +439,14 @@ export interface AnalyzeSentenceRequest {
 
 export interface AnalyzeParagraphRequest {
   paragraph: string;
+  sessionId?: string;
+}
+
+export interface AnalyzePhraseRequest {
+  phrase: string;
+  sentenceContext: string;
+  paragraphContext?: string;
+  maxItems?: number;
   sessionId?: string;
 }
 
@@ -430,6 +503,29 @@ export interface SentenceAnalysisDB {
   literal_translation: string | null;
   natural_translation: string | null;
   paragraph_context: string | null;
+  user_id: string | null;
+  document_id: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface PhraseAnalysisDB {
+  id: string;
+  phrase: string;
+  ipa: string | null;
+  pos: string | null;
+  type: string | null;
+  cefr: string | null;
+  tone: string | null;
+  register: string | null;
+  literal_meaning: string | null;
+  figurative_meaning: string | null;
+  vietnamese_translation: string | null;
+  usage_notes: string | null;
+  sentence_context: string | null;
+  paragraph_context: string | null;
+  example_sentence: string | null;
+  example_translation: string | null;
   user_id: string | null;
   document_id: string | null;
   created_at: string | null;

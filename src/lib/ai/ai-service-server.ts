@@ -11,9 +11,11 @@ import {
   WordAnalysis,
   SentenceAnalysis,
   ParagraphAnalysis,
+  PhraseAnalysis,
   AnalyzeWordRequest,
   AnalyzeSentenceRequest,
   AnalyzeParagraphRequest,
+  AnalyzePhraseRequest,
   AnalysisResponse
 } from './types'
 import {
@@ -555,6 +557,79 @@ export class AIServiceServer {
     }
   }
 
+  // Phrase Analysis Method
+  async analyzePhrase(userId: string, request: AnalyzePhraseRequest): Promise<AnalysisResponse<PhraseAnalysis>> {
+    const startTime = Date.now()
+    
+    try {
+      // Check user permissions and usage limits
+      await this.checkUserLimits(userId, 'phrase-analysis')
+      
+      // Get AI response to extract provider and model info
+      const prompt = require('./prompt-utils').buildPhraseAnalysisPrompt(request)
+      const aiResponse = await this.aiService.generateText({
+        prompt,
+        temperature: 0.3,
+        maxTokens: 6000,
+        metadata: {
+          operation: 'phrase-analysis',
+          phrase: request.phrase,
+          context: request.sentenceContext
+        }
+      })
+      
+      // Parse and validate response
+      const analysisResult = JSON.parse(aiResponse.text)
+      const analysis = require('./prompt-utils').validatePhraseAnalysis(analysisResult)
+      
+      // Save to database
+      const phraseAnalysisId = await this.savePhraseAnalysis(userId, request, analysis)
+      
+      // Add to session if sessionId is provided
+      if (request.sessionId && phraseAnalysisId) {
+        const sessionOptions: SessionAnalysisOptions = {
+          sessionId: request.sessionId,
+          analysisId: phraseAnalysisId,
+          analysisType: 'phrase',
+          userId: userId,
+          analysisData: analysis,
+          analysisTitle: generateAnalysisTitle('phrase', request.phrase),
+          analysisSummary: generateAnalysisSummary('phrase', request.phrase)
+        }
+
+        const validationErrors = validateSessionAnalysisOptions(sessionOptions)
+        if (validationErrors.length === 0) {
+          const sessionResult = await addAnalysisToSession(sessionOptions)
+          if (!sessionResult.success) {
+            console.warn('Failed to add phrase analysis to session:', sessionResult.error)
+          }
+        } else {
+          console.warn('Session analysis validation errors:', validationErrors)
+        }
+      }
+      
+      return {
+        success: true,
+        data: analysis,
+        metadata: {
+          processingTime: Date.now() - startTime,
+          tokensUsed: aiResponse.usage.totalTokens,
+          cost: aiResponse.cost,
+          model: aiResponse.model,
+          provider: aiResponse.provider,
+          analysisId: phraseAnalysisId || undefined
+        }
+      }
+    } catch (error) {
+      console.error('Error analyzing phrase:', error)
+      
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }
+    }
+  }
+
   // Database save methods
   private async saveWordAnalysis(userId: string, request: AnalyzeWordRequest, analysis: WordAnalysis): Promise<string | null> {
     console.log('DEBUG: Starting saveWordAnalysis for word:', analysis.meta.word)
@@ -805,6 +880,82 @@ export class AIServiceServer {
 
     console.log('DEBUG: Final return statement, paragraphAnalysisId:', paragraphAnalysisId)
     return paragraphAnalysisId
+  }
+
+  private async savePhraseAnalysis(userId: string, request: AnalyzePhraseRequest, analysis: PhraseAnalysis): Promise<string | null> {
+    console.log('DEBUG: Starting savePhraseAnalysis for phrase:', analysis.meta.phrase)
+    console.log('DEBUG: sessionId in request:', request.sessionId)
+    const supabase = await createClient()
+    let phraseAnalysisId: string | null = null
+    
+    try {
+      console.log('DEBUG: Attempting to save main phrase analysis to database')
+      console.log('DEBUG: Will save with document_id:', request.sessionId || null)
+      
+      // Map complexity level from CEFR
+      const complexityLevel = analysis.meta.cefr === 'A1' || analysis.meta.cefr === 'A2' ? 'Basic' :
+                            analysis.meta.cefr === 'B1' || analysis.meta.cefr === 'B2' ? 'Intermediate' : 'Advanced'
+      
+      // Map register level
+      const registerLevel = analysis.meta.register === 'formal' ? 'formal' :
+                          analysis.meta.register === 'informal' ? 'informal' : 'neutral'
+      
+      // Save main phrase analysis
+      const { data: phraseAnalysisData, error: phraseError } = await supabase
+        .from('phrase_analyses')
+        .insert({
+          user_id: userId,
+          phrase: analysis.meta.phrase,
+          phrase_type: analysis.meta.type,
+          complexity_level: complexityLevel,
+          register_level: registerLevel,
+          literal_meaning: analysis.definitions.literal_meaning,
+          contextual_meaning: analysis.definitions.figurative_meaning,
+          vietnamese_translation: analysis.definitions.vietnamese_translation,
+          stylistic_notes: analysis.definitions.usage_notes,
+          sentence_context: request.sentenceContext,
+          paragraph_context: request.paragraphContext,
+          grammatical_pattern: analysis.grammar_and_structure.pattern,
+          part_of_speech: analysis.meta.pos,
+          variations: analysis.grammar_and_structure.variations.map(v => v.phrase),
+          synonyms: [], // Will be populated later if needed
+          antonyms: [], // Will be populated later if needed
+          usage_examples: analysis.usage.example_sentences.map(ex => ex.sentence),
+          example_translations: analysis.usage.example_sentences.map(ex => ex.translation),
+          cultural_notes: analysis.pragmatics_and_culture.cultural_notes,
+          register_explanation: analysis.pragmatics_and_culture.register_appropriateness,
+          common_mistakes: analysis.pragmatics_and_culture.common_mistakes.map(m => m.mistake),
+          memory_aid: analysis.learning_aids.memory_tips,
+          usage_tips: analysis.learning_aids.practice_suggestions.map(p => p.exercise),
+          frequency_level: null, // Will be determined later
+          natural_translation: analysis.definitions.vietnamese_translation,
+          structure_breakdown: {
+            components: analysis.components.words,
+            pattern: analysis.grammar_and_structure.pattern,
+            variations: analysis.grammar_and_structure.variations
+          },
+          document_id: request.sessionId || null
+        })
+        .select()
+        .single()
+
+      if (phraseError || !phraseAnalysisData) {
+        console.error('DEBUG: Database error when saving phrase analysis:', phraseError)
+        throw new Error('Failed to save phrase analysis')
+      }
+
+      phraseAnalysisId = phraseAnalysisData.id
+      console.log('DEBUG: Successfully saved phrase analysis with ID:', phraseAnalysisId)
+      
+      console.log('DEBUG: Successfully completed savePhraseAnalysis, returning ID:', phraseAnalysisId)
+    } catch (error) {
+      console.error('DEBUG: Failed to save phrase analysis:', error)
+      console.error('DEBUG: phraseAnalysisId at error time:', phraseAnalysisId)
+      throw error
+    }
+
+    console.log('DEBUG: Final return statement, phraseAnalysisId:', phraseAnalysisId)
+    return phraseAnalysisId
   }
 
   // Cache methods for optimization

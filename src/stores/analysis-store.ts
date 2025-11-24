@@ -4,7 +4,7 @@ import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis } from '@/lib/ai
 // Queue item cho analysis
 interface AnalysisQueueItem {
   id: string;
-  type: 'word' | 'sentence' | 'paragraph';
+  type: 'word' | 'phrase' | 'sentence' | 'paragraph';
   data: any;
   timestamp: number;
 }
@@ -18,8 +18,8 @@ interface AnalysisStore {
   
   // UI states
   selectedText: string;
-  selectedType: 'word' | 'sentence' | 'paragraph';
-  activeTab: 'word' | 'sentence' | 'paragraph';
+  selectedType: 'word' | 'phrase' | 'sentence' | 'paragraph';
+  activeTab: 'word' | 'phrase' | 'sentence' | 'paragraph';
   
   // Loading states
   isAnalyzing: boolean;
@@ -28,7 +28,7 @@ interface AnalysisStore {
   // History states
   analysisHistory: Array<{
     id: string;
-    type: 'word' | 'sentence' | 'paragraph';
+    type: 'word' | 'phrase' | 'sentence' | 'paragraph';
     input: string;
     result: WordAnalysis | SentenceAnalysis | ParagraphAnalysis;
     timestamp: number;
@@ -45,8 +45,8 @@ interface AnalysisStore {
   
   // Selection actions
   setSelectedText: (text: string) => void;
-  setSelectedType: (type: 'word' | 'sentence' | 'paragraph') => void;
-  setActiveTab: (tab: 'word' | 'sentence' | 'paragraph') => void;
+  setSelectedType: (type: 'word' | 'phrase' | 'sentence' | 'paragraph') => void;
+  setActiveTab: (tab: 'word' | 'phrase' | 'sentence' | 'paragraph') => void;
   
   // Loading actions
   setIsAnalyzing: (isAnalyzing: boolean) => void;
@@ -71,7 +71,7 @@ interface AnalysisStore {
 // History item interface
 interface AnalysisHistoryItem {
   id: string;
-  type: 'word' | 'sentence' | 'paragraph';
+  type: 'word' | 'phrase' | 'sentence' | 'paragraph';
   input: string;
   result: WordAnalysis | SentenceAnalysis | ParagraphAnalysis;
   timestamp: number;
@@ -182,7 +182,7 @@ export const useAnalysisSelectors = () => {
     getParagraphAnalysis: (id: string) => store.paragraphAnalyses.get(id),
     
     // Computed selectors
-    hasCachedAnalysis: (type: 'word' | 'sentence' | 'paragraph', id: string) => {
+    hasCachedAnalysis: (type: 'word' | 'phrase' | 'sentence' | 'paragraph', id: string) => {
       switch (type) {
         case 'word':
           return store.wordAnalyses.has(id);
@@ -198,12 +198,12 @@ export const useAnalysisSelectors = () => {
     getRecentHistory: (limit = 10) => 
       store.analysisHistory.slice(0, limit),
     
-    getHistoryByType: (type: 'word' | 'sentence' | 'paragraph') =>
+    getHistoryByType: (type: 'word' | 'phrase' | 'sentence' | 'paragraph') =>
       store.analysisHistory.filter(item => item.type === type),
     
     // Queue selectors
     getQueueLength: () => store.analysisQueue.length,
-    getQueueByType: (type: 'word' | 'sentence' | 'paragraph') =>
+    getQueueByType: (type: 'word' | 'phrase' | 'sentence' | 'paragraph') =>
       store.analysisQueue.filter(item => item.type === type),
   };
 };
@@ -214,7 +214,7 @@ export const useAnalysisActions = () => {
   
   return {
     // Batch actions
-    analyzeText: async (text: string, type: 'word' | 'sentence' | 'paragraph') => {
+    analyzeText: async (text: string, type: 'word' | 'phrase' | 'sentence' | 'paragraph') => {
       const id = `${type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
       store.setIsAnalyzing(true);
@@ -232,8 +232,10 @@ export const useAnalysisActions = () => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(
-            type === 'word' 
+            type === 'word'
               ? { word: text, sentenceContext: '', paragraphContext: '' }
+              : type === 'phrase'
+              ? { word: text.split(' ')[0], sentenceContext: text, paragraphContext: '' }
               : type === 'sentence'
               ? { sentence: text }
               : { paragraph: text }
@@ -253,6 +255,9 @@ export const useAnalysisActions = () => {
         // Cache kết quả
         switch (type) {
           case 'word':
+            store.setWordAnalysis(id, result.data);
+            break;
+          case 'phrase':
             store.setWordAnalysis(id, result.data);
             break;
           case 'sentence':

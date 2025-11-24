@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 
 interface AnalysisResult {
   text: string;
-  type: 'word' | 'sentence' | 'paragraph';
+  type: 'word' | 'phrase' | 'sentence' | 'paragraph';
   data: any;
 }
 

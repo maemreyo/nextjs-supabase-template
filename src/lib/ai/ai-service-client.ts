@@ -1,10 +1,12 @@
-import { 
-  GenerateTextParams, 
-  GenerateTextResponse, 
-  GenerateEmbeddingParams, 
+import {
+  GenerateTextParams,
+  GenerateTextResponse,
+  GenerateEmbeddingParams,
   GenerateEmbeddingResponse,
   AIResponse,
-  UsageCheckResponse
+  UsageCheckResponse,
+  PhraseAnalysis,
+  AnalyzePhraseRequest
 } from './types'
 
 // Client-side AI service that communicates with API routes

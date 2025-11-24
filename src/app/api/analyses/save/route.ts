@@ -4,13 +4,14 @@ import { Database } from '@/lib/database.types';
 import type {
   WordAnalysis,
   SentenceAnalysis,
-  ParagraphAnalysis
+  ParagraphAnalysis,
+  PhraseAnalysis
 } from '@/lib/ai/types';
 
 interface SaveAnalysisRequest {
-  type: 'word' | 'sentence' | 'paragraph';
+  type: 'word' | 'sentence' | 'paragraph' | 'phrase';
   text: string;
-  analysisData: WordAnalysis | SentenceAnalysis | ParagraphAnalysis;
+  analysisData: WordAnalysis | SentenceAnalysis | ParagraphAnalysis | PhraseAnalysis;
   sessionId?: string;
   documentId?: string;
 }
@@ -92,12 +93,51 @@ function transformParagraphAnalysis(analysis: ParagraphAnalysis, text: string, u
   };
 }
 
+// Helper function to transform PhraseAnalysis to database format
+function transformPhraseAnalysis(analysis: PhraseAnalysis, text: string, userId: string, documentId?: string): Database['public']['Tables']['phrase_analyses']['Insert'] {
+  return {
+    phrase: text,
+    part_of_speech: analysis.meta.pos,
+    phrase_type: analysis.meta.type,
+    complexity_level: analysis.meta.cefr === 'A1' || analysis.meta.cefr === 'A2' ? 'Basic' :
+                    analysis.meta.cefr === 'B1' || analysis.meta.cefr === 'B2' ? 'Intermediate' : 'Advanced',
+    register_level: analysis.meta.register === 'formal' ? 'formal' :
+                    analysis.meta.register === 'informal' ? 'informal' : 'neutral',
+    literal_meaning: analysis.definitions.literal_meaning,
+    contextual_meaning: analysis.definitions.figurative_meaning,
+    vietnamese_translation: analysis.definitions.vietnamese_translation,
+    stylistic_notes: analysis.definitions.usage_notes,
+    sentence_context: null, // Will be set if available
+    paragraph_context: null, // Will be set if available
+    grammatical_pattern: analysis.grammar_and_structure.pattern,
+    variations: analysis.grammar_and_structure.variations.map(v => v.phrase),
+    synonyms: [], // Will be populated if available
+    antonyms: [], // Will be populated if available
+    usage_examples: analysis.usage.example_sentences.map(ex => ex.sentence),
+    example_translations: analysis.usage.example_sentences.map(ex => ex.translation),
+    cultural_notes: analysis.pragmatics_and_culture.cultural_notes,
+    register_explanation: analysis.pragmatics_and_culture.register_appropriateness,
+    common_mistakes: analysis.pragmatics_and_culture.common_mistakes.map(m => m.mistake),
+    memory_aid: analysis.learning_aids.memory_tips,
+    usage_tips: analysis.learning_aids.practice_suggestions.map(p => p.exercise),
+    frequency_level: null, // Will be determined based on usage
+    natural_translation: analysis.definitions.vietnamese_translation,
+    structure_breakdown: {
+      components: analysis.components.words,
+      pattern: analysis.grammar_and_structure.pattern,
+      variations: analysis.grammar_and_structure.variations
+    },
+    user_id: userId,
+    document_id: documentId || null,
+  };
+}
+
 // Helper function to create session analysis entry
 function createSessionAnalysisEntry(
   sessionId: string,
   analysisId: string,
-  analysisType: 'word' | 'sentence' | 'paragraph',
-  analysisData: WordAnalysis | SentenceAnalysis | ParagraphAnalysis,
+  analysisType: 'word' | 'sentence' | 'paragraph' | 'phrase',
+  analysisData: WordAnalysis | SentenceAnalysis | ParagraphAnalysis | PhraseAnalysis,
   text: string,
   userId: string
 ): Database['public']['Tables']['session_analyses']['Insert'] {
@@ -117,6 +157,10 @@ function createSessionAnalysisEntry(
     const paragraphAnalysis = analysisData as ParagraphAnalysis;
     title = `Paragraph: ${paragraphAnalysis.content_analysis.main_topic}`;
     summary = paragraphAnalysis.content_analysis.main_topic;
+  } else if (analysisType === 'phrase') {
+    const phraseAnalysis = analysisData as PhraseAnalysis;
+    title = `Phrase: ${phraseAnalysis.meta.phrase}`;
+    summary = phraseAnalysis.definitions.figurative_meaning || phraseAnalysis.definitions.literal_meaning;
   }
   
   return {
@@ -147,9 +191,9 @@ export const POST = withAuth(
       }
 
       // Validate analysis type
-      if (!['word', 'sentence', 'paragraph'].includes(body.type)) {
+      if (!['word', 'sentence', 'paragraph', 'phrase'].includes(body.type)) {
         return createErrorResponse(
-          'Type must be word, sentence, or paragraph',
+          'Type must be word, sentence, paragraph, or phrase',
           400
         );
       }
@@ -370,6 +414,27 @@ export const POST = withAuth(
           // Don't fail the whole operation if feedback fails
         }
       }
+    } else if (body.type === 'phrase') {
+      const phraseAnalysisData = transformPhraseAnalysis(
+        body.analysisData as PhraseAnalysis,
+        body.text,
+        user.id,
+        body.documentId
+      );
+      
+      const { data, error } = await supabase
+        .from('phrase_analyses')
+        .insert(phraseAnalysisData)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error saving phrase analysis:', error);
+        throw error;
+      }
+      
+      analysisId = data.id;
+      analysisData = data;
     }
 
     let sessionAnalysisId: string | undefined;
@@ -401,7 +466,7 @@ export const POST = withAuth(
         // First get current counts
         const { data: currentSession, error: fetchError } = await supabase
           .from('analysis_sessions')
-          .select('word_analyses_count, sentence_analyses_count, paragraph_analyses_count, total_analyses')
+          .select('word_analyses_count, sentence_analyses_count, paragraph_analyses_count, phrase_analyses_count, total_analyses')
           .eq('id', body.sessionId)
           .single();
         
@@ -416,6 +481,8 @@ export const POST = withAuth(
             updateData.sentence_analyses_count = (currentSession.sentence_analyses_count || 0) + 1;
           } else if (body.type === 'paragraph') {
             updateData.paragraph_analyses_count = (currentSession.paragraph_analyses_count || 0) + 1;
+          } else if (body.type === 'phrase') {
+            updateData.phrase_analyses_count = (currentSession.phrase_analyses_count || 0) + 1;
           }
           
           updateData.total_analyses = (currentSession.total_analyses || 0) + 1;

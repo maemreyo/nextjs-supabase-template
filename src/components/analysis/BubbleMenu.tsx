@@ -225,7 +225,7 @@ const MemoizedBubbleMenu = React.memo(function BubbleMenu({
 
 interface TextSelection {
   text: string;
-  type: 'word' | 'sentence' | 'paragraph';
+  type: 'word' | 'phrase' | 'sentence' | 'paragraph';
 }
 
 interface BubbleMenuPosition {
@@ -237,12 +237,12 @@ interface BubbleMenuPosition {
 interface BubbleMenuProps {
   position: BubbleMenuPosition;
   selection: TextSelection;
-  analysisType: 'word' | 'sentence' | 'paragraph';
+  analysisType: 'word' | 'phrase' | 'sentence' | 'paragraph';
   isAnalyzing: boolean;
   isSaving: boolean;
   lastAnalysisResult: {
     text: string;
-    type: 'word' | 'sentence' | 'paragraph';
+    type: 'word' | 'phrase' | 'sentence' | 'paragraph';
     data: any;
   } | null;
   autoSaveEnabled: boolean;

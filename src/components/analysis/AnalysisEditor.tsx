@@ -2,7 +2,7 @@ import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle, Loader2 } from 'lucide-react';
-import type { AnalysisEditorProps, WordAnalysis, SentenceAnalysis, ParagraphAnalysis } from './types';
+import type { AnalysisEditorProps, WordAnalysis, SentenceAnalysis, ParagraphAnalysis, PhraseAnalysis } from './types';
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -52,8 +52,8 @@ export function AnalysisEditor({
 }: AnalysisEditorProps & {
   onAnalysisComplete?: (result: {
     text: string;
-    type: 'word' | 'sentence' | 'paragraph';
-    data: WordAnalysis | SentenceAnalysis | ParagraphAnalysis;
+    type: 'word' | 'phrase' | 'sentence' | 'paragraph';
+    data: WordAnalysis | PhraseAnalysis | SentenceAnalysis | ParagraphAnalysis;
   }) => void;
   sessionId?: string;
 }) {
@@ -90,7 +90,7 @@ export function AnalysisEditor({
   const [sessionTitle, setSessionTitle] = useState('');
   const [selectedSessionId, setSelectedSessionId] = useState('');
   const [sessionQuickActionsOpen, setSessionQuickActionsOpen] = useState(false);
-  const [analysisType, setAnalysisType] = useState<'word' | 'sentence' | 'paragraph'>('word');
+  const [analysisType, setAnalysisType] = useState<'word' | 'phrase' | 'sentence' | 'paragraph'>('word');
 
   // Session store
   const { sessions, createSession, setCurrentSession } = useSessionStore();
@@ -186,7 +186,7 @@ export function AnalysisEditor({
     triggerAnalysis,
     setLastResult,
   } = useAnalysisLogic({
-    onAnalyze: onAnalyze ? async (text: string, type: 'word' | 'sentence' | 'paragraph') => {
+    onAnalyze: onAnalyze ? async (text: string, type: 'word' | 'phrase' | 'sentence' | 'paragraph') => {
       return await onAnalyze(text, type);
     } : undefined,
     onAnalysisComplete,
@@ -218,7 +218,7 @@ export function AnalysisEditor({
   ];
 
   // Handle analysis request function with security validation
-  const handleAnalysisRequest = useMemoizedCallback(async (text: string, type: 'word' | 'sentence' | 'paragraph') => {
+  const handleAnalysisRequest = useMemoizedCallback(async (text: string, type: 'word' | 'phrase' | 'sentence' | 'paragraph') => {
     // Validate and sanitize input
     const validation = validateAnalysisText(text, {
       maxLength: 10000,
@@ -287,12 +287,12 @@ export function AnalysisEditor({
 
   // Handle save
   const handleSave = useCallback(() => {
-    if (lastAnalysisResult) {
+    if (lastAnalysisResult && lastAnalysisResult.data) {
       if (sessionId) {
         forceSave();
       } else {
         saveAnalysis({
-          type: lastAnalysisResult.type,
+          type: lastAnalysisResult.type as any,
           text: lastAnalysisResult.text,
           analysisData: lastAnalysisResult.data,
         });
@@ -430,7 +430,7 @@ export function AnalysisEditor({
             activeFormats={activeFormats}
             selection={{
               text: selection.text,
-              type: selection.type === 'phrase' ? 'sentence' : selection.type,
+              type: selection.type,
             }}
             expandToWord={expandToWord}
             expandToSentence={expandToSentence}
@@ -449,7 +449,7 @@ export function AnalysisEditor({
             textStats={textStats}
             hasUnsavedChanges={hasUnsavedChanges}
             isAnalyzing={effectiveIsAnalyzing}
-            lastAnalysisResult={lastAnalysisResult}
+            lastAnalysisResult={lastAnalysisResult as any}
             onAnalyze={handleAnalyze}
           /> */}
         </Card>
@@ -459,12 +459,12 @@ export function AnalysisEditor({
           position={bubbleMenuPosition}
           selection={{
             text: selection.text,
-            type: selection.type === 'phrase' ? 'sentence' : selection.type,
+            type: selection.type,
           }}
           analysisType={analysisType}
           isAnalyzing={effectiveIsAnalyzing}
           isSaving={isSaving}
-          lastAnalysisResult={lastAnalysisResult}
+          lastAnalysisResult={lastAnalysisResult as any}
           autoSaveEnabled={autoSaveEnabled}
           sessionId={sessionId}
           onAnalyze={handleAnalyze}
@@ -507,10 +507,11 @@ export function AnalysisEditor({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="session-type">Session Type</Label>
-                <Select value={analysisType} onValueChange={(v) => setAnalysisType(v as 'word' | 'sentence' | 'paragraph')}>
+                <Select value={analysisType} onValueChange={(v) => setAnalysisType(v as 'word' | 'phrase' | 'sentence' | 'paragraph')}>
                   <SelectTrigger><SelectValue placeholder="Select session type" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="word">Word Analysis</SelectItem>
+                    <SelectItem value="phrase">Phrase Analysis</SelectItem>
                     <SelectItem value="sentence">Sentence Analysis</SelectItem>
                     <SelectItem value="paragraph">Paragraph Analysis</SelectItem>
                   </SelectContent>

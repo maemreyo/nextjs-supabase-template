@@ -44,6 +44,7 @@ import { SessionActions } from '@/components/analysis';
 import { useWordAnalysisMutation } from '@/hooks/useWordAnalysis';
 import { useSentenceAnalysisMutation } from '@/hooks/useSentenceAnalysis';
 import { useParagraphAnalysisMutation } from '@/hooks/useParagraphAnalysis';
+import { usePhraseAnalysis } from '@/hooks/usePhraseAnalysis';
 import { useSessionData } from '@/hooks/useSessionData';
 
 // Store
@@ -51,7 +52,7 @@ import { useAnalysisStore, useAnalysisSelectors, useAnalysisActions } from '@/st
 import { useSessionStore } from '@/stores/session-store';
 
 // Types
-import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis } from '@/lib/ai/types';
+import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis, PhraseAnalysis } from '@/lib/ai/types';
 import AnalysisResultDialog from '@/components/analysis/AnalysisResultDialog';
 import SavedAnalysesManager from '@/components/analysis/SavedAnalysesManager';
 import { useAppNavigation, createBreadcrumbItems, NavigationValidation } from '@/lib/navigation';
@@ -95,10 +96,10 @@ function ImprovedAnalysisPageContent() {
   });
 
   // Local state
-  const [activeTab, setActiveTab] = useState<'word' | 'sentence' | 'paragraph'>('word');
+  const [activeTab, setActiveTab] = useState<'word' | 'phrase' | 'sentence' | 'paragraph'>('word');
   const [selectedText, setSelectedText] = useState('');
-  const [analysisType, setAnalysisType] = useState<'word' | 'sentence' | 'paragraph'>('word');
-  const [analysisResult, setAnalysisResult] = useState<WordAnalysis | SentenceAnalysis | ParagraphAnalysis | null>(null);
+  const [analysisType, setAnalysisType] = useState<'word' | 'phrase' | 'sentence' | 'paragraph'>('word');
+  const [analysisResult, setAnalysisResult] = useState<WordAnalysis | PhraseAnalysis | SentenceAnalysis | ParagraphAnalysis | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
@@ -107,7 +108,7 @@ function ImprovedAnalysisPageContent() {
   // Ref to track the last analysis request at parent level
   const lastAnalysisRef = useRef<{
     text: string;
-    type: 'word' | 'sentence' | 'paragraph';
+    type: 'word' | 'phrase' | 'sentence' | 'paragraph';
     timestamp: number;
   } | null>(null);
 
@@ -140,6 +141,7 @@ function ImprovedAnalysisPageContent() {
   const wordAnalysisMutation = useWordAnalysisMutation();
   const sentenceAnalysisMutation = useSentenceAnalysisMutation();
   const paragraphAnalysisMutation = useParagraphAnalysisMutation();
+  const phraseAnalysis = usePhraseAnalysis();
 
   // Sync local state với store state
   useEffect(() => {
@@ -151,14 +153,14 @@ function ImprovedAnalysisPageContent() {
   }, [storeSelectedText, storeSelectedType, storeActiveTab]);
 
   // Event handlers
-  const handleTextSelect = useCallback((text: string, type: 'word' | 'sentence' | 'paragraph') => {
+  const handleTextSelect = useCallback((text: string, type: 'word' | 'phrase' | 'sentence' | 'paragraph') => {
     setSelectedText(text);
     setAnalysisType(type);
     setActiveTab(type);
     setError(null);
   }, []);
 
-  const handleAnalyze = useCallback(async (text: string, type: 'word' | 'sentence' | 'paragraph') => {
+  const handleAnalyze = useCallback(async (text: string, type: 'word' | 'phrase' | 'sentence' | 'paragraph') => {
     if (!text.trim()) return;
 
     // Check if this is a duplicate request (same text and type within last 2 seconds)
@@ -204,6 +206,18 @@ function ImprovedAnalysisPageContent() {
           });
           break;
 
+        case 'phrase':
+          // Use phrase analysis API
+          const phraseWords = text.split(/\s+/);
+          const phraseContext = phraseWords.slice(0, 5).join(' '); // First 5 words as context
+
+          if (!text.trim()) {
+            throw new Error('Không tìm thấy cụm từ để phân tích');
+          }
+
+          result = await phraseAnalysis.analyzePhrase(text, phraseContext, '');
+          break;
+
         case 'sentence':
           result = await sentenceAnalysisMutation.mutateAsync({
             sentence: text,
@@ -222,7 +236,7 @@ function ImprovedAnalysisPageContent() {
           throw new Error('Invalid analysis type');
       }
 
-      setAnalysisResult(result);
+      setAnalysisResult(result.data as any);
       setAnalysisPanelOpen(true);
 
       // Add to history using store directly
@@ -245,7 +259,7 @@ function ImprovedAnalysisPageContent() {
     }
   }, [wordAnalysisMutation, sentenceAnalysisMutation, paragraphAnalysisMutation]);
 
-  const handleTabChange = useCallback((tab: 'word' | 'sentence' | 'paragraph') => {
+  const handleTabChange = useCallback((tab: 'word' | 'phrase' | 'sentence' | 'paragraph') => {
     setActiveTab(tab);
   }, []);
 
@@ -408,7 +422,7 @@ function ImprovedAnalysisPageContent() {
                     >
                       <div className="flex items-center justify-between mb-1">
                         <Badge variant="outline" className="text-xs">
-                          {item.type === 'word' ? 'Từ' : item.type === 'sentence' ? 'Câu' : 'Đoạn'}
+                          {item.type === 'word' ? 'Từ' : item.type === 'phrase' ? 'Cụm từ' : item.type === 'sentence' ? 'Câu' : 'Đoạn'}
                         </Badge>
                         <span className="text-xs text-muted-foreground" title={new Date(item.timestamp).toLocaleString('vi-VN')}>
                           {new Date(item.timestamp).toLocaleDateString('vi-VN')}

@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 
 interface CompactResultCardProps {
   analysis: WordAnalysis | SentenceAnalysis | ParagraphAnalysis | null;
-  analysisType: 'word' | 'sentence' | 'paragraph';
+  analysisType: 'word' | 'phrase' | 'sentence' | 'paragraph';
   isLoading: boolean;
   error: string | null;
   onViewDetails: () => void;
@@ -42,7 +42,7 @@ export function CompactResultCard({
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="text-xs">
-              {analysisType === 'word' ? 'Từ' : analysisType === 'sentence' ? 'Câu' : 'Đoạn'}
+              {analysisType === 'word' ? 'Từ' : analysisType === 'phrase' ? 'Cụm từ' : analysisType === 'sentence' ? 'Câu' : 'Đoạn'}
             </Badge>
             <span className="text-sm text-muted-foreground">Đang phân tích...</span>
           </div>

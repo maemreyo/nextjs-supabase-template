@@ -45,7 +45,7 @@ interface ActiveFormats {
 
 interface TextSelection {
   text: string;
-  type: 'word' | 'sentence' | 'paragraph';
+  type: 'word' | 'phrase' | 'sentence' | 'paragraph';
 }
 
 interface EditorToolbarProps {
@@ -54,7 +54,7 @@ interface EditorToolbarProps {
   hasUnsavedChanges: boolean;
   lastAnalysisResult: {
     text: string;
-    type: 'word' | 'sentence' | 'paragraph';
+    type: 'word' | 'phrase' | 'sentence' | 'paragraph';
     data: any;
   } | null;
   sessionId?: string;

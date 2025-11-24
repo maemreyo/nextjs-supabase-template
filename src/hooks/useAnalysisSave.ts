@@ -1,10 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-keys';
-import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis } from '@/lib/ai/types';
+import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis, PhraseAnalysis } from '@/lib/ai/types';
 import { useSupabase } from '@/components/providers/supabase-provider';
 
-type AnalysisType = 'word' | 'sentence' | 'paragraph';
-type AnalysisData = WordAnalysis | SentenceAnalysis | ParagraphAnalysis;
+type AnalysisType = 'word' | 'sentence' | 'paragraph' | 'phrase';
+type AnalysisData = WordAnalysis | SentenceAnalysis | ParagraphAnalysis | PhraseAnalysis;
 
 interface SaveAnalysisParams {
   type: AnalysisType;

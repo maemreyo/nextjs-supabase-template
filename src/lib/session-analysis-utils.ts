@@ -7,7 +7,7 @@ type AnalysisSession = Database['public']['Tables']['analysis_sessions']['Update
 export interface SessionAnalysisOptions {
   sessionId?: string
   analysisId: string
-  analysisType: 'word' | 'sentence' | 'paragraph'
+  analysisType: 'word' | 'phrase' | 'sentence' | 'paragraph'
   userId: string
   analysisData?: any
   analysisTitle?: string
@@ -17,7 +17,7 @@ export interface SessionAnalysisOptions {
 
 export interface SessionCounterUpdate {
   sessionId: string
-  analysisType: 'word' | 'sentence' | 'paragraph'
+  analysisType: 'word' | 'phrase' | 'sentence' | 'paragraph'
   increment: number
 }
 
@@ -202,7 +202,7 @@ export function extractSessionId(request: Request): string | null {
  * Tạo analysis title dựa trên type và content
  */
 export function generateAnalysisTitle(
-  analysisType: 'word' | 'sentence' | 'paragraph',
+  analysisType: 'word' | 'phrase' | 'sentence' | 'paragraph',
   content: string,
   maxLength: number = 50
 ): string {
@@ -219,12 +219,13 @@ export function generateAnalysisTitle(
  * Tạo analysis summary ngắn gọn
  */
 export function generateAnalysisSummary(
-  analysisType: 'word' | 'sentence' | 'paragraph',
+  analysisType: 'word' | 'phrase' | 'sentence' | 'paragraph',
   content: string,
   maxLength: number = 100
 ): string {
   const prefixes = {
     word: 'Phân tích từ',
+    phrase: 'Phân tích cụm từ',
     sentence: 'Phân tích câu',
     paragraph: 'Phân tích đoạn văn'
   }
@@ -256,8 +257,8 @@ export function validateSessionAnalysisOptions(options: SessionAnalysisOptions):
     errors.push('userId is required')
   }
   
-  if (options.analysisType && !['word', 'sentence', 'paragraph'].includes(options.analysisType)) {
-    errors.push('analysisType must be one of: word, sentence, paragraph')
+  if (options.analysisType && !['word', 'phrase', 'sentence', 'paragraph'].includes(options.analysisType)) {
+    errors.push('analysisType must be one of: word, phrase, sentence, paragraph')
   }
   
   return errors

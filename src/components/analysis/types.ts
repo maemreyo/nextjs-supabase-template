@@ -3,11 +3,12 @@ export type {
   Collocation,
   WordAnalysis,
   SentenceAnalysis,
-  ParagraphAnalysis
+  ParagraphAnalysis,
+  PhraseAnalysis
 } from '@/lib/ai/types';
 
 // Import types for use in interfaces
-import type { Collocation, WordAnalysis, SentenceAnalysis, ParagraphAnalysis } from '@/lib/ai/types';
+import type { Collocation, WordAnalysis, SentenceAnalysis, ParagraphAnalysis, PhraseAnalysis } from '@/lib/ai/types';
 
 // Props cho CollocationList component
 export interface CollocationListProps {
@@ -65,6 +66,14 @@ export interface ParagraphAnalysisDisplayProps {
   className?: string;
 }
 
+// Props cho PhraseAnalysisDisplay component
+export interface PhraseAnalysisDisplayProps {
+  analysis: PhraseAnalysis;
+  isLoading?: boolean;
+  error?: string;
+  className?: string;
+}
+
 // Props cho RewriteSuggestions component
 export interface RewriteSuggestionsProps {
   suggestions: SentenceAnalysis['rewrite_suggestions'];
@@ -87,12 +96,12 @@ export interface ConstructiveFeedbackProps {
 
 // Props cho AnalysisEditor component
 export interface AnalysisEditorProps {
-  onTextSelect?: (text: string, type: 'word' | 'sentence' | 'paragraph') => void;
-  onAnalyze?: (text: string, type: 'word' | 'sentence' | 'paragraph') => void;
+  onTextSelect?: (text: string, type: 'word' | 'phrase' | 'sentence' | 'paragraph') => void;
+  onAnalyze?: (text: string, type: 'word' | 'phrase' | 'sentence' | 'paragraph') => void;
   onAnalysisComplete?: (result: {
     text: string;
-    type: 'word' | 'sentence' | 'paragraph';
-    data: WordAnalysis | SentenceAnalysis | ParagraphAnalysis;
+    type: 'word' | 'phrase' | 'sentence' | 'paragraph';
+    data: WordAnalysis | PhraseAnalysis | SentenceAnalysis | ParagraphAnalysis;
   }) => void;
   initialText?: string;
   className?: string;
@@ -102,8 +111,8 @@ export interface AnalysisEditorProps {
 
 // Props cho AnalysisTabs component
 export interface AnalysisTabsProps {
-  activeType: 'word' | 'sentence' | 'paragraph';
-  onTypeChange: (type: 'word' | 'sentence' | 'paragraph') => void;
+  activeType: 'word' | 'phrase' | 'sentence' | 'paragraph';
+  onTypeChange: (type: 'word' | 'phrase' | 'sentence' | 'paragraph') => void;
   className?: string;
 }
 
@@ -111,8 +120,8 @@ export interface AnalysisTabsProps {
 export interface AnalysisPanelProps {
   documentId?: string;
   selectedText?: string;
-  analysisType: 'word' | 'sentence' | 'paragraph';
-  onAnalysisTypeChange: (type: 'word' | 'sentence' | 'paragraph') => void;
+  analysisType: 'word' | 'phrase' | 'sentence' | 'paragraph';
+  onAnalysisTypeChange: (type: 'word' | 'phrase' | 'sentence' | 'paragraph') => void;
   className?: string;
 }
 
@@ -120,8 +129,8 @@ export interface AnalysisPanelProps {
 export interface CollapsibleAnalysisPanelProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  analysisResult: WordAnalysis | SentenceAnalysis | ParagraphAnalysis | null;
-  analysisType: 'word' | 'sentence' | 'paragraph';
+  analysisResult: WordAnalysis | PhraseAnalysis | SentenceAnalysis | ParagraphAnalysis | null;
+  analysisType: 'word' | 'phrase' | 'sentence' | 'paragraph';
   onAddToVocabulary: () => void;
   className?: string;
 }

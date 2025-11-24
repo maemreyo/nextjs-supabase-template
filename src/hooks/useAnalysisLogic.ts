@@ -1,15 +1,15 @@
 import { useState, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
-import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis } from '@/lib/ai/types';
+import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis, PhraseAnalysis } from '@/lib/ai/types';
 
 interface AnalysisResult {
   text: string;
-  type: 'word' | 'sentence' | 'paragraph';
-  data: WordAnalysis | SentenceAnalysis | ParagraphAnalysis;
+  type: 'word' | 'phrase' | 'sentence' | 'paragraph';
+  data: WordAnalysis | PhraseAnalysis | SentenceAnalysis | ParagraphAnalysis;
 }
 
 interface UseAnalysisLogicProps {
-  onAnalyze?: (text: string, type: 'word' | 'sentence' | 'paragraph') => Promise<any>;
+  onAnalyze?: (text: string, type: 'word' | 'phrase' | 'sentence' | 'paragraph') => Promise<any>;
   onAnalysisComplete?: (result: AnalysisResult) => void;
   onError?: (error: Error) => void;
 }
@@ -18,7 +18,7 @@ interface UseAnalysisLogicReturn {
   isAnalyzing: boolean;
   lastAnalysisResult: AnalysisResult | null;
   analysisHistory: AnalysisResult[];
-  triggerAnalysis: (text: string, type: 'word' | 'sentence' | 'paragraph') => Promise<void>;
+  triggerAnalysis: (text: string, type: 'word' | 'phrase' | 'sentence' | 'paragraph') => Promise<void>;
   clearLastResult: () => void;
   clearHistory: () => void;
   setLastResult: (result: AnalysisResult) => void;
@@ -36,13 +36,13 @@ export function useAnalysisLogic({
   // Track last analysis request to prevent duplicates
   const lastAnalysisRef = useRef<{
     text: string;
-    type: 'word' | 'sentence' | 'paragraph';
+    type: 'word' | 'phrase' | 'sentence' | 'paragraph';
     timestamp: number;
   } | null>(null);
 
   const triggerAnalysis = useCallback(async (
-    text: string, 
-    type: 'word' | 'sentence' | 'paragraph'
+    text: string,
+    type: 'word' | 'phrase' | 'sentence' | 'paragraph'
   ) => {
     if (!text.trim()) {
       toast.error('Không có nội dung để phân tích', {

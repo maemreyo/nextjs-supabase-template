@@ -9,12 +9,13 @@ import {
   FileText, BookOpen, AlignLeft, Check
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
-import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis } from '@/lib/ai/types';
+import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis, PhraseAnalysis } from '@/lib/ai/types';
 import {
   WordAnalysisView,
   SentenceAnalysisView,
   ParagraphAnalysisView
 } from './AnalysisViews';
+import PhraseAnalysisView from './PhraseAnalysisView';
 import { useAnalysisActions } from '@/hooks/useAnalysisActions';
 
 interface AnalysisMetadata {
@@ -27,8 +28,8 @@ interface AnalysisMetadata {
 interface AnalysisResultDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  analysis: WordAnalysis | SentenceAnalysis | ParagraphAnalysis | null;
-  analysisType: 'word' | 'sentence' | 'paragraph';
+  analysis: WordAnalysis | SentenceAnalysis | ParagraphAnalysis | PhraseAnalysis | null;
+  analysisType: 'word' | 'phrase' | 'sentence' | 'paragraph';
   originalText?: string;
   processingTime?: number;
   tokensUsed?: number;
@@ -190,6 +191,7 @@ export function AnalysisResultDialog({
   // Get appropriate icon based on analysis type
   const Icon = useMemo(() => {
     if (analysisType === 'word') return BookOpen;
+    if (analysisType === 'phrase') return BookOpen; // Use same icon as word for phrase
     if (analysisType === 'sentence') return AlignLeft;
     return FileText;
   }, [analysisType]);
@@ -222,7 +224,7 @@ export function AnalysisResultDialog({
             <div>
                 <DialogTitle className="text-lg font-semibold leading-none">Kết quả phân tích</DialogTitle>
                 <DialogDescription className="text-xs mt-1">
-                   {analysisType === 'word' ? 'Từ vựng' : analysisType === 'sentence' ? 'Câu văn' : 'Đoạn văn'}
+                   {analysisType === 'word' ? 'Từ vựng' : analysisType === 'phrase' ? 'Cụm từ' : analysisType === 'sentence' ? 'Câu văn' : 'Đoạn văn'}
                 </DialogDescription>
             </div>
           </div>
@@ -276,6 +278,7 @@ export function AnalysisResultDialog({
                      {/* Analysis Content */}
                      <div className="mt-0 h-full border-0 p-0">
                         {analysisType === 'word' && <WordAnalysisView data={analysis as WordAnalysis} />}
+                        {analysisType === 'phrase' && <WordAnalysisView data={analysis as PhraseAnalysis} />}
                         {analysisType === 'sentence' && <SentenceAnalysisView data={analysis as SentenceAnalysis} />}
                         {analysisType === 'paragraph' && <ParagraphAnalysisView data={analysis as ParagraphAnalysis} />}
                      </div>
