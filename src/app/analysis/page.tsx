@@ -63,7 +63,24 @@ import { Breadcrumb, ResponsiveBreadcrumb, MobileBreadcrumb } from '@/components
 function ImprovedAnalysisPageContent() {
   // Get sessionId from URL parameters
   const searchParams = useSearchParams();
-  const sessionId = NavigationValidation.getValidatedSessionId(searchParams);
+  
+  // For Next.js 16, we need to handle searchParams carefully
+  // Let's access sessionId directly from searchParams object
+  let sessionId: string | null = null;
+  try {
+    // Try to get sessionId directly - this should work with both old and new Next.js
+    sessionId = (searchParams as any)?.get?.('sessionId');
+    
+    // Validate sessionId if we got one
+    if (sessionId && NavigationValidation.isValidSessionId(sessionId)) {
+      // Valid sessionId
+    } else {
+      sessionId = null;
+    }
+  } catch (error) {
+    console.error('[DEBUG] AnalysisPage - Error processing searchParams:', error);
+    sessionId = null;
+  }
 
   // Load session data
   const {

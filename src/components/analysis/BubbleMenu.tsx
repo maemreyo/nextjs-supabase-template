@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -7,8 +7,37 @@ import {
   Save,
   Volume2,
   Highlighter,
+  ChevronDown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+// Highlight colors
+const HIGHLIGHT_COLORS = [
+  { value: '#fef08a', label: 'Yellow', className: 'bg-yellow-200' },
+  { value: '#bfdbfe', label: 'Blue', className: 'bg-blue-200' },
+  { value: '#bbf7d0', label: 'Green', className: 'bg-green-200' },
+  { value: '#fecaca', label: 'Red', className: 'bg-red-200' },
+  { value: '#e9d5ff', label: 'Purple', className: 'bg-purple-200' },
+  { value: '#fed7aa', label: 'Orange', className: 'bg-orange-200' },
+];
+
+// Text-to-Speech function
+const speakText = (text: string, lang: string = 'en-US') => {
+  if ('speechSynthesis' in window) {
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = lang;
+    utterance.rate = 0.9; // Slightly slower for better clarity
+    utterance.pitch = 1;
+    utterance.volume = 1;
+
+    window.speechSynthesis.speak(utterance);
+  } else {
+    console.warn('Text-to-speech not supported in this browser');
+  }
+};
 
 // Memoized BubbleMenu with custom comparison to avoid unnecessary re-renders
 const MemoizedBubbleMenu = React.memo(function BubbleMenu({
@@ -26,9 +55,40 @@ const MemoizedBubbleMenu = React.memo(function BubbleMenu({
   onHighlight,
   className
 }: BubbleMenuProps) {
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
   if (!position.show) {
     return null;
   }
+
+  const handlePronounce = () => {
+    if (isSpeaking) {
+      // Stop speaking
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+    } else {
+      // Start speaking
+      setIsSpeaking(true);
+      speakText(selection.text);
+
+      // Reset speaking state when done
+      const checkSpeaking = setInterval(() => {
+        if (!window.speechSynthesis.speaking) {
+          setIsSpeaking(false);
+          clearInterval(checkSpeaking);
+        }
+      }, 100);
+    }
+
+    // Call the original onPronounce if provided
+    onPronounce?.(selection.text);
+  };
+
+  const handleHighlight = (color: string) => {
+    onHighlight(color);
+    setShowColorPicker(false);
+  };
 
   return (
     <div
@@ -43,11 +103,6 @@ const MemoizedBubbleMenu = React.memo(function BubbleMenu({
         transform: 'translate(-50%, -100%)'
       }}
     >
-      {/* Selection Type Badge */}
-      <Badge variant="secondary" className="text-xs px-2 border-r">
-        {selection.type}
-      </Badge>
-
       {/* Analyze Button */}
       <Button
         size="sm"
@@ -84,24 +139,58 @@ const MemoizedBubbleMenu = React.memo(function BubbleMenu({
         variant="ghost"
         size="sm"
         onMouseDown={(e) => e.preventDefault()}
-        onClick={() => onPronounce(selection.text)}
-        className="h-7 w-7 p-0"
-        title="Pronounce"
+        onClick={handlePronounce}
+        className={cn(
+          "h-7 w-7 p-0",
+          isSpeaking && "bg-primary/10"
+        )}
+        title={isSpeaking ? "Stop pronunciation" : "Pronounce"}
       >
-        <Volume2 size={14} />
+        <Volume2 size={14} className={cn(isSpeaking && "text-primary animate-pulse")} />
       </Button>
 
-      {/* Highlight Button */}
-      <Button
-        variant="ghost"
-        size="sm"
-        onMouseDown={(e) => e.preventDefault()}
-        onClick={() => onHighlight('#fef08a')}
-        className="h-7 w-7 p-0"
-        title="Highlight"
-      >
-        <Highlighter size={14} />
-      </Button>
+      {/* Highlight Button with Color Picker */}
+      <div className="relative">
+        <Button
+          variant="ghost"
+          size="sm"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => setShowColorPicker(!showColorPicker)}
+          className="h-7 w-7 p-0"
+          title="Highlight"
+        >
+          <Highlighter size={14} />
+        </Button>
+
+        {/* Color Picker Dropdown */}
+        {showColorPicker && (
+          <div
+            className="absolute top-full mt-1 left-1/2 -translate-x-1/2 bg-background rounded-lg shadow-lg border border-border p-2 flex flex-col gap-1 z-50 min-w-[120px]"
+            onMouseDown={(e) => e.preventDefault()}
+          >
+            {HIGHLIGHT_COLORS.map((color) => (
+              <button
+                key={color.value}
+                onClick={() => handleHighlight(color.value)}
+                className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent text-xs transition-colors text-left"
+                title={`Highlight with ${color.label}`}
+              >
+                <div
+                  className={cn("w-4 h-4 rounded border border-border", color.className)}
+                />
+                <span>{color.label}</span>
+              </button>
+            ))}
+            <div className="border-t border-border my-1" />
+            <button
+              onClick={() => setShowColorPicker(false)}
+              className="px-2 py-1.5 rounded hover:bg-accent text-xs text-muted-foreground transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }, (prevProps, nextProps) => {
@@ -121,7 +210,7 @@ const MemoizedBubbleMenu = React.memo(function BubbleMenu({
     prevProps.className === nextProps.className &&
     // Compare lastAnalysisResult by text and type only (not the entire data object)
     (prevProps.lastAnalysisResult?.text === nextProps.lastAnalysisResult?.text &&
-     prevProps.lastAnalysisResult?.type === nextProps.lastAnalysisResult?.type)
+      prevProps.lastAnalysisResult?.type === nextProps.lastAnalysisResult?.type)
     // Note: We intentionally don't compare functions (onAnalyze, onSave, etc.)
     // as they should be stable references from the parent component
   );
@@ -153,7 +242,7 @@ interface BubbleMenuProps {
   sessionId?: string;
   onAnalyze: () => void;
   onSave: () => void;
-  onPronounce: (text: string) => void;
+  onPronounce?: (text: string) => void;
   onHighlight: (color: string) => void;
   className?: string;
 }

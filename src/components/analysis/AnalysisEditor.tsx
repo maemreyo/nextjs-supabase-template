@@ -59,7 +59,25 @@ export function AnalysisEditor({
 }) {
   // Get sessionId from URL parameters if not provided as prop
   const searchParams = useSearchParams();
-  const urlSessionId = NavigationValidation.getValidatedSessionId(searchParams);
+  
+  // For Next.js 16, we need to handle searchParams carefully
+  // Let's access the sessionId directly from the searchParams object
+  let urlSessionId: string | null = null;
+  try {
+    // Try to get sessionId directly - this should work with both old and new Next.js
+    urlSessionId = (searchParams as any)?.get?.('sessionId');
+    
+    // Validate the sessionId if we got one
+    if (urlSessionId && NavigationValidation.isValidSessionId(urlSessionId)) {
+      // Valid sessionId
+    } else {
+      urlSessionId = null;
+    }
+  } catch (error) {
+    console.error('[DEBUG] AnalysisEditor - Error processing searchParams:', error);
+    urlSessionId = null;
+  }
+  
   const sessionId = propSessionId || urlSessionId || undefined;
   const { navigateToSessions, navigateToAnalysis } = useAppNavigation();
 

@@ -11,6 +11,40 @@
  */
 function safeStringify(obj: any): string {
   try {
+    // Handle different types of objects that might cause issues in Next.js 16
+    if (obj == null) {
+      return 'null';
+    }
+    
+    // Check for Promise objects that need to be unwrapped with React.use()
+    if (obj instanceof Promise || (obj && typeof obj.then === 'function')) {
+      console.warn('[DEBUG] safeStringify - Detected Promise object, returning [Promise] placeholder');
+      return '[Promise]';
+    }
+    
+    // Check for URLSearchParams objects that might be wrapped in Promise
+    if (obj.constructor?.name === 'URLSearchParams' ||
+        (obj && typeof obj.get === 'function' && typeof obj.getAll === 'function')) {
+      try {
+        // Convert URLSearchParams to plain object for safe stringification
+        const paramsObj: Record<string, string> = {};
+        obj.forEach((value: string, key: string) => {
+          paramsObj[key] = value;
+        });
+        return JSON.stringify(paramsObj);
+      } catch (e) {
+        console.warn('[DEBUG] safeStringify - Failed to convert URLSearchParams, returning placeholder');
+        return '[URLSearchParams]';
+      }
+    }
+    
+    // Check for objects that might be React.use() wrapped
+    if (obj.constructor?.name?.includes('Usable') ||
+        (obj && typeof obj.unwrapped === 'function')) {
+      console.warn('[DEBUG] safeStringify - Detected React.use() wrapped object, returning placeholder');
+      return '[ReactUsable]';
+    }
+    
     return JSON.stringify(obj);
   } catch (error) {
     if (error instanceof Error && error.message.includes('cyclic')) {
@@ -21,6 +55,24 @@ function safeStringify(obj: any): string {
           if (seen.has(val)) {
             return '[Circular]';
           }
+          
+          // Check for Promise objects in circular reference
+          if (val instanceof Promise || (val && typeof val.then === 'function')) {
+            return '[Promise]';
+          }
+          
+          // Check for URLSearchParams in circular reference
+          if (val.constructor?.name === 'URLSearchParams' ||
+              (val && typeof val.get === 'function' && typeof val.getAll === 'function')) {
+            return '[URLSearchParams]';
+          }
+          
+          // Check for React.use() wrapped objects in circular reference
+          if (val.constructor?.name?.includes('Usable') ||
+              (val && typeof val.unwrapped === 'function')) {
+            return '[ReactUsable]';
+          }
+          
           seen.add(val);
         }
         return val;
