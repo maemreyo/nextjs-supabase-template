@@ -143,6 +143,52 @@ export function useSessionData(sessionId: string | undefined, options: UseSessio
     return textParts.join('\n\n');
   }, [data]);
 
+  // Extract session HTML content for rich text editor
+  const getSessionHTML = useCallback(() => {
+    console.log('🔍 [DEBUG] getSessionHTML - Session data:', {
+      hasContent: !!data?.session?.content,
+      hasContentHTML: !!data?.session?.content_html,
+      hasContentData: !!data?.session?.content_data,
+      contentFormat: data?.session?.content_format
+    });
+    
+    // First, try to get HTML content from content_html column (new format)
+    if (data?.session?.content_html) {
+      console.log('🔍 [DEBUG] getSessionHTML - Using content_html:', data.session.content_html.substring(0, 100) + '...');
+      return data.session.content_html;
+    }
+    
+    // Fallback to legacy content column
+    if (data?.session?.content) {
+      console.log('🔍 [DEBUG] getSessionHTML - Using legacy content column');
+      // Check if content contains HTML tags
+      const hasHTML = /<[a-z][\s\S]*>/i.test(data.session.content);
+      if (hasHTML) {
+        return data.session.content;
+      }
+      // If it's plain text, convert to simple HTML with paragraphs
+      return data.session.content.split('\n\n').map(p => `<p>${p}</p>`).join('');
+    }
+    
+    // Fallback: Extract text from analyses and convert to HTML
+    if (!data?.analyses) return '';
+    
+    console.log('🔍 [DEBUG] getSessionHTML - Falling back to analyses');
+    const textParts: string[] = [];
+    
+    data.analyses.forEach(analysis => {
+      if (analysis.word_analysis?.paragraph_context) {
+        textParts.push(`<p>${analysis.word_analysis.paragraph_context}</p>`);
+      } else if (analysis.sentence_analysis?.sentence) {
+        textParts.push(`<p>${analysis.sentence_analysis.sentence}</p>`);
+      } else if (analysis.paragraph_analysis?.paragraph) {
+        textParts.push(`<p>${analysis.paragraph_analysis.paragraph}</p>`);
+      }
+    });
+    
+    return textParts.join('');
+  }, [data]);
+
   // Get analyses by type
   const getAnalysesByType = useCallback((type: 'word' | 'sentence' | 'paragraph') => {
     if (!data?.analyses) return [];
@@ -181,6 +227,7 @@ export function useSessionData(sessionId: string | undefined, options: UseSessio
     isRefetching,
     invalidateCache,
     getSessionText,
+    getSessionHTML,
     getAnalysesByType,
     getWordList,
   };

@@ -4,7 +4,11 @@ export interface AnalysisSession {
   user_id: string;
   title: string;
   description?: string | null;
-  content?: string | null; // Session content stored in the content column
+  content?: string | null; // Legacy session content stored in content column
+  content_data?: any | null; // TipTap JSON format content
+  content_html?: string | null; // HTML format content
+  content_plain?: string | null; // Plain text format content
+  content_format?: 'tiptap' | 'html' | 'plain' | null; // Content format type
   session_type: 'word' | 'sentence' | 'paragraph' | 'mixed';
   status: 'active' | 'archived' | 'deleted';
   total_analyses: number;
@@ -20,7 +24,11 @@ export interface AnalysisSessionInsert {
   user_id?: string;
   title: string;
   description?: string | null;
-  content?: string | null; // Session content stored in the content column
+  content?: string | null; // Legacy session content stored in content column
+  content_data?: any | null; // TipTap JSON format content
+  content_html?: string | null; // HTML format content
+  content_plain?: string | null; // Plain text format content
+  content_format?: 'tiptap' | 'html' | 'plain' | null; // Content format type
   session_type: 'word' | 'sentence' | 'paragraph' | 'mixed';
   status?: 'active' | 'archived' | 'deleted';
   total_analyses?: number;
@@ -32,7 +40,11 @@ export interface AnalysisSessionInsert {
 export interface AnalysisSessionUpdate {
   title?: string;
   description?: string | null;
-  content?: string | null; // Session content stored in the content column
+  content?: string | null; // Legacy session content stored in content column
+  content_data?: any | null; // TipTap JSON format content
+  content_html?: string | null; // HTML format content
+  content_plain?: string | null; // Plain text format content
+  content_format?: 'tiptap' | 'html' | 'plain' | null; // Content format type
   session_type?: 'word' | 'sentence' | 'paragraph' | 'mixed';
   status?: 'active' | 'archived' | 'deleted';
   total_analyses?: number;

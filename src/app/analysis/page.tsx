@@ -58,11 +58,11 @@ import { Breadcrumb, ResponsiveBreadcrumb, MobileBreadcrumb } from '@/components
  */
 function ImprovedAnalysisPageContent() {
   console.log('🔍 [DEBUG] ImprovedAnalysisPageContent - Component started');
-  
+
   // Get sessionId from URL parameters
   const searchParams = useSearchParams();
   const sessionId = NavigationValidation.getValidatedSessionId(searchParams);
-  
+
   // Load session data
   const {
     session,
@@ -74,7 +74,7 @@ function ImprovedAnalysisPageContent() {
     enabled: !!sessionId,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
-  
+
   // Local state
   const [activeTab, setActiveTab] = useState<'word' | 'sentence' | 'paragraph'>('word');
   const [selectedText, setSelectedText] = useState('');
@@ -84,14 +84,14 @@ function ImprovedAnalysisPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [analysisPanelOpen, setAnalysisPanelOpen] = useState(false);
-  
+
   // Ref to track the last analysis request at parent level
   const lastAnalysisRef = useRef<{
     text: string;
     type: 'word' | 'sentence' | 'paragraph';
     timestamp: number;
   } | null>(null);
-  
+
   // Sidebar collapsible sections state
   const [isAnalysisTypeOpen, setIsAnalysisTypeOpen] = useState(true);
   const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(true);
@@ -151,9 +151,9 @@ function ImprovedAnalysisPageContent() {
     const now = Date.now();
     const lastAnalysis = lastAnalysisRef.current;
     if (lastAnalysis &&
-        lastAnalysis.text === text &&
-        lastAnalysis.type === type &&
-        (now - lastAnalysis.timestamp) < 2000) {
+      lastAnalysis.text === text &&
+      lastAnalysis.type === type &&
+      (now - lastAnalysis.timestamp) < 2000) {
       console.log('🔍 [DEBUG] ImprovedAnalysisPageContent - Skipping duplicate analysis request', {
         text,
         type,
@@ -175,44 +175,44 @@ function ImprovedAnalysisPageContent() {
 
     try {
       let result;
-      
+
       switch (type) {
         case 'word':
           // Extract context for word analysis
           const words = text.split(/\s+/);
           const wordToAnalyze = words[0];
           const sentenceContext = words.slice(0, 5).join(' '); // First 5 words as context
-          
+
           if (!wordToAnalyze) {
             throw new Error('Không tìm thấy từ để phân tích');
           }
-          
+
           result = await wordAnalysisMutation.mutateAsync({
             word: wordToAnalyze,
             sentenceContext,
             paragraphContext: ''
           });
           break;
-          
+
         case 'sentence':
           result = await sentenceAnalysisMutation.mutateAsync({
             sentence: text
           });
           break;
-          
+
         case 'paragraph':
           result = await paragraphAnalysisMutation.mutateAsync({
             paragraph: text
           });
           break;
-          
+
         default:
           throw new Error('Invalid analysis type');
       }
-      
+
       setAnalysisResult(result);
       setAnalysisPanelOpen(true);
-      
+
       // Add to history using store directly
       const { addToHistory } = useAnalysisStore.getState();
       addToHistory({
@@ -222,7 +222,7 @@ function ImprovedAnalysisPageContent() {
         result,
         timestamp: Date.now()
       });
-      
+
       return result;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Phân tích thất bại';
@@ -260,11 +260,11 @@ function ImprovedAnalysisPageContent() {
   const recentHistory = getRecentHistory(5);
 
   // Determine current mutation based on analysis type
-  const currentMutation = analysisType === 'word' 
-    ? wordAnalysisMutation 
-    : analysisType === 'sentence' 
-    ? sentenceAnalysisMutation 
-    : paragraphAnalysisMutation;
+  const currentMutation = analysisType === 'word'
+    ? wordAnalysisMutation
+    : analysisType === 'sentence'
+      ? sentenceAnalysisMutation
+      : paragraphAnalysisMutation;
 
   const currentLoading = isAnalyzing || currentMutation.isPending;
 
@@ -290,11 +290,6 @@ function ImprovedAnalysisPageContent() {
   return (
     <div
       className="container mx-auto px-4 py-4 sm:px-6 lg:px-8 max-w-7xl h-[calc(100vh-2rem)] flex flex-col"
-      style={{
-        backgroundColor: 'var(--background)',
-        color: 'var(--foreground)',
-        minHeight: '100vh'
-      }}
     >
       {/* Breadcrumb Navigation - Desktop */}
       <div className="hidden sm:block mb-4 sm:mb-6 flex-shrink-0">
@@ -355,24 +350,10 @@ function ImprovedAnalysisPageContent() {
 
       <div
         className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 min-h-0"
-        style={{
-          backgroundColor: 'var(--card)',
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--radius)',
-          padding: '1rem',
-          minHeight: '400px'
-        }}
       >
         {/* Main Content - Editor or Saved Analyses */}
         <div
           className="lg:col-span-2 min-h-0"
-          style={{
-            backgroundColor: 'var(--background)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius)',
-            padding: '1rem',
-            minHeight: '300px'
-          }}
         >
           {(() => {
             console.log('🔍 [DEBUG] ImprovedAnalysisPageContent - Rendering AnalysisEditor');
@@ -394,13 +375,6 @@ function ImprovedAnalysisPageContent() {
         {/* Sidebar - occupies 1/3 of space */}
         <div
           className="lg:col-span-1 space-y-3 lg:space-y-4 overflow-y-auto"
-          style={{
-            backgroundColor: 'var(--background)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius)',
-            padding: '1rem',
-            minHeight: '300px'
-          }}
         >
           {/* Analysis Type Selector */}
           <Card className="p-3 sm:p-4 sticky top-6" title="Chọn loại phân tích phù hợp với văn bản">
@@ -435,12 +409,12 @@ function ImprovedAnalysisPageContent() {
                     <BookOpen className="h-4 w-4" />
                     <span className="hidden sm:inline">Từ</span>
                   </TabsTrigger>
-                  
+
                   <TabsTrigger value="sentence" className="flex items-center gap-2" title="Phân tích câu">
                     <FileText className="h-4 w-4" />
                     <span className="hidden sm:inline">Câu</span>
                   </TabsTrigger>
-                  
+
                   <TabsTrigger value="paragraph" className="flex items-center gap-2" title="Phân tích đoạn văn">
                     <FilePlus className="h-4 w-4" />
                     <span className="hidden sm:inline">Đoạn</span>
@@ -457,7 +431,7 @@ function ImprovedAnalysisPageContent() {
                 <h3 className="font-semibold text-foreground text-sm">Văn bản đã chọn</h3>
                 <Badge variant="outline" className="text-xs">{selectedText.length} ký tự</Badge>
               </div>
-              
+
               <div className="bg-background p-2 rounded border-l-4 border-primary mb-3">
                 <p className="text-xs italic text-foreground line-clamp-3">"{selectedText}"</p>
               </div>
@@ -475,7 +449,7 @@ function ImprovedAnalysisPageContent() {
                 >
                   Xóa
                 </Button>
-                
+
                 <Button
                   onClick={() => {
                     handleAnalyze(selectedText, activeTab as 'word' | 'sentence' | 'paragraph');
@@ -511,58 +485,6 @@ function ImprovedAnalysisPageContent() {
             />
           )}
 
-          {/* Quick Actions */}
-          <Card className="p-3 sm:p-4" title="Các thao tác nhanh">
-            <div
-              className="flex items-center justify-between mb-3 cursor-pointer"
-              onClick={() => setIsQuickActionsOpen(!isQuickActionsOpen)}
-              title={isQuickActionsOpen ? "Thu gọn" : "Mở rộng"}
-            >
-              <h3 className="font-semibold flex items-center gap-2 text-foreground">
-                <Zap className="h-4 w-4" />
-                <span className="hidden sm:inline">Thao tác nhanh</span>
-                <span className="sm:hidden">Nhanh</span>
-              </h3>
-              {isQuickActionsOpen ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
-            </div>
-            
-            {isQuickActionsOpen && (
-              <div className="space-y-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedText('');
-                    setAnalysisResult(null);
-                    setError(null);
-                  }}
-                  className="w-full justify-start"
-                  title="Xóa văn bản đã chọn"
-                >
-                  <MousePointer className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Xóa lựa chọn</span>
-                  <span className="sm:hidden">Xóa chọn</span>
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleClearAll}
-                  className="w-full justify-start"
-                  title="Xóa tất cả dữ liệu"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Xóa tất cả</span>
-                  <span className="sm:hidden">Xóa hết</span>
-                </Button>
-              </div>
-            )}
-          </Card>
-
           {/* Recent History */}
           {recentHistory.length > 0 && (
             <Card className="p-3 sm:p-4" title="Lịch sử phân tích gần đây">
@@ -587,7 +509,7 @@ function ImprovedAnalysisPageContent() {
                   )}
                 </div>
               </div>
-              
+
               {isHistoryOpen && (
                 <div className="space-y-2 max-h-40 sm:max-h-48 overflow-y-auto">
                   {recentHistory.map((item) => (

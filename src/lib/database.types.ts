@@ -297,6 +297,10 @@ export type Database = {
       analysis_sessions: {
         Row: {
           content: string | null
+          content_data: Json | null
+          content_format: string | null
+          content_html: string | null
+          content_plain: string | null
           created_at: string | null
           description: string | null
           id: string
@@ -313,6 +317,10 @@ export type Database = {
         }
         Insert: {
           content?: string | null
+          content_data?: Json | null
+          content_format?: string | null
+          content_html?: string | null
+          content_plain?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
@@ -329,6 +337,10 @@ export type Database = {
         }
         Update: {
           content?: string | null
+          content_data?: Json | null
+          content_format?: string | null
+          content_html?: string | null
+          content_plain?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
@@ -2007,6 +2019,10 @@ export type Database = {
           actual_sentence_count: number | null
           actual_word_count: number | null
           content: string | null
+          content_data: Json | null
+          content_format: string | null
+          content_html: string | null
+          content_plain: string | null
           created_at: string | null
           description: string | null
           id: string | null

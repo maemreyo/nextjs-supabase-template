@@ -49,13 +49,21 @@ export async function GET(
       );
     }
 
-    // Get session details including content column
+    // Get session details including all content columns
     const { data: session, error: sessionError } = await supabase
       .from('analysis_sessions')
       .select('*')
       .eq('id', sessionId)
       .eq('user_id', user.id)
       .single();
+
+    console.log('🔍 [DEBUG] API load route - Session data:', {
+      hasContent: !!session?.content,
+      hasContentHTML: !!session?.content_html,
+      hasContentData: !!session?.content_data,
+      hasContentPlain: !!session?.content_plain,
+      contentFormat: session?.content_format
+    });
 
     if (sessionError || !session) {
       return NextResponse.json(

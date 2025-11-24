@@ -62,11 +62,25 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   const getAccessToken = async (): Promise<string | null> => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      console.log('DEBUG: SupabaseProvider - getAccessToken - Session exists:', !!session);
-      console.log('DEBUG: SupabaseProvider - getAccessToken - Access token exists:', !!session?.access_token);
-      return session?.access_token || null
+      console.log('🔍 [DEBUG] SupabaseProvider - getAccessToken - Session exists:', !!session);
+      console.log('🔍 [DEBUG] SupabaseProvider - getAccessToken - Access token exists:', !!session?.access_token);
+      console.log('🔍 [DEBUG] SupabaseProvider - getAccessToken - User exists:', !!session?.user);
+      
+      if (!session?.access_token) {
+        console.warn('🔍 [DEBUG] SupabaseProvider - getAccessToken - No access token in session');
+        // Try to refresh the session
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
+        if (refreshError) {
+          console.error('🔍 [DEBUG] SupabaseProvider - getAccessToken - Refresh failed:', refreshError);
+          return null
+        }
+        console.log('🔍 [DEBUG] SupabaseProvider - getAccessToken - Refresh successful, new token exists:', !!refreshData.session?.access_token);
+        return refreshData.session?.access_token || null
+      }
+      
+      return session.access_token
     } catch (error) {
-      console.error('DEBUG: SupabaseProvider - getAccessToken - Error:', error);
+      console.error('🔍 [DEBUG] SupabaseProvider - getAccessToken - Error:', error);
       return null
     }
   }
