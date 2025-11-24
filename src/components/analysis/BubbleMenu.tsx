@@ -7,9 +7,11 @@ import {
   Save,
   Volume2,
   Highlighter,
-  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Separator } from '../ui/separator';
 
 // Highlight colors
 const HIGHLIGHT_COLORS = [
@@ -55,8 +57,8 @@ const MemoizedBubbleMenu = React.memo(function BubbleMenu({
   onHighlight,
   className
 }: BubbleMenuProps) {
-  const [showColorPicker, setShowColorPicker] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [currentColorIndex, setCurrentColorIndex] = useState(0);
 
   if (!position.show) {
     return null;
@@ -85,10 +87,15 @@ const MemoizedBubbleMenu = React.memo(function BubbleMenu({
     onPronounce?.(selection.text);
   };
 
-  const handleHighlight = (color: string) => {
-    onHighlight(color);
-    setShowColorPicker(false);
+  const handlePrevColor = () => {
+    setCurrentColorIndex((prev) => (prev - 1 + HIGHLIGHT_COLORS.length) % HIGHLIGHT_COLORS.length);
   };
+
+  const handleNextColor = () => {
+    setCurrentColorIndex((prev) => (prev + 1) % HIGHLIGHT_COLORS.length);
+  };
+
+  const currentColor = HIGHLIGHT_COLORS[currentColorIndex] || HIGHLIGHT_COLORS[0] as any;
 
   return (
     <div
@@ -149,47 +156,47 @@ const MemoizedBubbleMenu = React.memo(function BubbleMenu({
         <Volume2 size={14} className={cn(isSpeaking && "text-primary animate-pulse")} />
       </Button>
 
-      {/* Highlight Button with Color Picker */}
-      <div className="relative">
+      {/* Highlight Color Picker with Navigation */}
+      <div className="flex items-center gap-1">
+        <div className="w-px h-5 bg-border mx-1" />
+        
+        {/* Previous Color Button */}
         <Button
           variant="ghost"
           size="sm"
           onMouseDown={(e) => e.preventDefault()}
-          onClick={() => setShowColorPicker(!showColorPicker)}
-          className="h-7 w-7 p-0"
-          title="Highlight"
+          onClick={handlePrevColor}
+          className="h-7 w-6 p-0"
+          title="Previous color"
         >
-          <Highlighter size={14} />
+          <ChevronLeft size={12} />
         </Button>
 
-        {/* Color Picker Dropdown */}
-        {showColorPicker && (
+        {/* Current Color Button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => onHighlight(currentColor.value)}
+          className="h-7 px-0 py-0"
+          title={`Highlight with ${currentColor.label}`}
+        >
           <div
-            className="absolute top-full mt-1 left-1/2 -translate-x-1/2 bg-background rounded-lg shadow-lg border border-border p-2 flex flex-col gap-1 z-50 min-w-[120px]"
-            onMouseDown={(e) => e.preventDefault()}
-          >
-            {HIGHLIGHT_COLORS.map((color) => (
-              <button
-                key={color.value}
-                onClick={() => handleHighlight(color.value)}
-                className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent text-xs transition-colors text-left"
-                title={`Highlight with ${color.label}`}
-              >
-                <div
-                  className={cn("w-4 h-4 rounded border border-border", color.className)}
-                />
-                <span>{color.label}</span>
-              </button>
-            ))}
-            <div className="border-t border-border my-1" />
-            <button
-              onClick={() => setShowColorPicker(false)}
-              className="px-2 py-1.5 rounded hover:bg-accent text-xs text-muted-foreground transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        )}
+            className={cn("w-4 h-4 rounded border border-border", currentColor.className)}
+          />
+        </Button>
+
+        {/* Next Color Button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={handleNextColor}
+          className="h-7 w-6 p-0"
+          title="Next color"
+        >
+          <ChevronRight size={12} />
+        </Button>
       </div>
     </div>
   );

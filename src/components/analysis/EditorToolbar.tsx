@@ -220,7 +220,7 @@ export function EditorToolbar({
       </div>
 
       {/* Highlight Controls */}
-      <div className="flex items-center gap-1 border-r pr-2 mr-2">
+      {/* <div className="flex items-center gap-1 border-r pr-2 mr-2">
         {highlightColors.map(color => (
           <button
             key={color}
@@ -231,7 +231,7 @@ export function EditorToolbar({
             title={`Highlight with ${color}`}
           />
         ))}
-      </div>
+      </div> */}
     </div>
   );
 }
