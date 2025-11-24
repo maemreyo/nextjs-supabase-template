@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { WordAnalysis, AnalyzeWordRequest, AnalysisResponse } from '@/lib/ai/types';
 import { useSupabase } from '@/components/providers/supabase-provider';
+import { useSavedAnalysis, useSavedAnalysisByWord } from './useSavedAnalysis';
 
 // Query keys cho word analysis
 export const wordAnalysisKeys = {
@@ -19,14 +20,44 @@ export function useWordAnalysis(
   options?: {
     enabled?: boolean;
     staleTime?: number;
+    checkSavedFirst?: boolean;
+    sessionId?: string;
+    wordId?: string;
   }
 ) {
-  const { enabled = true, staleTime = 1000 * 60 * 30 } = options || {};
+  const {
+    enabled = true,
+    staleTime = 1000 * 60 * 30,
+    checkSavedFirst = false,
+    sessionId,
+    wordId
+  } = options || {};
   const { getAccessToken } = useSupabase();
+
+  // Try to get saved analysis first if enabled
+  const savedAnalysisQuery = useSavedAnalysis(wordId, sessionId, {
+    enabled: checkSavedFirst && !!wordId,
+    staleTime
+  });
+
+  const savedAnalysisByWordQuery = useSavedAnalysisByWord(word, sessionId, {
+    enabled: checkSavedFirst && !!word && !!sessionId && !wordId,
+    staleTime
+  });
+
+  const savedAnalysis = wordId ? savedAnalysisQuery.data : savedAnalysisByWordQuery.data;
 
   return useQuery({
     queryKey: wordAnalysisKeys.detail(word, sentenceContext, paragraphContext),
     queryFn: async (): Promise<WordAnalysis> => {
+      // If we have a saved analysis, return it
+      if (savedAnalysis) {
+        console.log('🔍 [DEBUG] useWordAnalysis - Using saved analysis', {
+          word: savedAnalysis.meta.word,
+          source: wordId ? 'wordId' : 'word+sessionId'
+        });
+        return savedAnalysis;
+      }
       // DEBUG: Log để kiểm tra authentication state
       console.log('DEBUG: useWordAnalysis - Starting API call for word:', word);
       
@@ -72,7 +103,7 @@ export function useWordAnalysis(
 
       return result.data;
     },
-    enabled: enabled && !!word && !!sentenceContext,
+    enabled: enabled && !!word && !!sentenceContext && (!checkSavedFirst || !savedAnalysis),
     staleTime,
     retry: (failureCount, error) => {
       // Không retry cho lỗi 4xx (client errors)
@@ -80,6 +111,9 @@ export function useWordAnalysis(
       return true;
     },
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    // Add initial data from saved analysis if available
+    initialData: savedAnalysis,
+    initialDataUpdatedAt: savedAnalysis ? new Date().getTime() : undefined,
   });
 }
 

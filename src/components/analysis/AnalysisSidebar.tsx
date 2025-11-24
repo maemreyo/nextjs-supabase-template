@@ -29,8 +29,9 @@ interface AnalysisSidebarProps {
   // Session props
   sessionId: string | null;
   getWordList: () => any[];
-  onWordClick: (wordItem: any) => void;
-  onWordRemove: (wordId: string) => void;
+  onWordClick?: (wordItem: any) => void;
+  onWordAnalyze?: (wordItem: any) => void;
+  onWordRemove?: (wordId: string) => void;
   
   // Dialog actions
   onViewDetails: () => void;
@@ -58,6 +59,7 @@ export function AnalysisSidebar({
   sessionId,
   getWordList,
   onWordClick,
+  onWordAnalyze,
   onWordRemove,
   
   // Dialog actions
@@ -76,19 +78,12 @@ export function AnalysisSidebar({
         />
       )}
 
-      {/* Recent History */}
-      <RecentHistoryCard
-        recentHistory={recentHistory}
-        isOpen={isHistoryOpen}
-        onToggle={onHistoryToggle}
-        onHistoryItemClick={onHistoryItemClick}
-      />
-
       {/* Session Word List */}
       {sessionId && (
         <SessionWordList
           words={getWordList()}
           onWordClick={onWordClick}
+          onWordAnalyze={onWordAnalyze}
           onWordRemove={onWordRemove}
           className="mb-4"
         />

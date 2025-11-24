@@ -32,6 +32,7 @@ interface WordItem {
 interface SessionWordListProps {
   words: WordItem[];
   onWordClick?: (word: WordItem) => void;
+  onWordAnalyze?: (wordItem: WordItem) => void;
   onWordRemove?: (wordId: string) => void;
   className?: string;
   emptyMessage?: string;
@@ -40,6 +41,7 @@ interface SessionWordListProps {
 export function SessionWordList({
   words,
   onWordClick,
+  onWordAnalyze,
   onWordRemove,
   className = "",
   emptyMessage = "Chưa có từ nào được phân tích trong session này."
@@ -76,129 +78,109 @@ export function SessionWordList({
 
   return (
     <Card className={`flex flex-col ${className}`}>
-      <div className="p-4 border-b">
+      <div className="p-3 border-b">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold flex items-center gap-2">
+          <h3 className="font-semibold flex items-center gap-2 text-sm">
             <BookOpen className="h-4 w-4" />
             Danh sách từ vựng
           </h3>
-          <Badge variant="secondary">{words.length} từ</Badge>
+          <Badge variant="secondary" className="text-xs">{words.length} từ</Badge>
         </div>
       </div>
       
       <ScrollArea className="flex-1">
-        <div className="p-4 space-y-4">
-          {words.map((wordItem, index) => (
-            <div key={wordItem.analysisId} className="border rounded-lg p-4 hover:bg-accent/50 transition-colors">
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 
-                      className="text-lg font-medium cursor-pointer hover:text-primary transition-colors"
-                      onClick={() => onWordClick?.(wordItem)}
-                    >
+        <div className="p-2">
+          <div className="grid grid-cols-1 gap-2">
+            {words.map((wordItem) => (
+              <div
+                key={wordItem.analysisId}
+                className="border rounded-md p-2 hover:bg-accent/50 transition-colors cursor-pointer"
+                onClick={() => {
+                  console.log('🔍 [DEBUG] SessionWordList - Word clicked:', {
+                    word: wordItem.word,
+                    analysisId: wordItem.analysisId,
+                    hasAnalysis: !!wordItem.analysis,
+                    hasOnWordClick: !!onWordClick
+                  });
+                  onWordClick?.(wordItem);
+                }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <h4 className="font-medium text-sm hover:text-primary transition-colors">
                       {wordItem.word}
                     </h4>
+                    {wordItem.analysis?.ipa && (
+                      <code className="text-xs bg-muted px-1 py-0.5 rounded">
+                        {wordItem.analysis.ipa}
+                      </code>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center gap-1">
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handlePronounce(wordItem.word)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePronounce(wordItem.word);
+                      }}
                       className="h-6 w-6 p-0"
                       title="Phát âm"
                     >
                       <Volume2 className="h-3 w-3" />
                     </Button>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge variant="outline" className="text-xs">
-                      {wordItem.analysis?.pos || 'Từ'}
-                    </Badge>
-                    {wordItem.analysis?.cefr && (
-                      <Badge variant="secondary" className="text-xs">
-                        CEFR {wordItem.analysis.cefr}
-                      </Badge>
-                    )}
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Clock className="h-3 w-3" />
-                      {formatDate(wordItem.analysis?.created_at || new Date().toISOString())}
-                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreHorizontal className="h-3 w-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => onWordAnalyze?.(wordItem)}>
+                          <BookOpen className="h-4 w-4 mr-2" />
+                          Phân tích chi tiết
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handlePronounce(wordItem.word)}>
+                          <Volume2 className="h-4 w-4 mr-2" />
+                          Phát âm
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => onWordRemove?.(wordItem.analysisId)}
+                          className="text-destructive"
+                        >
+                          <Tag className="h-4 w-4 mr-2" />
+                          Xóa
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
                 
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onWordClick?.(wordItem)}>
-                      <BookOpen className="h-4 w-4 mr-2" />
-                      Xem chi tiết
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handlePronounce(wordItem.word)}>
-                      <Volume2 className="h-4 w-4 mr-2" />
-                      Phát âm
-                    </DropdownMenuItem>
-                    {wordItem.analysis?.example_sentence && (
-                      <DropdownMenuItem>
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        Xem ví dụ
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem 
-                      onClick={() => onWordRemove?.(wordItem.analysisId)}
-                      className="text-destructive"
-                    >
-                      <Tag className="h-4 w-4 mr-2" />
-                      Xóa khỏi session
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <div className="flex items-center gap-1 mt-1">
+                  <Badge variant="outline" className="text-xs px-1 py-0">
+                    {wordItem.analysis?.pos || 'Từ'}
+                  </Badge>
+                  {wordItem.analysis?.cefr && (
+                    <Badge variant="secondary" className="text-xs px-1 py-0">
+                      {wordItem.analysis.cefr}
+                    </Badge>
+                  )}
+                  {wordItem.translation && (
+                    <span className="text-xs text-muted-foreground truncate ml-1">
+                      {wordItem.translation}
+                    </span>
+                  )}
+                </div>
               </div>
-              
-              <div className="space-y-2">
-                {wordItem.translation && (
-                  <div>
-                    <span className="text-sm font-medium">Nghĩa:</span>
-                    <p className="text-sm text-muted-foreground">{wordItem.translation}</p>
-                  </div>
-                )}
-                
-                {wordItem.definition && (
-                  <div>
-                    <span className="text-sm font-medium">Định nghĩa:</span>
-                    <p className="text-sm text-muted-foreground">{wordItem.definition}</p>
-                  </div>
-                )}
-                
-                {wordItem.analysis?.example_sentence && (
-                  <div>
-                    <span className="text-sm font-medium">Ví dụ:</span>
-                    <p className="text-sm italic text-muted-foreground">
-                      "{wordItem.analysis.example_sentence}"
-                    </p>
-                    {wordItem.analysis?.example_translation && (
-                      <p className="text-sm text-muted-foreground">
-                        {wordItem.analysis.example_translation}
-                      </p>
-                    )}
-                  </div>
-                )}
-                
-                {wordItem.analysis?.ipa && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">Phiên âm:</span>
-                    <code className="text-sm bg-muted px-2 py-1 rounded">
-                      {wordItem.analysis.ipa}
-                    </code>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </ScrollArea>
     </Card>

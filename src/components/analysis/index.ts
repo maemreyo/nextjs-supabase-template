@@ -18,6 +18,11 @@ export {
   ParagraphAnalysisView
 } from './AnalysisViews';
 
+// Export new refactored view components
+export { default as WordPhraseAnalysisView } from './WordPhraseAnalysisView';
+export { default as SentenceAnalysisViewComponent } from './SentenceAnalysisView';
+export { default as ParagraphAnalysisViewComponent } from './ParagraphAnalysisView';
+
 // Export helper components from AnalysisViews
 export {
   SectionTitle,
@@ -26,6 +31,17 @@ export {
   ProgressIndicator,
   AnalysisCard
 } from './AnalysisViews';
+
+// Export new helper components
+export {
+  Section,
+  MetaBadge,
+  DefinitionCard,
+  InfoCard,
+  RelationCard,
+  CollocationCard,
+  ScoreCard
+} from './AnalysisResultHelpers';
 
 // Export all components
 export { default as WordAnalysisDisplay } from './WordAnalysisDisplay';

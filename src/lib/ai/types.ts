@@ -429,6 +429,8 @@ export interface AnalyzeWordRequest {
   paragraphContext?: string;
   maxItems?: number;
   sessionId?: string;
+  checkSavedFirst?: boolean;
+  wordId?: string;
 }
 
 export interface AnalyzeSentenceRequest {

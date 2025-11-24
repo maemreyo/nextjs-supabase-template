@@ -7,6 +7,8 @@ import { useSentenceAnalysisMutation } from '@/hooks/useSentenceAnalysis';
 import { useParagraphAnalysisMutation } from '@/hooks/useParagraphAnalysis';
 import { usePhraseAnalysis } from '@/hooks/usePhraseAnalysis';
 import { useAnalysisStore, useAnalysisSelectors, useAnalysisActions } from '@/stores/analysis-store';
+import { useSavedAnalysisByWord } from '@/hooks/useSavedAnalysis';
+import { api } from '@/lib/api-client-client';
 import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis, PhraseAnalysis } from '@/lib/ai/types';
 
 export interface UseAnalysisPageLogicProps {
@@ -76,6 +78,8 @@ export interface UseAnalysisPageLogicReturn {
   handleRewriteApply: (text: string) => void;
   handleFeedbackApply: (text: string) => void;
   handleClearAll: () => void;
+  handleWordFromSessionAnalyze: (word: string, wordItem: any) => Promise<void>;
+  setAnalysisResult: (result: WordAnalysis | PhraseAnalysis | SentenceAnalysis | ParagraphAnalysis | null) => void;
 }
 
 /**
@@ -284,6 +288,160 @@ export function useAnalysisPageLogic({ sessionId }: UseAnalysisPageLogicProps): 
     setAnalysisPanelOpen(false);
   }, [clearAll]);
 
+  // Handler for analyzing word from session
+  const handleWordFromSessionAnalyze = useCallback(async (word: string, wordItem: any) => {
+    if (!word.trim()) return;
+    
+    // Set analysis type to word
+    setAnalysisTypeState('word');
+    setActiveTabState('word');
+    setSelectedTextState(word);
+
+    // Extract context from wordItem
+    const sentenceContext = wordItem.context || wordItem.sentence || '';
+    const paragraphContext = wordItem.paragraphContext || '';
+
+    // First, try to get saved analysis from database
+    if (sessionId) {
+      console.log('🔍 [DEBUG] handleWordFromSessionAnalyze - Checking for saved analysis', { word, sessionId });
+      
+      try {
+        // Direct API call to check for saved analysis
+        const queryParams = {
+          type: 'word',
+          session_id: sessionId,
+          search: word,
+          per_page: '1' // We only need the most recent one
+        };
+
+        const result = await api.analyses.list(queryParams);
+        
+        if (result.success && result.data?.analyses?.length > 0) {
+          console.log('🔍 [DEBUG] handleWordFromSessionAnalyze - Found saved analysis', { word });
+          
+          // Transform database format to WordAnalysis format
+          const dbAnalysis = result.data.analyses[0];
+          const wordAnalysis: WordAnalysis = {
+            meta: {
+              word: dbAnalysis.word,
+              ipa: dbAnalysis.ipa || '',
+              pos: dbAnalysis.pos || '',
+              cefr: dbAnalysis.cefr || '',
+              tone: dbAnalysis.tone || '',
+            },
+            definitions: {
+              root_meaning: dbAnalysis.root_meaning || '',
+              context_meaning: dbAnalysis.context_meaning || '',
+              vietnamese_translation: dbAnalysis.vietnamese_translation || '',
+            },
+            usage: {
+              example_sentence: dbAnalysis.example_sentence || '',
+              example_translation: dbAnalysis.example_translation || '',
+              collocations: dbAnalysis.word_collocations?.map((col: any) => ({
+                phrase: col.phrase,
+                meaning: col.meaning || '',
+                usage_example: col.usage_example || '',
+                frequency_level: col.frequency_level || 'common'
+              })) || [],
+            },
+            inference_strategy: dbAnalysis.inference_clues ? {
+              clues: dbAnalysis.inference_clues,
+              reasoning: dbAnalysis.inference_reasoning || '',
+            } : {
+              clues: '',
+              reasoning: ''
+            },
+            relations: {
+              synonyms: dbAnalysis.word_synonyms?.map((syn: any) => ({
+                word: syn.synonym_word,
+                ipa: syn.ipa || '',
+                meaning_en: syn.meaning_en || '',
+                meaning_vi: syn.meaning_vi || ''
+              })) || [],
+              antonyms: dbAnalysis.word_antonyms?.map((ant: any) => ({
+                word: ant.antonym_word,
+                ipa: ant.ipa || '',
+                meaning_en: ant.meaning_en || '',
+                meaning_vi: ant.meaning_vi || ''
+              })) || [],
+            }
+          };
+          
+          // Use saved analysis
+          setAnalysisResult(wordAnalysis);
+          setIsDetailDialogOpen(true);
+          setAnalysisPanelOpen(false);
+
+          // Add to history
+          const { addToHistory } = useAnalysisStore.getState();
+          addToHistory({
+            id: `word-${Date.now()}`,
+            type: 'word',
+            input: word,
+            result: wordAnalysis,
+            timestamp: Date.now()
+          });
+
+          return;
+        }
+      } catch (error) {
+        console.error('🔍 [DEBUG] handleWordFromSessionAnalyze - Error checking saved analysis', error);
+        // Continue with API call if saved analysis check fails
+      }
+    }
+
+    // Check if word analysis exists in history/store
+    const { analysisHistory } = useAnalysisStore.getState();
+    const existingAnalysis = analysisHistory.find(item =>
+      item.type === 'word' && item.input.toLowerCase() === word.toLowerCase()
+    );
+
+    if (existingAnalysis) {
+      // Use cached analysis
+      setAnalysisResult(existingAnalysis.result as WordAnalysis);
+      setIsDetailDialogOpen(true);
+      setAnalysisPanelOpen(false);
+      return;
+    }
+
+    // Set loading state
+    setIsAnalyzingState(true);
+    setErrorState(null);
+
+    try {
+      // Call word analysis API with checkSavedFirst option
+      const result = await wordAnalysisMutation.mutateAsync({
+        word,
+        sentenceContext,
+        paragraphContext,
+        sessionId: sessionId || undefined,
+        checkSavedFirst: true,
+        wordId: wordItem.id // Pass wordId if available
+      });
+
+      // Set analysis result and open dialog
+      setAnalysisResult(result);
+      setIsDetailDialogOpen(true);
+      setAnalysisPanelOpen(false);
+
+      // Add to history
+      const { addToHistory } = useAnalysisStore.getState();
+      addToHistory({
+        id: `word-${Date.now()}`,
+        type: 'word',
+        input: word,
+        result,
+        timestamp: Date.now()
+      });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Phân tích từ thất bại';
+      setErrorState(errorMessage);
+      console.error('Word analysis error:', err);
+    } finally {
+      setIsAnalyzingState(false);
+    }
+  }, [sessionId, wordAnalysisMutation]);
+
   // Computed values
   const recentHistory = useMemo(() => getRecentHistory(5), [getRecentHistory]);
 
@@ -339,6 +497,7 @@ export function useAnalysisPageLogic({ sessionId }: UseAnalysisPageLogicProps): 
     setIsHistoryOpen,
     setIsAnalysisTypeOpen,
     setIsQuickActionsOpen,
+    setAnalysisResult,
     
     // Handlers
     handleTextSelect,
@@ -347,6 +506,7 @@ export function useAnalysisPageLogic({ sessionId }: UseAnalysisPageLogicProps): 
     handleRewriteApply,
     handleFeedbackApply,
     handleClearAll,
+    handleWordFromSessionAnalyze,
   };
 }
 
