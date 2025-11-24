@@ -36,7 +36,6 @@ import EditorToolbar from './EditorToolbar';
 import EditorContent from './EditorContent';
 import EditorStatusBar from './EditorStatusBar';
 import BubbleMenu from './BubbleMenu';
-import SessionHeader from './SessionHeader';
 
 // Import new hooks
 import useAnalysisLogic from '@/hooks/useAnalysisLogic';
@@ -382,16 +381,6 @@ export function AnalysisEditor({
       }
     >
       <div className={`h-full flex flex-col ${className}`}>
-        {/* Session Header */}
-        <SessionHeader
-          session={session}
-          analysesCount={analyses.length}
-          isLoading={isSessionLoading}
-          onNavigateBack={navigateToSessions}
-          onNavigateToSessions={navigateToSessions}
-          onCreateNewSession={handleCreateNewSession}
-        />
-
         {/* Error Display */}
         {sessionError && (
           <Alert className="m-4 border-destructive/50 bg-destructive/10 text-destructive">

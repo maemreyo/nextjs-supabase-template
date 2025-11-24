@@ -124,40 +124,6 @@ export function EditorToolbar({
 }: EditorToolbarProps) {
   return (
     <div className={cn("border-b p-2 flex items-center gap-1 flex-wrap", className)}>
-      {/* Save Controls Section */}
-      <div className="flex items-center gap-2 border-r pr-2 mr-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={onSave}
-          disabled={isSaving || (!lastAnalysisResult && !selection.text)}
-          className="h-7 px-2"
-          title={sessionId ? "Lưu kết quả phân tích vào session (Ctrl+S)" : "Lưu kết quả phân tích (Ctrl+S)"}
-        >
-          {isSaving ? (
-            <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Đang lưu...</>
-          ) : (
-            <><Save className="h-3 w-3 mr-1" />Lưu</>
-          )}
-        </Button>
-
-        {/* Session Management Dropdown */}
-        {sessionId && (
-          <Button
-            variant="outline"
-            size="sm"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={onSessionActions}
-            className="h-7 px-2"
-            title="Quản lý session"
-          >
-            <FolderOpen className="h-3 w-3 mr-1" />
-            Session
-          </Button>
-        )}
-      </div>
-
       {/* Text Formatting Controls */}
       <div className="flex items-center gap-0.5 border-r pr-2 mr-2">
         <ToolBtn onClick={() => formatCommands.bold()} active={activeFormats.bold} title="Bold">
@@ -204,7 +170,7 @@ export function EditorToolbar({
       </div>
 
       {/* Selection Expansion Controls */}
-      <div className="flex items-center gap-1 border-r pr-2 mr-2">
+      {/* <div className="flex items-center gap-1 border-r pr-2 mr-2">
         <Button 
           variant="outline" 
           size="sm" 
@@ -232,6 +198,25 @@ export function EditorToolbar({
         >
           Paragraph
         </Button>
+      </div> */}
+
+      {/* Save Controls Section */}
+      <div className="flex items-center gap-2 border-r pr-2 mr-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={onSave}
+          disabled={isSaving || (!lastAnalysisResult && !selection.text)}
+          className="h-7 px-2"
+          title={sessionId ? "Lưu kết quả phân tích vào session (Ctrl+S)" : "Lưu kết quả phân tích (Ctrl+S)"}
+        >
+          {isSaving ? (
+            <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Đang lưu...</>
+          ) : (
+            <><Save className="h-3 w-3 mr-1" />Lưu</>
+          )}
+        </Button>
       </div>
 
       {/* Highlight Controls */}
@@ -247,6 +232,8 @@ export function EditorToolbar({
           />
         ))}
       </div>
+
+
 
       {/* Selection Info */}
       <div className="ml-auto flex items-center gap-2">

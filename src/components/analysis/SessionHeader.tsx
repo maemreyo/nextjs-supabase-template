@@ -76,13 +76,6 @@ export function SessionHeader({
           {/* Session Info */}
           {session && (
             <div className="flex items-center gap-2 min-w-0">
-              <Badge variant="outline" className="bg-primary/10 border-primary/30 truncate max-w-[150px] sm:max-w-none">
-                <FolderOpen className="h-3 w-3 mr-1 flex-shrink-0" />
-                <span className="truncate">{session.title}</span>
-              </Badge>
-              <Badge variant="secondary" className="text-xs flex-shrink-0">
-                {getSessionTypeLabel(session.session_type)}
-              </Badge>
               <Badge variant="outline" className="text-xs flex-shrink-0">
                 {analysesCount} phân tích
               </Badge>

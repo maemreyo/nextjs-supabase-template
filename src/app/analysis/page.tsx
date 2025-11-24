@@ -26,6 +26,8 @@ import {
   Trash2,
   RotateCcw,
   Eye,
+  ArrowLeft,
+  Plus,
 } from 'lucide-react';
 
 // Components
@@ -36,6 +38,7 @@ import AnalysisErrorBoundary from '@/components/analysis/AnalysisErrorBoundary';
 import AnalysisDebugPanel from '@/components/analysis/AnalysisDebugPanel';
 import AuthGuard from '@/components/auth/auth-guard';
 import SessionWordList from '@/components/analysis/SessionWordList';
+import { SessionActions } from '@/components/analysis';
 
 // Hooks
 import { useWordAnalysisMutation } from '@/hooks/useWordAnalysis';
@@ -45,6 +48,7 @@ import { useSessionData } from '@/hooks/useSessionData';
 
 // Store
 import { useAnalysisStore, useAnalysisSelectors, useAnalysisActions } from '@/stores/analysis-store';
+import { useSessionStore } from '@/stores/session-store';
 
 // Types
 import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis } from '@/lib/ai/types';
@@ -112,7 +116,8 @@ function ImprovedAnalysisPageContent() {
   const {
     clearAll
   } = useAnalysisActions();
-  const { navigateToSessions } = useAppNavigation();
+  const { navigateToSessions, navigateToAnalysis } = useAppNavigation();
+  const { createSession } = useSessionStore();
 
   // Mutations cho analysis
   const wordAnalysisMutation = useWordAnalysisMutation();
@@ -247,6 +252,16 @@ function ImprovedAnalysisPageContent() {
     setAnalysisPanelOpen(false);
   }, [clearAll]);
 
+  // Handle new session creation
+  const handleCreateNewSession = useCallback(async () => {
+    const title = `Session mới - ${new Date().toLocaleDateString('vi-VN')}`;
+    const newSession = await createSession({
+      title,
+      session_type: 'mixed'
+    });
+    navigateToAnalysis(newSession.id);
+  }, [createSession, navigateToAnalysis]);
+
   const recentHistory = getRecentHistory(5);
 
   // Determine current mutation based on analysis type
@@ -269,16 +284,6 @@ function ImprovedAnalysisPageContent() {
     <div
       className="container mx-auto px-4 py-4 sm:px-6 lg:px-8 max-w-7xl h-[calc(100vh-2rem)] flex flex-col"
     >
-      {/* Breadcrumb Navigation - Desktop */}
-      <div className="hidden sm:block mb-4 sm:mb-6 flex-shrink-0">
-        <ResponsiveBreadcrumb items={breadcrumbItems} />
-      </div>
-
-      {/* Breadcrumb Navigation - Mobile */}
-      <div className="sm:hidden mb-4 flex-shrink-0">
-        <MobileBreadcrumb items={breadcrumbItems} />
-      </div>
-
       {/* Page Header - Only show when not in session mode */}
       {!sessionId && (
         <div className="mb-4 sm:mb-6 flex-shrink-0">
@@ -292,28 +297,12 @@ function ImprovedAnalysisPageContent() {
       {/* Quick Navigation when in session mode */}
       {sessionId && (
         <div className="mb-4 sm:mb-6 flex-shrink-0">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground mb-2 truncate">
-                {session?.title || 'Đang tải...'}
-              </h1>
-              <p className="text-muted-foreground text-sm sm:text-base">
-                Phân tích chi tiết từ, câu và đoạn văn bằng AI
-              </p>
-            </div>
-            <div className="flex gap-2 flex-shrink-0">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigateToSessions()}
-                className="flex-shrink-0"
-              >
-                <FileText className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Danh sách phiên</span>
-                <span className="sm:hidden">Phiên</span>
-              </Button>
-            </div>
-          </div>
+          <SessionActions
+            session={session}
+            analysesCount={analyses.length}
+            onNavigateBack={() => navigateToSessions()}
+            onCreateNewSession={handleCreateNewSession}
+          />
         </div>
       )}
 
@@ -434,18 +423,6 @@ function ImprovedAnalysisPageContent() {
             />
           )}
 
-          {/* Analysis Panel */}
-          {analysisPanelOpen && analysisResult && (
-            <>
-              <AnalysisPanel
-                analysisPanelOpen={analysisPanelOpen}
-                setAnalysisPanelOpen={setAnalysisPanelOpen}
-                analysisResult={analysisResult}
-                analysisType={activeTab}
-                selectedText={selectedText}
-              />
-            </>
-          )}
         </div>
       </div>
 

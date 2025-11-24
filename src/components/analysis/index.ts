@@ -43,6 +43,7 @@ export { default as AnalysisResultDialog } from './AnalysisResultDialog';
 export { default as SmartVocabularyDialog } from './SmartVocabularyDialog';
 export { default as CompactResultCard } from './CompactResultCard';
 export { default as CollapsibleAnalysisPanel } from './CollapsibleAnalysisPanel';
+export { SessionActions } from './SessionActions';
 
 // Export utility functions
 export {
