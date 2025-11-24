@@ -15,7 +15,8 @@ export function EditorContent({ editor, className }: EditorContentProps) {
         <TipTapEditorContent
           editor={editor}
           className={cn(
-            "min-h-96 p-6 bg-background rounded border border-border focus:outline-none focus:ring-2 focus:ring-primary/50 prose max-w-none",
+            // "min-h-96 p-6 bg-background rounded border border-border focus:outline-none focus:ring-2 focus:ring-primary/50 prose max-w-none",
+            "min-h-96 p-6 prose max-w-none focus-visible:none",
             className
           )}
         />

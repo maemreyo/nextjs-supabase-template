@@ -45,7 +45,7 @@ export function useTipTapEditor({
     const words = text.split(/\s+/).filter(w => w.length > 0);
     const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
     const paragraphs = text.split(/\n\n+/).filter(p => p.trim().length > 0);
-    
+
     setTextStats({
       characters: text.length,
       words: words.length,
@@ -56,6 +56,11 @@ export function useTipTapEditor({
 
   const editor = useEditor({
     immediatelyRender: false,
+    editorProps: {
+      attributes: {
+        class: 'focus-visible:outline-none focus:outline-none outline-none',
+      },
+    },
     extensions: [
       StarterKit.configure({
         heading: {
@@ -93,9 +98,9 @@ export function useTipTapEditor({
       const html = editor.getHTML();
       const json = editor.getJSON();
       const text = editor.getText();
-      
+
       updateTextStats(text);
-      
+
       if (onUpdate) {
         onUpdate({ html, json, text });
       }
@@ -103,7 +108,7 @@ export function useTipTapEditor({
     onSelectionUpdate: ({ editor }) => {
       const { from, to } = editor.state.selection;
       const text = editor.state.doc.textBetween(from, to, ' ');
-      
+
       if (onSelectionUpdate) {
         onSelectionUpdate({ text, from, to });
       }
@@ -144,7 +149,7 @@ export function useTipTapEditor({
     code: () => editor?.chain().focus().toggleCode().run(),
     codeBlock: () => editor?.chain().focus().toggleCodeBlock().run(),
     horizontalRule: () => editor?.chain().focus().setHorizontalRule().run(),
-    textAlign: (alignment: 'left' | 'center' | 'right' | 'justify') => 
+    textAlign: (alignment: 'left' | 'center' | 'right' | 'justify') =>
       editor?.chain().focus().setTextAlign(alignment).run(),
     setColor: (color: string) => editor?.chain().focus().setColor(color).run(),
     setHighlight: (color: string) => editor?.chain().focus().setHighlight({ color }).run(),
@@ -191,10 +196,10 @@ export function useTipTapEditor({
   // Selection helpers
   const getSelection = () => {
     if (!editor) return { text: '', from: 0, to: 0, empty: true };
-    
+
     const { from, to, empty } = editor.state.selection;
     const text = editor.state.doc.textBetween(from, to, ' ');
-    
+
     return { text, from, to, empty };
   };
 

@@ -399,7 +399,7 @@ export function AnalysisEditor({
           </div>
         )}
 
-        <Card className="flex-1 flex flex-col">
+        <Card className="h-full">
           {/* Toolbar */}
           <EditorToolbar
             isSaving={isSaving}

@@ -232,18 +232,6 @@ export function EditorToolbar({
           />
         ))}
       </div>
-
-
-
-      {/* Selection Info */}
-      <div className="ml-auto flex items-center gap-2">
-        {selection.text && (
-          <Badge variant="outline" className="text-xs bg-primary/10 border-primary/30">
-            <MousePointer className="h-3 w-3 mr-1" />
-            Đã chọn: {selection.text.length} ký tự
-          </Badge>
-        )}
-      </div>
     </div>
   );
 }
