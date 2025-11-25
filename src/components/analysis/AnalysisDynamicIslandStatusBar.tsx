@@ -31,7 +31,7 @@ interface AnalysisDynamicIslandStatusBarProps {
         data: WordAnalysis | PhraseAnalysis | SentenceAnalysis | ParagraphAnalysis;
     } | null;
     error: string | null;
-    onClose: () => void;
+    onClose?: () => void;
     onViewDetails: () => void;
     progress?: number;
     className?: string;
@@ -50,6 +50,7 @@ export function AnalysisDynamicIslandStatusBar({
     className = ""
 }: AnalysisDynamicIslandStatusBarProps) {
     const [isExpanded, setIsExpanded] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(false);
     const [status, setStatus] = useState<StatusState>('idle');
     const [isDragging, setIsDragging] = useState(false);
     const [startY, setStartY] = useState(0);
@@ -60,10 +61,13 @@ export function AnalysisDynamicIslandStatusBar({
         if (isAnalyzing) {
             setStatus('loading');
             setIsExpanded(false);
+            setIsCollapsed(false);
         } else if (error) {
             setStatus('error');
+            setIsCollapsed(false);
         } else if (analysisResult) {
             setStatus('success');
+            setIsCollapsed(false);
         } else {
             setStatus('idle');
         }
@@ -83,7 +87,8 @@ export function AnalysisDynamicIslandStatusBar({
         if (!isDragging) return;
         const diff = currentY - startY;
         if (diff > 50) {
-            onClose();
+            setIsCollapsed(true);
+            setIsExpanded(false);
         }
         setIsDragging(false);
         setCurrentY(0);
@@ -107,18 +112,43 @@ export function AnalysisDynamicIslandStatusBar({
         if (!isDragging) return;
         const diff = currentY - startY;
         if (diff > 50) {
-            onClose();
+            setIsCollapsed(true);
+            setIsExpanded(false);
         }
         setIsDragging(false);
         setCurrentY(0);
     };
 
-    if (!isVisible) {
-        return null;
-    }
+    // Component luôn hiển thị, không bao giờ return null
+    // Chỉ thay đổi trạng thái collapsed/expanded
 
     const transform = isDragging ? `translateY(${Math.max(0, currentY - startY)}px)` : '';
     const opacity = isDragging ? Math.max(0.5, 1 - (currentY - startY) / 100) : 1;
+    
+    // Nếu component ở trạng thái collapsed, hiển thị dạng thu gọn
+    if (isCollapsed) {
+        return (
+            <div
+                ref={statusBarRef}
+                className="fixed bottom-6 right-6 z-50 transition-all duration-300 ease-out"
+            >
+                <div
+                    className="bg-black dark:bg-zinc-900 rounded-full shadow-2xl backdrop-blur-xl border border-zinc-800/50 p-3 cursor-pointer hover:scale-110 transition-transform duration-200"
+                    onClick={() => {
+                        setIsCollapsed(false);
+                        setIsExpanded(true);
+                    }}
+                >
+                    <div className="relative">
+                        <div className="h-6 w-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 animate-pulse" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <ChevronUp className="h-3 w-3 text-white" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     // Loading state - compact like Dynamic Island
     if (status === 'loading') {
@@ -170,7 +200,8 @@ export function AnalysisDynamicIslandStatusBar({
                                         className="h-7 w-7 p-0 rounded-full hover:bg-zinc-800"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            onClose();
+                                            setIsCollapsed(true);
+                                            setIsExpanded(false);
                                         }}
                                     >
                                         <X className="h-4 w-4 text-zinc-400" />
@@ -232,7 +263,8 @@ export function AnalysisDynamicIslandStatusBar({
                                         className="h-7 w-7 p-0 rounded-full hover:bg-zinc-800"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            onClose();
+                                            setIsCollapsed(true);
+                                            setIsExpanded(false);
                                         }}
                                     >
                                         <X className="h-4 w-4 text-zinc-400" />
@@ -389,7 +421,8 @@ export function AnalysisDynamicIslandStatusBar({
                                         className="h-7 w-7 p-0 rounded-full hover:bg-zinc-800"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            onClose();
+                                            setIsCollapsed(true);
+                                            setIsExpanded(false);
                                         }}
                                     >
                                         <X className="h-4 w-4 text-zinc-400" />
@@ -444,7 +477,25 @@ export function AnalysisDynamicIslandStatusBar({
         );
     }
 
-    return null;
+    // Component luôn hiển thị một indicator nhỏ ngay cả ở trạng thái idle
+    return (
+        <div
+            ref={statusBarRef}
+            className="fixed bottom-6 right-6 z-50 transition-all duration-300 ease-out"
+        >
+            <div
+                className="bg-black dark:bg-zinc-900 rounded-full shadow-2xl backdrop-blur-xl border border-zinc-800/50 p-3 cursor-pointer hover:scale-110 transition-transform duration-200"
+                onClick={() => setIsExpanded(true)}
+            >
+                <div className="relative">
+                    <div className="h-6 w-6 rounded-full bg-gradient-to-br from-gray-500 to-gray-600" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <ChevronUp className="h-3 w-3 text-white" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 }
 
 export default AnalysisDynamicIslandStatusBar;

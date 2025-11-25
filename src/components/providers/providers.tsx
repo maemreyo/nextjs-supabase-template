@@ -27,7 +27,7 @@ export function Providers({ children }: ProvidersProps) {
         <AuthSyncProvider>
           <QueryClientProvider client={queryClient}>
             {children}
-            <ReactQueryDevtools initialIsOpen={false} />
+            {/* <ReactQueryDevtools initialIsOpen={false} /> */}
           </QueryClientProvider>
         </AuthSyncProvider>
       </SupabaseProvider>
