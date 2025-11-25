@@ -1,134 +1,269 @@
 import { withAuth, createSuccessResponse, createErrorResponse } from '@/lib/api-client';
-import type { SessionAnalysis, SessionAnalysisInsert } from '@/types/sessions';
+import { Database } from '@/lib/database.types';
 
-// GET /api/sessions/[id]/analyses - Get session analyses
+interface SessionAnalysesResponse {
+  success: boolean;
+  data?: {
+    analyses: any[]; // Using any for now due to complex joins
+    pagination?: {
+      words: {
+        limit: number;
+        offset: number;
+        total: number;
+        hasMore: boolean;
+        currentCount: number;
+      };
+    };
+  };
+  error?: string;
+}
+
+// GET /api/sessions/[id]/analyses - Load session analyses with pagination
 export const GET = withAuth(
-  async (request, { user, supabase }, { params }) => {
-    const { id: sessionId } = await params;
-
-    // Get session analyses
-    const { data: analyses, error: fetchError } = await supabase
-      .from('session_analyses')
-      .select('*')
-      .eq('session_id', sessionId)
-      .eq('user_id', user.id)
-      .order('position', { ascending: true });
-
-    if (fetchError) {
-      throw fetchError;
-    }
-
-    return createSuccessResponse(analyses || []);
-  }
-);
-
-// POST /api/sessions/[id]/analyses - Add analysis to session
-export const POST = withAuth(
-  async (request, { user, supabase }, { params }) => {
-    const { id: sessionId } = await params;
-    const analysisData: SessionAnalysisInsert = await request.json();
-
-    // Validate required fields
-    if (!analysisData.analysis_type || !analysisData.analysis_id) {
-      return createErrorResponse('analysis_type and analysis_id are required', 400);
-    }
-
-    // Get next position
-    const { data: existingAnalyses } = await supabase
-      .from('session_analyses')
-      .select('position')
-      .eq('session_id', sessionId)
-      .eq('user_id', user.id)
-      .order('position', { ascending: false })
-      .limit(1);
-
-    const nextPosition = existingAnalyses && existingAnalyses.length > 0
-      ? (existingAnalyses[0]?.position ?? 0) + 1
-      : 0;
-
-    // Insert analysis
-    const { data: analysis, error: insertError } = await supabase
-      .from('session_analyses')
-      .insert({
-        ...analysisData,
-        session_id: sessionId,
-        user_id: user.id,
-        position: nextPosition
-      })
-      .select()
-      .single();
-
-    if (insertError) {
-      throw insertError;
-    }
-
-    return createSuccessResponse(analysis);
-  }
-);
-
-// DELETE /api/sessions/[id]/analyses/[analysisId] - Remove analysis from session
-export const DELETE = withAuth(
-  async (request, { user, supabase }, { params }) => {
-    // For DELETE, we need to extract analysisId from the URL
-    const url = new URL(request.url);
-    const pathSegments = url.pathname.split('/');
-    const analysisId = pathSegments[pathSegments.length - 1];
-    const { id: sessionId } = await params;
+  async (request, { user, supabase, params }) => {
+    console.log('🔍 [DEBUG] API analyses route - Starting request');
     
-    if (!analysisId) {
-      return createErrorResponse('Analysis ID is required', 400);
-    }
+    try {
+      // Extract session ID from params (Next.js 16 compatible)
+      const sessionId = params?.id;
+      console.log('🔍 [DEBUG] API analyses route - Session ID extracted:', sessionId);
 
-    // Check if user owns the analysis
-    const { data: analysis, error: checkError } = await supabase
-      .from('session_analyses')
-      .select('user_id')
-      .eq('id', analysisId)
-      .single();
-
-    if (checkError || !analysis || analysis.user_id !== user.id) {
-      return createErrorResponse('Analysis not found or access denied', 404);
-    }
-
-    // Delete analysis
-    const { error: deleteError } = await supabase
-      .from('session_analyses')
-      .delete()
-      .eq('id', analysisId)
-      .eq('user_id', user.id);
-
-    if (deleteError) {
-      throw deleteError;
-    }
-
-    return createSuccessResponse({ id: analysisId });
-  }
-);
-
-// PATCH /api/sessions/[id]/analyses/reorder - Reorder session analyses
-export const PATCH = withAuth(
-  async (request, { user, supabase }, { params }) => {
-    const { id: sessionId } = await params;
-    const { analysis_ids } = await request.json();
-
-    if (!Array.isArray(analysis_ids) || analysis_ids.length === 0) {
-      return createErrorResponse('analysis_ids array is required', 400);
-    }
-
-    // Update positions individually since we don't have the RPC function
-    for (let i = 0; i < analysis_ids.length; i++) {
-      const { error: updateError } = await supabase
-        .from('session_analyses')
-        .update({ position: i })
-        .eq('id', analysis_ids[i])
-        .eq('session_id', sessionId)
-        .eq('user_id', user.id);
-
-      if (updateError) {
-        throw updateError;
+      if (!sessionId) {
+        console.error('🔍 [DEBUG] API analyses route - Session ID is empty or undefined');
+        return createErrorResponse('Session ID is required', 400);
       }
-    }
 
-    return createSuccessResponse({ updated: true });
+      // Parse pagination and filter parameters
+      const { searchParams } = new URL(request.url);
+      const wordsLimit = parseInt(searchParams.get('wordsLimit') || '20');
+      const wordsOffset = parseInt(searchParams.get('wordsOffset') || '0');
+      const analysisType = searchParams.get('type') || 'all'; // Filter by type: word, sentence, paragraph, phrase, or all
+      
+      console.log('🔍 [DEBUG] API analyses route - Params:', { 
+        sessionId, 
+        wordsLimit, 
+        wordsOffset, 
+        analysisType 
+      });
+
+      console.log('🔍 [DEBUG] API analyses route - Processing session ID:', sessionId);
+  
+      // Get session analyses with related data
+      console.log('🔍 [DEBUG] API analyses route - Fetching session analyses...');
+      let sessionAnalysesQuery = supabase
+        .from('session_analyses')
+        .select('*')
+        .eq('session_id', sessionId)
+        .eq('user_id', user.id)
+        .order('position', { ascending: true });
+
+      // Apply type filter if specified
+      if (analysisType !== 'all') {
+        sessionAnalysesQuery = sessionAnalysesQuery.eq('analysis_type', analysisType);
+      }
+
+      const { data: sessionAnalyses, error: analysesError } = await sessionAnalysesQuery;
+
+      console.log('🔍 [DEBUG] API analyses route - Session analyses result:', {
+        analysesError,
+        count: sessionAnalyses?.length || 0,
+        analysisType
+      });
+
+      // Get word analyses directly for this session (document_id = session_id) with pagination
+      let wordAnalysesData: any[] = [];
+      let totalWordsCount = 0;
+      
+      if (analysisType === 'all' || analysisType === 'word') {
+        console.log('🔍 [DEBUG] API analyses route - Fetching word analyses with pagination...');
+        const { data: wordAnalyses, error: wordAnalysesError } = await supabase
+          .from('word_analyses')
+          .select('*')
+          .eq('document_id', sessionId)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: true })
+          .range(wordsOffset, wordsOffset + wordsLimit - 1);
+
+        // Get total count of word analyses for pagination info
+        const { count: wordCount, error: countError } = await supabase
+          .from('word_analyses')
+          .select('*', { count: 'exact', head: true })
+          .eq('document_id', sessionId)
+          .eq('user_id', user.id);
+
+        if (!wordAnalysesError && wordAnalyses) {
+          wordAnalysesData = wordAnalyses;
+        }
+        
+        if (!countError && wordCount !== null) {
+          totalWordsCount = wordCount;
+        }
+
+        console.log('🔍 [DEBUG] API analyses route - Word analyses result:', {
+          wordAnalysesError,
+          count: wordAnalysesData.length,
+          totalWordsCount,
+          wordsOffset,
+          wordsLimit,
+          hasMore: (wordsOffset + wordsLimit) < totalWordsCount
+        });
+      }
+
+      // Fetch related analysis data using optimized JOIN queries to eliminate N+1 problem
+      console.log('🔍 [DEBUG] API analyses route - Fetching related analysis data with JOIN queries...');
+      let sessionAnalysesWithDetails = [];
+      try {
+        // Extract analysis IDs from session_analyses to batch fetch related data
+        const wordAnalysisIds = (sessionAnalyses || [])
+          .filter(analysis => analysis.analysis_type === 'word')
+          .map(analysis => analysis.analysis_id);
+        
+        const sentenceAnalysisIds = (sessionAnalyses || [])
+          .filter(analysis => analysis.analysis_type === 'sentence')
+          .map(analysis => analysis.analysis_id);
+        
+        const paragraphAnalysisIds = (sessionAnalyses || [])
+          .filter(analysis => analysis.analysis_type === 'paragraph')
+          .map(analysis => analysis.analysis_id);
+        
+        const phraseAnalysisIds = (sessionAnalyses || [])
+          .filter(analysis => analysis.analysis_type === 'phrase')
+          .map(analysis => analysis.analysis_id);
+
+        // Batch fetch all related data with single queries per type
+        const [wordDataResult, sentenceDataResult, paragraphDataResult, phraseDataResult] = await Promise.all([
+          // Fetch all word analyses in one query
+          wordAnalysisIds.length > 0
+            ? supabase
+                .from('word_analyses')
+                .select('*')
+                .in('id', wordAnalysisIds)
+            : Promise.resolve({ data: [], error: null }),
+          
+          // Fetch all sentence analyses in one query
+          sentenceAnalysisIds.length > 0
+            ? supabase
+                .from('sentence_analyses')
+                .select('*')
+                .in('id', sentenceAnalysisIds)
+            : Promise.resolve({ data: [], error: null }),
+          
+          // Fetch all paragraph analyses in one query
+          paragraphAnalysisIds.length > 0
+            ? supabase
+                .from('paragraph_analyses')
+                .select('*')
+                .in('id', paragraphAnalysisIds)
+            : Promise.resolve({ data: [], error: null }),
+          
+          // Fetch all phrase analyses in one query
+          phraseAnalysisIds.length > 0
+            ? supabase
+                .from('phrase_analyses')
+                .select('*')
+                .in('id', phraseAnalysisIds)
+            : Promise.resolve({ data: [], error: null })
+        ]);
+
+        // Create lookup maps for O(1) access
+        const wordAnalysisMap = new Map(
+          (wordDataResult.data || []).map(word => [word.id, word])
+        );
+        const sentenceAnalysisMap = new Map(
+          (sentenceDataResult.data || []).map(sentence => [sentence.id, sentence])
+        );
+        const paragraphAnalysisMap = new Map(
+          (paragraphDataResult.data || []).map(paragraph => [paragraph.id, paragraph])
+        );
+        const phraseAnalysisMap = new Map(
+          (phraseDataResult.data || []).map(phrase => [phrase.id, phrase])
+        );
+
+        // Combine session analyses with their related data using the maps
+        sessionAnalysesWithDetails = (sessionAnalyses || []).map(analysis => {
+          let relatedData = {};
+          
+          try {
+            if (analysis.analysis_type === 'word' && wordAnalysisMap.has(analysis.analysis_id)) {
+              relatedData = { word_analysis: wordAnalysisMap.get(analysis.analysis_id) };
+            } else if (analysis.analysis_type === 'sentence' && sentenceAnalysisMap.has(analysis.analysis_id)) {
+              relatedData = { sentence_analysis: sentenceAnalysisMap.get(analysis.analysis_id) };
+            } else if (analysis.analysis_type === 'paragraph' && paragraphAnalysisMap.has(analysis.analysis_id)) {
+              relatedData = { paragraph_analysis: paragraphAnalysisMap.get(analysis.analysis_id) };
+            } else if (analysis.analysis_type === 'phrase' && phraseAnalysisMap.has(analysis.analysis_id)) {
+              relatedData = { phrase_analysis: phraseAnalysisMap.get(analysis.analysis_id) };
+            }
+          } catch (mapError) {
+            console.error('🔍 [DEBUG] API analyses route - Error combining related data:', {
+              analysisId: analysis.id,
+              analysisType: analysis.analysis_type,
+              mapError
+            });
+          }
+          
+          return { ...analysis, ...relatedData };
+        });
+
+        console.log('🔍 [DEBUG] API analyses route - Optimized JOIN query results:', {
+          wordAnalysesCount: wordDataResult.data?.length || 0,
+          sentenceAnalysesCount: sentenceDataResult.data?.length || 0,
+          paragraphAnalysesCount: paragraphDataResult.data?.length || 0,
+          phraseAnalysesCount: phraseDataResult.data?.length || 0,
+          totalSessionAnalyses: sessionAnalysesWithDetails.length
+        });
+
+      } catch (batchFetchError) {
+        console.error('🔍 [DEBUG] API analyses route - Batch fetch error:', batchFetchError);
+        return createErrorResponse('Failed to fetch related analysis data', 500);
+      }
+
+      // Convert word analyses to session analysis format
+      const wordAnalysesAsSessionAnalyses = wordAnalysesData.map((wordAnalysis, index) => ({
+        id: `word_${wordAnalysis.id}`, // Temporary ID for frontend
+        analysis_id: wordAnalysis.id,
+        analysis_type: 'word' as const,
+        session_id: sessionId,
+        user_id: wordAnalysis.user_id,
+        position: 1000 + index, // Position after regular session analyses
+        analysis_title: `Word: ${wordAnalysis.word}`,
+        analysis_summary: `Analysis of word "${wordAnalysis.word}"`,
+        word_analysis: wordAnalysis
+      }));
+
+      // Combine both types of analyses
+      const allAnalyses = [
+        ...sessionAnalysesWithDetails,
+        ...wordAnalysesAsSessionAnalyses
+      ].sort((a, b) => (a.position || 0) - (b.position || 0));
+
+      if (analysesError) {
+        console.error('Error fetching session analyses:', analysesError);
+        return createErrorResponse('Failed to fetch session analyses', 500);
+      }
+
+      const responseData = {
+        analyses: allAnalyses,
+        pagination: {
+          words: {
+            limit: wordsLimit,
+            offset: wordsOffset,
+            total: totalWordsCount,
+            hasMore: (wordsOffset + wordsLimit) < totalWordsCount,
+            currentCount: wordAnalysesData.length
+          }
+        }
+      };
+
+      console.log('🔍 [DEBUG] API analyses route - Successfully processed session analyses:', sessionId);
+      return createSuccessResponse(responseData);
+      
+    } catch (error) {
+      console.error('🔍 [DEBUG] API analyses route - Unexpected error:', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        sessionId: params?.id || 'unknown'
+      });
+      return createErrorResponse('Internal server error', 500);
+    }
   }
 );

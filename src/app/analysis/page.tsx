@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense, lazy, startTransition } from 'react';
 import { useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 
@@ -10,11 +10,14 @@ import AnalysisErrorBoundary from '@/components/analysis/AnalysisErrorBoundary';
 import AuthGuard from '@/components/auth/auth-guard';
 import AnalysisResultDialog from '@/components/analysis/AnalysisResultDialog';
 import SavedAnalysesManager from '@/components/analysis/SavedAnalysesManager';
-import { 
-  AnalysisHeader, 
-  AnalysisSidebar, 
-  AnalysisErrorAlert 
+import {
+  AnalysisHeader,
+  AnalysisErrorAlert,
+  AnalysisSidebarSkeleton
 } from '@/components/analysis';
+
+// Lazy load AnalysisSidebar
+const LazyAnalysisSidebar = lazy(() => import('@/components/analysis/AnalysisSidebar'));
 
 // Hooks
 import { useAnalysisPageLogic } from '@/hooks/useAnalysisPageLogic';
@@ -266,30 +269,32 @@ const transformWordAnalysisDB = (dbData: WordAnalysisDB): WordAnalysis => {
         </div>
 
         {/* Sidebar */}
-        <AnalysisSidebar
-          selectedText={selectedText}
-          analysisResult={analysisResult}
-          activeTab={activeTab}
-          isLoading={currentLoading}
-          error={error}
-          isDetailDialogOpen={isDetailDialogOpen}
-          
-          // History props
-          recentHistory={recentHistory}
-          isHistoryOpen={isHistoryOpen}
-          onHistoryToggle={() => setIsHistoryOpen(!isHistoryOpen)}
-          onHistoryItemClick={handleHistoryItemClick}
-          
-          // Session props
-          sessionId={sessionId}
-          getWordList={getWordList}
-          onWordClick={handleWordClick}
-          onWordAnalyze={handleWordAnalyze}
-          onWordRemove={handleWordRemove}
-          
-          // Dialog actions
-          onViewDetails={() => setIsDetailDialogOpen(true)}
-        />
+        <Suspense fallback={<AnalysisSidebarSkeleton />}>
+          <LazyAnalysisSidebar
+            selectedText={selectedText}
+            analysisResult={analysisResult}
+            activeTab={activeTab}
+            isLoading={currentLoading}
+            error={error}
+            isDetailDialogOpen={isDetailDialogOpen}
+            
+            // History props
+            recentHistory={recentHistory}
+            isHistoryOpen={isHistoryOpen}
+            onHistoryToggle={() => setIsHistoryOpen(!isHistoryOpen)}
+            onHistoryItemClick={handleHistoryItemClick}
+            
+            // Session props
+            sessionId={sessionId}
+            getWordList={getWordList}
+            onWordClick={handleWordClick}
+            onWordAnalyze={handleWordAnalyze}
+            onWordRemove={handleWordRemove}
+            
+            // Dialog actions
+            onViewDetails={() => setIsDetailDialogOpen(true)}
+          />
+        </Suspense>
       </div>
 
       {/* Analysis Result Dialog */}

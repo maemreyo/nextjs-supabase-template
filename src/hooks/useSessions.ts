@@ -174,6 +174,10 @@ export function useSession(sessionId: string, options: UseSessionsOptions = {}) 
     staleTime = 5 * 60 * 1000, // 5 minutes
   } = options;
 
+  console.warn('⚠️ [DEPRECATED] useSession() is deprecated. Use useSessionData() instead which uses parallel detail/analyses APIs.');
+  
+  console.warn('⚠️ [DEPRECATED] useSession() is deprecated. Use useSessionData() instead which uses parallel detail/analyses APIs.');
+  
   const queryKey = queryKeys.api.withParams('/api/sessions/load', { sessionId });
 
   const {
@@ -187,7 +191,7 @@ export function useSession(sessionId: string, options: UseSessionsOptions = {}) 
   } = useQuery({
     queryKey,
     queryFn: async () => {
-      console.log('🔍 [DEBUG] useSession - Fetching session', { sessionId });
+      console.log('🔍 [DEBUG] useSession - Fetching session (deprecated)', { sessionId });
 
       try {
         // Use new API client instead of manual fetch
@@ -316,8 +320,12 @@ export function useUpdateSession() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.api.endpoint('/api/sessions/list'),
       });
+      // Invalidate new detail/analyses endpoints instead of deprecated load endpoint
       queryClient.invalidateQueries({
-        queryKey: queryKeys.api.endpoint('/api/sessions/load'),
+        queryKey: queryKeys.api.endpoint('/api/sessions/detail'),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.api.endpoint('/api/sessions/analyses'),
       });
       
       return updatedSession;
@@ -368,8 +376,12 @@ export function useDeleteSession() {
       });
       
       // Also invalidate specific session cache if it exists
+      // Invalidate new detail/analyses endpoints instead of deprecated load endpoint
       queryClient.invalidateQueries({
-        queryKey: queryKeys.api.withParams('/api/sessions/load', { sessionId: deletedSessionId }),
+        queryKey: queryKeys.api.withParams('/api/sessions/detail', { sessionId: deletedSessionId }),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.api.withParams('/api/sessions/analyses', { sessionId: deletedSessionId }),
       });
       
       return deletedSessionId;

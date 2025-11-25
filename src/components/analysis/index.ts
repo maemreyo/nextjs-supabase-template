@@ -65,7 +65,38 @@ export { SessionActions } from './SessionActions';
 export { default as AnalysisHeader } from './AnalysisHeader';
 export { default as AnalysisSidebar } from './AnalysisSidebar';
 export { default as RecentHistoryCard } from './RecentHistoryCard';
+export { default as SessionAnalysesList } from './SessionAnalysesList';
 export { default as AnalysisErrorAlert } from './AnalysisErrorAlert';
+export { AnalysisSidebarSkeleton } from './AnalysisSidebarSkeleton';
+
+// New components and helpers for multi-type analysis
+export { default as AnalysisItemCard } from './components/AnalysisItemCard';
+export {
+  AnalysisSkeleton,
+  WordAnalysisSkeleton,
+  PhraseAnalysisSkeleton,
+  SentenceAnalysisSkeleton,
+  ParagraphAnalysisSkeleton,
+  MixedAnalysisSkeleton
+} from './components/AnalysisSkeleton';
+export * from './helpers/pos-normalizer';
+export * from './helpers/data-transformers';
+
+// Explicit re-exports to avoid naming conflicts
+export type {
+  AnalysisType,
+  AnalysisItem,
+  WordAnalysis as NewWordAnalysis,
+  PhraseAnalysis as NewPhraseAnalysis,
+  SentenceAnalysis as NewSentenceAnalysis,
+  ParagraphAnalysis as NewParagraphAnalysis,
+  BaseAnalysis,
+  SessionAnalysesListProps,
+  AnalysisItemProps,
+  LayoutConfig,
+  DEFAULT_LAYOUTS,
+  COMPACT_LAYOUTS
+} from './types/analysis-types';
 
 // Export utility functions
 export {

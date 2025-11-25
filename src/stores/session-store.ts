@@ -261,6 +261,7 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
   },
 
   loadSession: async (id) => {
+    console.warn('⚠️ [DEPRECATED] loadSession() is deprecated. Use useSessionData() instead which uses parallel detail/analyses APIs.');
     set({ isLoading: true, error: null });
     
     try {
@@ -268,21 +269,41 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
       const { data: { session } } = await (await import('@/lib/supabase/client')).createClient().auth.getSession();
       const token = session?.access_token;
 
-      const response = await fetch(`/api/sessions/${id}/load`, {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-      });
+      // Use parallel detail and analyses APIs
+      const [detailResponse, analysesResponse] = await Promise.all([
+        fetch(`/api/sessions/${id}/detail`, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        }),
+        fetch(`/api/sessions/${id}/analyses`, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        })
+      ]);
       
-      if (!response.ok) {
-        throw new Error(`Failed to load session: ${response.statusText}`);
+      if (!detailResponse.ok) {
+        throw new Error(`Failed to load session detail: ${detailResponse.statusText}`);
+      }
+      
+      if (!analysesResponse.ok) {
+        throw new Error(`Failed to load session analyses: ${analysesResponse.statusText}`);
       }
 
-      const result = await response.json();
+      const detailResult = await detailResponse.json();
+      const analysesResult = await analysesResponse.json();
       
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to load session');
+      if (!detailResult.success) {
+        throw new Error(detailResult.error || 'Failed to load session detail');
+      }
+      
+      if (!analysesResult.success) {
+        throw new Error(analysesResult.error || 'Failed to load session analyses');
       }
 
-      const sessionData = result.data;
+      const sessionData = {
+        session: detailResult.data.session,
+        analyses: analysesResult.data.analyses,
+        settings: detailResult.data.settings,
+        tags: detailResult.data.tags
+      };
       
       set((state) => ({
         sessions: state.sessions.some(s => s.id === id)
@@ -453,6 +474,7 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
   },
 
   loadSessionAnalyses: async (sessionId) => {
+    console.warn('⚠️ [DEPRECATED] loadSessionAnalyses() is deprecated. Use useSessionData() instead which uses parallel detail/analyses APIs.');
     set({ isLoading: true, error: null });
     
     try {
@@ -460,7 +482,7 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
       const { data: { session } } = await (await import('@/lib/supabase/client')).createClient().auth.getSession();
       const token = session?.access_token;
 
-      const response = await fetch(`/api/sessions/${sessionId}/load`, {
+      const response = await fetch(`/api/sessions/${sessionId}/analyses`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       

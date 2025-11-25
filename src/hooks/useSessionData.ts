@@ -1,4 +1,5 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { queryKeys } from '@/lib/query-keys';
 import { api } from '@/lib/api-client-client';
 import type { AnalysisSession, SessionAnalysis, SessionSettings, SessionTag } from '@/types/sessions';
@@ -12,12 +13,23 @@ interface SessionDataResponse {
   })[];
   settings?: SessionSettings;
   tags?: SessionTag[];
+  pagination?: {
+    words: {
+      limit: number;
+      offset: number;
+      total: number;
+      hasMore: boolean;
+      currentCount: number;
+    };
+  };
 }
 
 interface UseSessionDataOptions {
   enabled?: boolean;
   refetchOnWindowFocus?: boolean;
   staleTime?: number;
+  wordsLimit?: number;
+  wordsOffset?: number;
 }
 
 /**
@@ -30,60 +42,118 @@ export function useSessionData(sessionId: string | undefined, options: UseSessio
     enabled = true,
     refetchOnWindowFocus = false,
     staleTime = 5 * 60 * 1000, // 5 minutes
+    wordsLimit = 20,
+    wordsOffset = 0,
   } = options;
 
   const queryClient = useQueryClient();
 
-  const queryKey = queryKeys.api.withParams('/api/sessions/load', { sessionId });
+  // Query keys for parallel queries
+  const detailQueryKey = queryKeys.api.withParams('/api/sessions/detail', { sessionId });
+  const analysesQueryKey = queryKeys.api.withParams('/api/sessions/analyses', { sessionId, wordsLimit, wordsOffset });
 
-  const {
-    data,
-    isLoading,
-    isError,
-    error,
-    refetch,
-    isFetching,
-    isRefetching,
-  } = useQuery({
-    queryKey,
-    queryFn: async () => {
-      if (!sessionId) {
-        throw new Error('Session ID is required');
+  // Parallel queries using useQueries
+  const [
+    detailQuery,
+    analysesQuery
+  ] = useQueries({
+    queries: [
+      {
+        queryKey: detailQueryKey,
+        queryFn: async () => {
+          if (!sessionId) {
+            throw new Error('Session ID is required');
+          }
+
+          console.log('🔍 [DEBUG] useSessionData - Fetching session detail', { sessionId });
+
+          try {
+            const apiResponse = await api.sessions.getDetail(sessionId);
+            
+            // Handle different response formats
+            if (apiResponse.success && apiResponse.data) {
+              return apiResponse.data;
+            } else {
+              return apiResponse;
+            }
+          } catch (error) {
+            console.error('🔍 [DEBUG] useSessionData - Detail fetch failed', error);
+            throw error instanceof Error ? error : new Error('Failed to fetch session detail');
+          }
+        },
+        enabled: enabled && !!sessionId,
+        refetchOnWindowFocus,
+        staleTime,
+      },
+      {
+        queryKey: analysesQueryKey,
+        queryFn: async () => {
+          if (!sessionId) {
+            throw new Error('Session ID is required');
+          }
+
+          console.log('🔍 [DEBUG] useSessionData - Fetching session analyses', { sessionId, wordsLimit, wordsOffset });
+
+          try {
+            const apiResponse = await api.sessions.getAnalyses(sessionId, {
+              limit: wordsLimit,
+              offset: wordsOffset
+            });
+            
+            // Handle different response formats
+            if (apiResponse.success && apiResponse.data) {
+              return apiResponse.data;
+            } else {
+              return apiResponse;
+            }
+          } catch (error) {
+            console.error('🔍 [DEBUG] useSessionData - Analyses fetch failed', error);
+            throw error instanceof Error ? error : new Error('Failed to fetch session analyses');
+          }
+        },
+        enabled: enabled && !!sessionId,
+        refetchOnWindowFocus,
+        staleTime,
       }
-
-      console.log('🔍 [DEBUG] useSessionData - Fetching session data', { sessionId });
-
-      try {
-        // Use the new API client instead of manual fetch
-        const apiResponse = await api.sessions.get(sessionId);
-        
-        // Handle different response formats
-        let result: SessionDataResponse;
-        
-        if (apiResponse.success && apiResponse.data) {
-          // API returns { success: true, data: { session, analyses, settings, tags } }
-          result = apiResponse.data;
-        } else {
-          // API returns directly { session, analyses, settings, tags }
-          result = apiResponse;
-        }
-        
-        return result;
-      } catch (error) {
-        console.error('🔍 [DEBUG] useSessionData - Fetch failed', error);
-        throw error instanceof Error ? error : new Error('Failed to fetch session data');
-      }
-    },
-    enabled: enabled && !!sessionId,
-    refetchOnWindowFocus,
-    staleTime,
+    ]
   });
+
+  // Combine data from both queries
+  const data = useMemo(() => {
+    if (!detailQuery.data && !analysesQuery.data) return undefined;
+    
+    const combinedData: SessionDataResponse = {
+      session: detailQuery.data?.session,
+      settings: detailQuery.data?.settings,
+      tags: detailQuery.data?.tags || [],
+      analyses: analysesQuery.data?.analyses || [],
+      pagination: analysesQuery.data?.pagination
+    };
+    
+    return combinedData;
+  }, [detailQuery.data, analysesQuery.data]);
+
+  const isLoading = detailQuery.isLoading || analysesQuery.isLoading;
+  const isError = detailQuery.isError || analysesQuery.isError;
+  const error = detailQuery.error || analysesQuery.error;
+  const isFetching = detailQuery.isFetching || analysesQuery.isFetching;
+  const isRefetching = detailQuery.isRefetching || analysesQuery.isRefetching;
+
+  const refetch = () => {
+    return Promise.all([
+      detailQuery.refetch(),
+      analysesQuery.refetch()
+    ]);
+  };
 
   // Utility functions for cache management
   const invalidateCache = () => {
     console.log('🔍 [DEBUG] useSessionData - Invalidating cache');
     queryClient.invalidateQueries({
-      queryKey: queryKeys.api.withParams('/api/sessions/load', { sessionId }),
+      queryKey: detailQueryKey,
+    });
+    queryClient.invalidateQueries({
+      queryKey: analysesQueryKey,
     });
   };
 
@@ -99,7 +169,7 @@ export function useSessionData(sessionId: string | undefined, options: UseSessio
     
     const textParts: string[] = [];
     
-    data.analyses.forEach(analysis => {
+    data.analyses.forEach((analysis: any) => {
       if (analysis.word_analysis?.paragraph_context) {
         textParts.push(analysis.word_analysis.paragraph_context);
       } else if (analysis.sentence_analysis?.sentence) {
@@ -136,7 +206,7 @@ export function useSessionData(sessionId: string | undefined, options: UseSessio
         return data.session.content;
       }
       // If it's plain text, convert to simple HTML with paragraphs
-      return data.session.content.split('\n\n').map(p => `<p>${p}</p>`).join('');
+      return data.session.content.split('\n\n').map((p: any) => `<p>${p}</p>`).join('');
     }
     
     // Fallback: Extract text from analyses and convert to HTML
@@ -145,7 +215,7 @@ export function useSessionData(sessionId: string | undefined, options: UseSessio
     console.log('🔍 [DEBUG] getSessionHTML - Falling back to analyses');
     const textParts: string[] = [];
     
-    data.analyses.forEach(analysis => {
+    data.analyses.forEach((analysis: any) => {
       if (analysis.word_analysis?.paragraph_context) {
         textParts.push(`<p>${analysis.word_analysis.paragraph_context}</p>`);
       } else if (analysis.sentence_analysis?.sentence) {
@@ -162,18 +232,18 @@ export function useSessionData(sessionId: string | undefined, options: UseSessio
   const getAnalysesByType = (type: 'word' | 'sentence' | 'paragraph') => {
     if (!data?.analyses) return [];
     
-    return data.analyses.filter(analysis => analysis.analysis_type === type);
+    return data.analyses.filter((analysis: any) => analysis.analysis_type === type);
   };
 
   // Get word list from word analyses
   const getWordList = () => {
     if (!data?.analyses) return [];
     
-    const wordAnalyses = data.analyses.filter(analysis => 
+    const wordAnalyses = data.analyses.filter((analysis: any) =>
       analysis.analysis_type === 'word' && analysis.word_analysis
     );
     
-    return wordAnalyses.map(analysis => ({
+    return wordAnalyses.map((analysis: any) => ({
       word: analysis.word_analysis!.word,
       translation: analysis.word_analysis!.vietnamese_translation,
       definition: analysis.word_analysis!.context_meaning,
@@ -188,6 +258,7 @@ export function useSessionData(sessionId: string | undefined, options: UseSessio
     analyses: data?.analyses || [],
     settings: data?.settings,
     tags: data?.tags || [],
+    pagination: data?.pagination,
     isLoading,
     isError,
     error,

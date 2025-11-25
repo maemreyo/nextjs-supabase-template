@@ -126,7 +126,28 @@ export const api = {
       return ApiClient.get(`/api/sessions/list${queryString}`);
     },
     
-    get: (id: string) => ApiClient.get(`/api/sessions/${id}/load`),
+    // Deprecated: Use getDetail and getAnalyses instead
+    get: (id: string, params?: any) => {
+      console.warn('⚠️ [DEPRECATED] api.sessions.get() is deprecated. Use getDetail() and getAnalyses() instead.');
+      const queryString = params ? `?${new URLSearchParams(params).toString()}` : '';
+      return ApiClient.get(`/api/sessions/${id}/load${queryString}`);
+    },
+    
+    // New fast endpoint for session details only
+    getDetail: (id: string) => {
+      return ApiClient.get(`/api/sessions/${id}/detail`);
+    },
+    
+    // New endpoint for session analyses with pagination
+    getAnalyses: (id: string, params?: { limit?: number; offset?: number; type?: string }) => {
+      const queryParams = {
+        wordsLimit: params?.limit || 20,
+        wordsOffset: params?.offset || 0,
+        type: params?.type || 'all'
+      };
+      const queryString = `?${new URLSearchParams(queryParams as any).toString()}`;
+      return ApiClient.get(`/api/sessions/${id}/analyses${queryString}`);
+    },
     
     create: (data: any) => ApiClient.post('/api/sessions', data),
     

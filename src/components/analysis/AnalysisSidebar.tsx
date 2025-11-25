@@ -3,7 +3,7 @@
 import React from 'react';
 import { CompactResultCard } from './CompactResultCard';
 import { RecentHistoryCard } from './RecentHistoryCard';
-import { SessionWordList } from './SessionWordList';
+import { SessionAnalysesList } from './SessionAnalysesList';
 import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis, PhraseAnalysis } from '@/lib/ai/types';
 
 interface AnalysisSidebarProps {
@@ -32,6 +32,9 @@ interface AnalysisSidebarProps {
   onWordClick?: (wordItem: any) => void;
   onWordAnalyze?: (wordItem: any) => void;
   onWordRemove?: (wordId: string) => void;
+  onAnalysisClick?: (analysis: any) => void;
+  onAnalysisAnalyze?: (analysis: any) => void;
+  onAnalysisRemove?: (analysisId: string, analysisType: string) => void;
 
   // Dialog actions
   onViewDetails: () => void;
@@ -39,7 +42,7 @@ interface AnalysisSidebarProps {
 
 /**
  * Component cho phần sidebar của trang Analysis
- * Bao gồm CompactResultCard, RecentHistoryCard và SessionWordList
+ * Bao gồm CompactResultCard, RecentHistoryCard và SessionAnalysesList
  */
 export function AnalysisSidebar({
   selectedText,
@@ -61,6 +64,9 @@ export function AnalysisSidebar({
   onWordClick,
   onWordAnalyze,
   onWordRemove,
+  onAnalysisClick,
+  onAnalysisAnalyze,
+  onAnalysisRemove,
 
   // Dialog actions
   onViewDetails
@@ -78,11 +84,11 @@ export function AnalysisSidebar({
 
       {/* Session Word List */}
       {sessionId && (
-        <SessionWordList
-          words={getWordList()}
-          onWordClick={onWordClick}
-          onWordAnalyze={onWordAnalyze}
-          onWordRemove={onWordRemove}
+        <SessionAnalysesList
+          sessionId={sessionId}
+          onAnalysisClick={onAnalysisClick || onWordClick}
+          onAnalysisAnalyze={onAnalysisAnalyze || onWordAnalyze}
+          onAnalysisRemove={onAnalysisRemove || onWordRemove}
           className="mb-4"
         />
       )}
