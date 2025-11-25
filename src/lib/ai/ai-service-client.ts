@@ -4,9 +4,7 @@ import {
   GenerateEmbeddingParams,
   GenerateEmbeddingResponse,
   AIResponse,
-  UsageCheckResponse,
-  PhraseAnalysis,
-  AnalyzePhraseRequest
+  UsageCheckResponse
 } from './types'
 
 // Client-side AI service that communicates with API routes

@@ -141,7 +141,7 @@ export function CompactResultCard({
           </div>
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Target className="h-3 w-3" />
-            <span>{phraseAnalysis.components.words.length} từ thành phần</span>
+            {/* <span>{phraseAnalysis.components.words.length} từ thành phần</span> */}
           </div>
         </div>
         

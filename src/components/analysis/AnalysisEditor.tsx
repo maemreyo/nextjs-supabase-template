@@ -48,7 +48,8 @@ export function AnalysisEditor({
   initialText = "",
   className = "",
   isAnalyzing: parentIsAnalyzing = false,
-  sessionId: propSessionId
+  sessionId: propSessionId,
+  onEditorReady
 }: AnalysisEditorProps & {
   onAnalysisComplete?: (result: {
     text: string;
@@ -135,6 +136,13 @@ export function AnalysisEditor({
     },
   });
 
+  // Notify parent when editor is ready
+  React.useEffect(() => {
+    if (editor && onEditorReady) {
+      onEditorReady(editor);
+    }
+  }, [editor, onEditorReady]);
+
   // TipTap selection hook
   const {
     selection,
@@ -147,9 +155,9 @@ export function AnalysisEditor({
     triggerManualAnalysis,
   } = useTipTapSelection({
     editor,
-    onTextSelect,
-    onAnalysisRequest: (text, type) => {
-      handleAnalysisRequest(text, type);
+    onTextSelect: onTextSelect,
+    onAnalysisRequest: (selectionInfo) => {
+      handleAnalysisRequest(selectionInfo.text, selectionInfo.type);
     },
     autoAnalysisEnabled: true,
   });
@@ -256,6 +264,11 @@ export function AnalysisEditor({
   const handleAnalyze = useMemoizedCallback(async () => {
     const textToAnalyze = selection.text || getContent.text || '';
     if (!textToAnalyze.trim()) return;
+
+    // DEBUG: Log values to verify the issue
+    console.log('🔍 [DEBUG] handleAnalyze - selection.type:', selection.type);
+    console.log('🔍 [DEBUG] handleAnalyze - analysisType from state:', analysisType);
+    console.log('🔍 [DEBUG] handleAnalyze - textToAnalyze:', textToAnalyze);
 
     // Validate and sanitize input
     const validation = validateAnalysisText(textToAnalyze, {

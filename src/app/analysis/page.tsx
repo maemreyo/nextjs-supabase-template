@@ -19,6 +19,8 @@ import {
 // Hooks
 import { useAnalysisPageLogic } from '@/hooks/useAnalysisPageLogic';
 import { useSessionPageHandling } from '@/hooks/useSessionPageHandling';
+import { useState, useRef } from 'react';
+import { Editor } from '@tiptap/react';
 
 // Types
 import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis, PhraseAnalysis, WordAnalysisDB } from '@/lib/ai/types';
@@ -42,6 +44,9 @@ function ImprovedAnalysisPageContent() {
     navigateToSessions,
   } = useSessionPageHandling();
 
+  // Editor reference to pass to useAnalysisPageLogic
+  const [editor, setEditor] = useState<Editor | null>(null);
+
   // Analysis page logic
   const {
     activeTab,
@@ -64,7 +69,7 @@ function ImprovedAnalysisPageContent() {
     wordAnalysisMutation,
     sentenceAnalysisMutation,
     paragraphAnalysisMutation,
-    phraseAnalysis,
+    phraseAnalysisMutation,
     setActiveTab,
     setAnalysisType,
     setSelectedText,
@@ -81,7 +86,7 @@ function ImprovedAnalysisPageContent() {
     handleFeedbackApply,
     handleClearAll,
     handleWordFromSessionAnalyze,
-  } = useAnalysisPageLogic({ sessionId: sessionId || undefined });
+  } = useAnalysisPageLogic({ sessionId: sessionId || undefined, editor });
 
   // Determine current mutation based on analysis type
   const currentMutation = analysisType === 'word'
@@ -89,12 +94,6 @@ function ImprovedAnalysisPageContent() {
     : analysisType === 'sentence'
       ? sentenceAnalysisMutation
       : paragraphAnalysisMutation;
-
-  // Create breadcrumb items
-  const breadcrumbItems = useMemo(() => {
-    if (!session) return createBreadcrumbItems('/analysis');
-    return createBreadcrumbItems('/analysis', sessionId, session.title);
-  }, [session, sessionId]);
 
   // Handle history item click
   const handleHistoryItemClick = (item: any) => {
@@ -262,6 +261,7 @@ const transformWordAnalysisDB = (dbData: WordAnalysisDB): WordAnalysis => {
             isAnalyzing={isAnalyzing}
             className="h-full"
             sessionId={sessionId || undefined}
+            onEditorReady={setEditor}
           />
         </div>
 

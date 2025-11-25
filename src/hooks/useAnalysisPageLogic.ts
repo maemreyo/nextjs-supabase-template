@@ -2,17 +2,20 @@
 
 import React from 'react';
 import { useState, useCallback, useRef, useMemo } from 'react';
+import { Editor } from '@tiptap/react';
 import { useWordAnalysisMutation } from '@/hooks/useWordAnalysis';
 import { useSentenceAnalysisMutation } from '@/hooks/useSentenceAnalysis';
 import { useParagraphAnalysisMutation } from '@/hooks/useParagraphAnalysis';
-import { usePhraseAnalysis } from '@/hooks/usePhraseAnalysis';
+import { usePhraseAnalysisMutation } from '@/hooks/usePhraseAnalysis';
 import { useAnalysisStore, useAnalysisSelectors, useAnalysisActions } from '@/stores/analysis-store';
 import { useSavedAnalysisByWord } from '@/hooks/useSavedAnalysis';
 import { api } from '@/lib/api-client-client';
 import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis, PhraseAnalysis } from '@/lib/ai/types';
+import type { SelectionInfo } from '@/hooks/useTipTapSelection';
 
 export interface UseAnalysisPageLogicProps {
   sessionId?: string;
+  editor?: Editor | null;
 }
 
 export interface UseAnalysisPageLogicReturn {
@@ -41,7 +44,7 @@ export interface UseAnalysisPageLogicReturn {
     id: string;
     type: 'word' | 'phrase' | 'sentence' | 'paragraph';
     input: string;
-    result: WordAnalysis | SentenceAnalysis | ParagraphAnalysis;
+    result: WordAnalysis | PhraseAnalysis | SentenceAnalysis | ParagraphAnalysis;
     timestamp: number;
   }>;
   
@@ -50,7 +53,7 @@ export interface UseAnalysisPageLogicReturn {
     id: string;
     type: 'word' | 'phrase' | 'sentence' | 'paragraph';
     input: string;
-    result: WordAnalysis | SentenceAnalysis | ParagraphAnalysis;
+    result: WordAnalysis | PhraseAnalysis | SentenceAnalysis | ParagraphAnalysis;
     timestamp: number;
   }>;
   currentLoading: boolean;
@@ -59,7 +62,7 @@ export interface UseAnalysisPageLogicReturn {
   wordAnalysisMutation: any;
   sentenceAnalysisMutation: any;
   paragraphAnalysisMutation: any;
-  phraseAnalysis: any;
+  phraseAnalysisMutation: any;
   
   // Actions
   setActiveTab: (tab: 'word' | 'phrase' | 'sentence' | 'paragraph') => void;
@@ -72,7 +75,7 @@ export interface UseAnalysisPageLogicReturn {
   setIsQuickActionsOpen: (open: boolean) => void;
   
   // Handlers
-  handleTextSelect: (text: string, type: 'word' | 'phrase' | 'sentence' | 'paragraph') => void;
+  handleTextSelect: (selection: SelectionInfo) => void;
   handleAnalyze: (text: string, type: 'word' | 'phrase' | 'sentence' | 'paragraph') => Promise<any>;
   handleTabChange: (tab: 'word' | 'phrase' | 'sentence' | 'paragraph') => void;
   handleRewriteApply: (text: string) => void;
@@ -86,10 +89,12 @@ export interface UseAnalysisPageLogicReturn {
  * Custom hook để quản lý logic chính của trang Analysis
  * Bao gồm state management, event handlers, và sync với stores
  */
-export function useAnalysisPageLogic({ sessionId }: UseAnalysisPageLogicProps): UseAnalysisPageLogicReturn {
+export function useAnalysisPageLogic({ sessionId, editor }: UseAnalysisPageLogicProps): UseAnalysisPageLogicReturn {
   // Local state
   const [activeTab, setActiveTabState] = useState<'word' | 'phrase' | 'sentence' | 'paragraph'>('word');
   const [selectedText, setSelectedTextState] = useState('');
+  const [sentenceContext, setSentenceContextState] = useState('');
+  const [paragraphContext, setParagraphContextState] = useState('');
   const [analysisType, setAnalysisTypeState] = useState<'word' | 'phrase' | 'sentence' | 'paragraph'>('word');
   const [analysisResult, setAnalysisResult] = useState<WordAnalysis | PhraseAnalysis | SentenceAnalysis | ParagraphAnalysis | null>(null);
   const [isAnalyzing, setIsAnalyzingState] = useState(false);
@@ -131,7 +136,7 @@ export function useAnalysisPageLogic({ sessionId }: UseAnalysisPageLogicProps): 
   const wordAnalysisMutation = useWordAnalysisMutation();
   const sentenceAnalysisMutation = useSentenceAnalysisMutation();
   const paragraphAnalysisMutation = useParagraphAnalysisMutation();
-  const phraseAnalysis = usePhraseAnalysis();
+  const phraseAnalysisMutation = usePhraseAnalysisMutation();
 
   // Sync local state với store state
   const syncWithStore = useCallback(() => {
@@ -148,15 +153,101 @@ export function useAnalysisPageLogic({ sessionId }: UseAnalysisPageLogicProps): 
   }, [syncWithStore]);
 
   // Event handlers
-  const handleTextSelect = useCallback((text: string, type: 'word' | 'phrase' | 'sentence' | 'paragraph') => {
-    setSelectedTextState(text);
-    setAnalysisTypeState(type);
-    setActiveTabState(type);
+  const handleTextSelect = useCallback((selection: SelectionInfo) => {
+    setSelectedTextState(selection.text);
+    setSentenceContextState(selection.sentenceContext);
+    setParagraphContextState(selection.paragraphContext);
+    setAnalysisTypeState(selection.type);
+    setActiveTabState(selection.type);
     setErrorState(null);
   }, []);
 
+  // Helper function to extract sentence context
+  const extractSentenceContext = useCallback((text: string): string => {
+    if (!editor) return '';
+    
+    try {
+      const { state } = editor;
+      const fullText = state.doc.textContent;
+      const textIndex = fullText.indexOf(text);
+      
+      if (textIndex === -1) return '';
+      
+      const getChar = (pos: number): string => fullText[pos] ?? '';
+      let start = textIndex;
+      
+      // Find sentence start backwards
+      while (start > 0) {
+        const prevChar = getChar(start - 1);
+        if (/[.!?]/.test(prevChar)) {
+          const nextChar = getChar(start);
+          if (nextChar === ' ' || /[A-Z]/.test(nextChar)) {
+            break;
+          }
+        }
+        start--;
+      }
+      
+      // Skip leading whitespace
+      while (start < textIndex && /\s/.test(getChar(start))) {
+        start++;
+      }
+      
+      let end = textIndex + text.length;
+      
+      // Find sentence end forwards
+      while (end < fullText.length) {
+        const currChar = getChar(end);
+        if (/[.!?]/.test(currChar)) {
+          end++;
+          // Skip trailing punctuation/spaces/quotes
+          while (end < fullText.length && /[\s"')\]]/.test(getChar(end))) {
+            end++;
+          }
+          break;
+        }
+        end++;
+      }
+      
+      return state.doc.textBetween(start, end, ' ');
+    } catch (error) {
+      console.error('Error extracting sentence context:', error);
+      return '';
+    }
+  }, [editor]);
+
+  // Helper function to extract paragraph context
+  const extractParagraphContext = useCallback((text: string): string => {
+    if (!editor) return '';
+    
+    try {
+      const { state } = editor;
+      const fullText = state.doc.textContent;
+      const textIndex = fullText.indexOf(text);
+      
+      if (textIndex === -1) return '';
+      
+      const $from = state.doc.resolve(textIndex);
+      const depth = $from.depth;
+      const start = $from.start(depth);
+      const end = $from.end(depth);
+      
+      return state.doc.textBetween(start, end, ' ');
+    } catch (error) {
+      console.error('Error extracting paragraph context:', error);
+      return '';
+    }
+  }, [editor]);
+
   const handleAnalyze = useCallback(async (text: string, type: 'word' | 'phrase' | 'sentence' | 'paragraph') => {
     if (!text.trim()) return;
+
+    // Extract context using helper functions
+    const sentenceContext = extractSentenceContext(text);
+    const paragraphContext = extractParagraphContext(text);
+
+    console.log('🔍 [DEBUG] handleAnalyze', { text, type, sentenceContext, paragraphContext });
+    console.log('🔍 [DEBUG] handleAnalyze - SWITCHING ON TYPE:', type);
 
     // Check if this is a duplicate request (same text and type within last 2 seconds)
     const now = Date.now();
@@ -184,10 +275,9 @@ export function useAnalysisPageLogic({ sessionId }: UseAnalysisPageLogicProps): 
 
       switch (type) {
         case 'word':
-          // Extract context for word analysis
-          const words = text.split(/\s+/);
-          const wordToAnalyze = words[0];
-          const sentenceContext = words.slice(0, 5).join(' '); // First 5 words as context
+          const wordToAnalyze = text.trim();
+          const sentenceCtx = sentenceContext || '';
+          const paragraphCtx = paragraphContext || '';
 
           if (!wordToAnalyze) {
             throw new Error('Không tìm thấy từ để phân tích');
@@ -195,64 +285,58 @@ export function useAnalysisPageLogic({ sessionId }: UseAnalysisPageLogicProps): 
 
           result = await wordAnalysisMutation.mutateAsync({
             word: wordToAnalyze,
-            sentenceContext,
-            paragraphContext: '',
+            sentenceContext: sentenceCtx,
+            paragraphContext: paragraphCtx,
             sessionId: sessionId || undefined
           });
           break;
 
         case 'phrase':
-          // Use phrase analysis API
-          const phraseWords = text.split(/\s+/);
-          const phraseContext = phraseWords.slice(0, 5).join(' '); // First 5 words as context
-
           if (!text.trim()) {
             throw new Error('Không tìm thấy cụm từ để phân tích');
           }
 
-          const phraseResult = await phraseAnalysis.analyzePhrase(text, phraseContext, '');
-              break;
-    
-            case 'sentence':
-              result = await sentenceAnalysisMutation.mutateAsync({
-                sentence: text,
-                sessionId: sessionId || undefined
-              });
-              break;
-    
-            case 'paragraph':
-              result = await paragraphAnalysisMutation.mutateAsync({
-                paragraph: text,
-                sessionId: sessionId || undefined
-              });
-              break;
-    
-            default:
-              throw new Error('Invalid analysis type');
-          }
-    
-          // Handle result for phrase analysis (returns different format)
-          let analysisData;
-          if (type === 'phrase') {
-            // phraseAnalysis.analyzePhrase returns PhraseAnalysis directly
-            analysisData = phraseAnalysis.data;
-          } else {
-            // Other mutations return { data: AnalysisResult }
-            analysisData = (result as any).data;
-          }
-          
-          setAnalysisResult(analysisData as any);
-          setAnalysisPanelOpen(true);
-    
-          // Add to history using store directly
-          const { addToHistory } = useAnalysisStore.getState();
-          addToHistory({
-            id: `${type}-${Date.now()}`,
-            type,
-            input: text,
-            result: analysisData,
-            timestamp: Date.now()
+          result = await phraseAnalysisMutation.mutateAsync({
+            phrase: text,
+            sentenceContext: sentenceContext || '',
+            paragraphContext: paragraphContext || '',
+            sessionId: sessionId || undefined
           });
+          break;
+
+        case 'sentence':
+          result = await sentenceAnalysisMutation.mutateAsync({
+            sentence: text,
+            sessionId: sessionId || undefined
+          });
+          break;
+
+        case 'paragraph':
+          result = await paragraphAnalysisMutation.mutateAsync({
+            paragraph: text,
+            sessionId: sessionId || undefined
+          });
+          break;
+
+        default:
+          throw new Error('Invalid analysis type');
+      }
+
+      // Handle result (all mutations now return consistent format)
+      const analysisData = result;
+      
+      setAnalysisResult(analysisData as any);
+      setAnalysisPanelOpen(true);
+
+      // Add to history using store directly
+      const { addToHistory } = useAnalysisStore.getState();
+      addToHistory({
+        id: `${type}-${Date.now()}`,
+        type,
+        input: text,
+        result: analysisData,
+        timestamp: Date.now()
+      });
 
       return result;
     } catch (err) {
@@ -262,7 +346,7 @@ export function useAnalysisPageLogic({ sessionId }: UseAnalysisPageLogicProps): 
     } finally {
       setIsAnalyzingState(false);
     }
-  }, [wordAnalysisMutation, sentenceAnalysisMutation, paragraphAnalysisMutation, phraseAnalysis, sessionId]);
+  }, [wordAnalysisMutation, sentenceAnalysisMutation, paragraphAnalysisMutation, phraseAnalysisMutation, sessionId, extractSentenceContext, extractParagraphContext]);
 
   const handleTabChange = useCallback((tab: 'word' | 'phrase' | 'sentence' | 'paragraph') => {
     setActiveTabState(tab);
@@ -486,7 +570,7 @@ export function useAnalysisPageLogic({ sessionId }: UseAnalysisPageLogicProps): 
     wordAnalysisMutation,
     sentenceAnalysisMutation,
     paragraphAnalysisMutation,
-    phraseAnalysis,
+    phraseAnalysisMutation,
     
     // Actions
     setActiveTab: setActiveTabState,
@@ -500,8 +584,8 @@ export function useAnalysisPageLogic({ sessionId }: UseAnalysisPageLogicProps): 
     setAnalysisResult,
     
     // Handlers
-    handleTextSelect,
-    handleAnalyze,
+    handleTextSelect: handleTextSelect as any,
+    handleAnalyze: handleAnalyze as any,
     handleTabChange,
     handleRewriteApply,
     handleFeedbackApply,

@@ -22,7 +22,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis, CollapsibleAnalysisPanelProps } from './types';
+import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis, PhraseAnalysis, CollapsibleAnalysisPanelProps } from './types';
 import { WordAnalysisDisplay } from './WordAnalysisDisplay';
 import { SentenceAnalysisDisplay } from './SentenceAnalysisDisplay';
 import { ParagraphAnalysisDisplay } from './ParagraphAnalysisDisplay';
@@ -34,13 +34,15 @@ function CollapsedState({
   hasContent 
 }: { 
   onToggle: () => void; 
-  analysisType: 'word' | 'sentence' | 'paragraph';
+  analysisType: 'word' | 'phrase' | 'sentence' | 'paragraph';
   hasContent: boolean;
 }) {
   const getAnalysisTypeIcon = () => {
     switch (analysisType) {
       case 'word':
         return <BookOpen className="h-4 w-4" />;
+      case 'phrase':
+        return <MessageSquare className="h-4 w-4" />;
       case 'sentence':
         return <FileText className="h-4 w-4" />;
       case 'paragraph':
@@ -54,6 +56,8 @@ function CollapsedState({
     switch (analysisType) {
       case 'word':
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200';
+      case 'phrase':
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-200';
       case 'sentence':
         return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200';
       case 'paragraph':
@@ -100,8 +104,8 @@ function ExpandedHeader({
   analysisResult 
 }: { 
   onToggle: () => void; 
-  analysisType: 'word' | 'sentence' | 'paragraph';
-  analysisResult: WordAnalysis | SentenceAnalysis | ParagraphAnalysis | null;
+  analysisType: 'word' | 'phrase' | 'sentence' | 'paragraph';
+  analysisResult: WordAnalysis | PhraseAnalysis | SentenceAnalysis | ParagraphAnalysis | null;
 }) {
   const getAnalysisTitle = () => {
     if (!analysisResult) return 'Analysis';
@@ -109,6 +113,8 @@ function ExpandedHeader({
     switch (analysisType) {
       case 'word':
         return (analysisResult as WordAnalysis).meta?.word || 'Word Analysis';
+      case 'phrase':
+        return 'Phrase Analysis';
       case 'sentence':
         return 'Sentence Analysis';
       case 'paragraph':
@@ -122,6 +128,8 @@ function ExpandedHeader({
     switch (analysisType) {
       case 'word':
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200 border-blue-200 dark:border-blue-800';
+      case 'phrase':
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-200 border-orange-200 dark:border-orange-800';
       case 'sentence':
         return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200 border-green-200 dark:border-green-800';
       case 'paragraph':
@@ -158,8 +166,8 @@ function CompactAnalysisDisplay({
   analysisResult, 
   analysisType 
 }: { 
-  analysisResult: WordAnalysis | SentenceAnalysis | ParagraphAnalysis | null;
-  analysisType: 'word' | 'sentence' | 'paragraph';
+  analysisResult: WordAnalysis | PhraseAnalysis | SentenceAnalysis | ParagraphAnalysis | null;
+  analysisType: 'word' | 'phrase' | 'sentence' | 'paragraph';
 }) {
   if (!analysisResult) return null;
 
@@ -182,6 +190,28 @@ function CompactAnalysisDisplay({
           <div>
             <h4 className="text-xs text-muted-foreground mb-1">Example</h4>
             <p className="text-muted-foreground italic text-xs">{(analysisResult as WordAnalysis).usage?.example_sentence || 'N/A'}</p>
+          </div>
+        </div>
+      );
+
+    case 'phrase':
+      return (
+        <div className="space-y-3 text-sm">
+          <div>
+            <h4 className="text-xs text-muted-foreground mb-1">Phrase</h4>
+            <p className="text-primary font-mono text-xs">{(analysisResult as PhraseAnalysis).meta?.phrase || 'N/A'}</p>
+          </div>
+          <div>
+            <h4 className="text-xs text-muted-foreground mb-1">Type</h4>
+            <Badge variant="outline" className="text-xs">{(analysisResult as PhraseAnalysis).meta?.type || 'N/A'}</Badge>
+          </div>
+          <div>
+            <h4 className="text-xs text-muted-foreground mb-1">Meaning</h4>
+            <p className="text-foreground text-xs">{(analysisResult as PhraseAnalysis).definitions?.literal_meaning || 'N/A'}</p>
+          </div>
+          <div>
+            <h4 className="text-xs text-muted-foreground mb-1">Translation</h4>
+            <p className="text-foreground text-xs">{(analysisResult as PhraseAnalysis).definitions?.vietnamese_translation || 'N/A'}</p>
           </div>
         </div>
       );

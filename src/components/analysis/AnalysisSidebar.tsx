@@ -19,7 +19,7 @@ interface AnalysisSidebarProps {
     id: string;
     type: 'word' | 'phrase' | 'sentence' | 'paragraph';
     input: string;
-    result: WordAnalysis | SentenceAnalysis | ParagraphAnalysis;
+    result: WordAnalysis | PhraseAnalysis | SentenceAnalysis | ParagraphAnalysis;
     timestamp: number;
   }>;
   isHistoryOpen: boolean;

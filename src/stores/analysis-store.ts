@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis } from '@/lib/ai/types';
+import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis, PhraseAnalysis } from '@/lib/ai/types';
 
 // Queue item cho analysis
 interface AnalysisQueueItem {
@@ -15,6 +15,7 @@ interface AnalysisStore {
   wordAnalyses: Map<string, WordAnalysis>;
   sentenceAnalyses: Map<string, SentenceAnalysis>;
   paragraphAnalyses: Map<string, ParagraphAnalysis>;
+  phraseAnalyses: Map<string, PhraseAnalysis>;
   
   // UI states
   selectedText: string;
@@ -30,7 +31,7 @@ interface AnalysisStore {
     id: string;
     type: 'word' | 'phrase' | 'sentence' | 'paragraph';
     input: string;
-    result: WordAnalysis | SentenceAnalysis | ParagraphAnalysis;
+    result: WordAnalysis | PhraseAnalysis | SentenceAnalysis | ParagraphAnalysis;
     timestamp: number;
   }>;
   
@@ -42,6 +43,7 @@ interface AnalysisStore {
   setWordAnalysis: (id: string, analysis: WordAnalysis) => void;
   setSentenceAnalysis: (id: string, analysis: SentenceAnalysis) => void;
   setParagraphAnalysis: (id: string, analysis: ParagraphAnalysis) => void;
+  setPhraseAnalysis: (id: string, analysis: PhraseAnalysis) => void;
   
   // Selection actions
   setSelectedText: (text: string) => void;
@@ -73,7 +75,7 @@ interface AnalysisHistoryItem {
   id: string;
   type: 'word' | 'phrase' | 'sentence' | 'paragraph';
   input: string;
-  result: WordAnalysis | SentenceAnalysis | ParagraphAnalysis;
+  result: WordAnalysis | PhraseAnalysis | SentenceAnalysis | ParagraphAnalysis;
   timestamp: number;
 }
 
@@ -83,6 +85,7 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   wordAnalyses: new Map(),
   sentenceAnalyses: new Map(),
   paragraphAnalyses: new Map(),
+  phraseAnalyses: new Map(),
   
   // UI states
   selectedText: '',
@@ -116,6 +119,12 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
     const newMap = new Map(state.paragraphAnalyses);
     newMap.set(id, analysis);
     return { paragraphAnalyses: newMap };
+  }),
+  
+  setPhraseAnalysis: (id, analysis) => set((state) => {
+    const newMap = new Map(state.phraseAnalyses);
+    newMap.set(id, analysis);
+    return { phraseAnalyses: newMap };
   }),
   
   // Selection actions
@@ -154,13 +163,15 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   clearCache: () => set({
     wordAnalyses: new Map(),
     sentenceAnalyses: new Map(),
-    paragraphAnalyses: new Map()
+    paragraphAnalyses: new Map(),
+    phraseAnalyses: new Map()
   }),
   
   reset: () => set({
     wordAnalyses: new Map(),
     sentenceAnalyses: new Map(),
     paragraphAnalyses: new Map(),
+    phraseAnalyses: new Map(),
     selectedText: '',
     selectedType: 'word',
     activeTab: 'word',
@@ -180,12 +191,15 @@ export const useAnalysisSelectors = () => {
     getWordAnalysis: (id: string) => store.wordAnalyses.get(id),
     getSentenceAnalysis: (id: string) => store.sentenceAnalyses.get(id),
     getParagraphAnalysis: (id: string) => store.paragraphAnalyses.get(id),
+    getPhraseAnalysis: (id: string) => store.phraseAnalyses.get(id),
     
     // Computed selectors
     hasCachedAnalysis: (type: 'word' | 'phrase' | 'sentence' | 'paragraph', id: string) => {
       switch (type) {
         case 'word':
           return store.wordAnalyses.has(id);
+        case 'phrase':
+          return store.phraseAnalyses.has(id);
         case 'sentence':
           return store.sentenceAnalyses.has(id);
         case 'paragraph':
@@ -258,7 +272,7 @@ export const useAnalysisActions = () => {
             store.setWordAnalysis(id, result.data);
             break;
           case 'phrase':
-            store.setWordAnalysis(id, result.data);
+            store.setPhraseAnalysis(id, result.data);
             break;
           case 'sentence':
             store.setSentenceAnalysis(id, result.data);

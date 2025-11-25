@@ -9,6 +9,7 @@ export type {
 
 // Import types for use in interfaces
 import type { Collocation, WordAnalysis, SentenceAnalysis, ParagraphAnalysis, PhraseAnalysis } from '@/lib/ai/types';
+import type { SelectionInfo } from '@/hooks/useTipTapSelection';
 
 // Props cho CollocationList component
 export interface CollocationListProps {
@@ -96,7 +97,7 @@ export interface ConstructiveFeedbackProps {
 
 // Props cho AnalysisEditor component
 export interface AnalysisEditorProps {
-  onTextSelect?: (text: string, type: 'word' | 'phrase' | 'sentence' | 'paragraph') => void;
+  onTextSelect?: (selection: SelectionInfo) => void;
   onAnalyze?: (text: string, type: 'word' | 'phrase' | 'sentence' | 'paragraph') => void;
   onAnalysisComplete?: (result: {
     text: string;
@@ -107,6 +108,7 @@ export interface AnalysisEditorProps {
   className?: string;
   isAnalyzing?: boolean;
   sessionId?: string;
+  onEditorReady?: (editor: any) => void;
 }
 
 // Props cho AnalysisTabs component
