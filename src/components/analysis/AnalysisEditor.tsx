@@ -82,9 +82,6 @@ export function AnalysisEditor({
   const sessionId = propSessionId || urlSessionId || undefined;
   const { navigateToSessions, navigateToAnalysis } = useAppNavigation();
 
-  // Performance monitoring
-  const performanceMetrics = usePerformanceMonitor('AnalysisEditor');
-
   // Local state
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [saveToSessionDialogOpen, setSaveToSessionDialogOpen] = useState(false);

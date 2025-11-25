@@ -162,9 +162,9 @@ export const api = {
         ? `?${new URLSearchParams(queryParams).toString()}`
         : '';
       
-      console.trace('[TRACE] getAnalyses called from stack trace:');
+      console.trace('[TRACE] getAnalyses called from stack trace:', new Error().stack);
       const url = `/api/sessions/${id}/analyses${queryString}`;
-      console.log(`[API] getAnalyses called with params:`, params, `URL: ${url}`);
+      console.log('[API] getAnalyses called with params:', params, 'URL:', url);
       return ApiClient.get(url);
     },
     
