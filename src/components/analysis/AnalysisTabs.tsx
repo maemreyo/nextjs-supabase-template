@@ -10,7 +10,6 @@ import { AnalysisItemCard } from './components/AnalysisItemCard';
 import { DEFAULT_LAYOUTS, COMPACT_LAYOUTS } from './types/analysis-types';
 import { getAnalysisTypeDisplayName, getAnalysisTypeIcon } from './helpers/data-transformers';
 import useSessionAnalysesByType from '@/hooks/useSessionAnalysesByType';
-import useSessionDetail from '@/hooks/useSessionDetail';
 
 // Height estimates for different analysis types
 const ANALYSIS_HEIGHTS = {
@@ -218,9 +217,6 @@ export const AnalysisTabs = memo(function AnalysisTabs({
 }: AnalysisTabsProps) {
   const [activeTab, setActiveTab] = React.useState<AnalysisType>('word');
 
-  // Get session detail once
-  const sessionDetail = useSessionDetail({ sessionId });
-  
   // Handle tab change with debug logging
   const handleTabChange = React.useCallback((value: string) => {
     const newTab = value as AnalysisType;
