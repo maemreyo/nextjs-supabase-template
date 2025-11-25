@@ -143,13 +143,17 @@ const AnalysisTabContent = memo(function AnalysisTabContent({
     );
   }
 
+  const gridClassName = getGridClassName();
+  const layout = getLayoutConfig();
+  
   return (
-    <div 
+    <div
       ref={parentRef}
       className="overflow-auto"
       style={{ height: '500px' }}
     >
       <div
+        className={`${gridClassName} grid gap-3 p-4`}
         style={{
           height: `${virtualizer.getTotalSize()}px`,
           width: '100%',
@@ -159,8 +163,6 @@ const AnalysisTabContent = memo(function AnalysisTabContent({
         {virtualizer.getVirtualItems().map((virtualItem) => {
           const analysis = data.flatAnalyses[virtualItem.index];
           if (!analysis) return null;
-          
-          const layout = getLayoutConfig();
           
           return (
             <div
@@ -174,17 +176,15 @@ const AnalysisTabContent = memo(function AnalysisTabContent({
                 transform: `translateY(${virtualItem.start}px)`,
               }}
             >
-              <div className={`${getGridClassName()} grid gap-3 p-4`}>
-                <AnalysisItemCard
-                  analysis={analysis}
-                  onClick={onAnalysisClick}
-                  onAnalyze={onAnalysisAnalyze}
-                  onRemove={onAnalysisRemove}
-                  compact={compact}
-                  showPhonetic={true}
-                  truncateLength={layout.truncateLength}
-                />
-              </div>
+              <AnalysisItemCard
+                analysis={analysis}
+                onClick={onAnalysisClick}
+                onAnalyze={onAnalysisAnalyze}
+                onRemove={onAnalysisRemove}
+                compact={compact}
+                showPhonetic={true}
+                truncateLength={layout.truncateLength}
+              />
             </div>
           );
         })}
@@ -301,14 +301,7 @@ export const AnalysisTabs = memo(function AnalysisTabs({
     <Card className="flex flex-col">
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         {/* Header with tabs */}
-        <div className="p-4 border-b">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold flex items-center gap-2 text-sm">
-              <BookOpen className="h-4 w-4" />
-              Danh sách phân tích
-            </h3>
-          </div>
-          
+        <div className="p-2 border-b">
           <TabsList className="grid w-full grid-cols-4">
             {tabConfig.map(({ value, label, icon: Icon }) => {
               const count = getTabCount(value);
