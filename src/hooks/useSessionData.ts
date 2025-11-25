@@ -92,24 +92,19 @@ export function useSessionData(sessionId: string | undefined, options: UseSessio
             throw new Error('Session ID is required');
           }
 
-          console.log('🔍 [DEBUG] useSessionData - Fetching session analyses', { sessionId, wordsLimit, wordsOffset });
-
-          try {
-            const apiResponse = await api.sessions.getAnalyses(sessionId, {
-              limit: wordsLimit,
-              offset: wordsOffset
-            });
-            
-            // Handle different response formats
-            if (apiResponse.success && apiResponse.data) {
-              return apiResponse.data;
-            } else {
-              return apiResponse;
+          console.log('🔍 [DEBUG] useSessionData - Analyses fetch REMOVED to avoid duplicate API call');
+          return {
+            analyses: [],
+            pagination: {
+              words: {
+                limit: wordsLimit,
+                offset: wordsOffset,
+                total: 0,
+                hasMore: false,
+                currentCount: 0
+              }
             }
-          } catch (error) {
-            console.error('🔍 [DEBUG] useSessionData - Analyses fetch failed', error);
-            throw error instanceof Error ? error : new Error('Failed to fetch session analyses');
-          }
+          };
         },
         enabled: enabled && !!sessionId,
         refetchOnWindowFocus,
