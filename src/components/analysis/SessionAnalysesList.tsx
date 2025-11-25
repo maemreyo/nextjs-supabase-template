@@ -19,7 +19,7 @@ export function SessionAnalysesList({
   className = "",
   emptyMessage = "Chưa có phân tích nào trong session này.",
   compact = false,
-  pageSize = 20
+  pageSize = 15
 }: SessionAnalysesListProps) {
   
   // If we have provided analyses (static data), render the legacy view

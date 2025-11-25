@@ -59,12 +59,15 @@ export function useSessionAnalysesByType({
       // Check if there's more data for this specific type
       const hasMore = lastPage.pagination[type]?.hasMore;
       const nextPageOffset = lastPageParam + pageSize;
+      const currentTotalItems = allPages.reduce((sum, page) => sum + (page.analyses?.length || 0), 0);
       
-      console.log(`[getNextPageParam] ${type}: hasMore=${hasMore}, nextPageOffset=${nextPageOffset}`);
+      console.log(`[getNextPageParam] ${type}: hasMore=${hasMore}, nextPageOffset=${nextPageOffset}, currentTotalItems=${currentTotalItems}`);
       
       if (hasMore) {
+        console.log(`[fetchNextPage] Will fetch next page for ${type} at offset ${nextPageOffset}`);
         return nextPageOffset;
       }
+      console.log(`[fetchNextPage] No more pages for ${type}, hasMore=${hasMore}`);
       return undefined;
     },
     initialPageParam: 0,

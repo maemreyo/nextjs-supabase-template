@@ -60,47 +60,26 @@ const AnalysisTabContent = memo(function AnalysisTabContent({
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Intersection observer for infinite scroll
-  const [inView, setInView] = React.useState(false);
-  const inViewRef = useRef<HTMLDivElement>(null);
-
-  // Auto-load more when in view
-  React.useEffect(() => {
-    if (inView && hasNextPage && !isFetchingNextPage) {
-      console.log(`[InfiniteScroll] Triggering fetchNextPage for ${type}, hasNextPage: ${hasNextPage}`);
+  // Track scroll position for infinite scroll trigger
+  const scrollRangeRef = useRef({ start: 0, end: 0 });
+  
+  // Auto-load more when approaching end of list
+  const handleScrollRangeChanged = useCallback(() => {
+    if (!hasNextPage || isFetchingNextPage) return;
+    
+    const totalItems = data?.flatAnalyses?.length || 0;
+    const visibleEnd = scrollRangeRef.current.end;
+    const threshold = 5; // Load more when 5 items from end are visible
+    
+    console.log(`[ScrollRange] ${type}: visibleEnd=${visibleEnd}, totalItems=${totalItems}, threshold=${threshold}, hasNextPage=${hasNextPage}`);
+    
+    if (visibleEnd >= totalItems - threshold) {
+      console.log(`[InfiniteScroll] Triggering fetchNextPage for ${type}, visibleEnd=${visibleEnd}, totalItems=${totalItems}`);
       fetchNextPage();
     }
-  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage, type]);
+  }, [type, hasNextPage, isFetchingNextPage, fetchNextPage, data?.flatAnalyses?.length]);
 
-  // Setup intersection observer
-  React.useEffect(() => {
-    const element = inViewRef.current;
-    if (!element) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (entry) {
-          const wasInView = inView;
-          const nowInView = entry.isIntersecting;
-          setInView(nowInView);
-          
-          if (nowInView && !wasInView) {
-            console.log(`[IntersectionObserver] ${type} entered view, hasNextPage: ${hasNextPage}, isFetchingNextPage: ${isFetchingNextPage}`);
-          }
-        }
-      },
-      {
-        threshold: 0,
-        rootMargin: '200px',
-      }
-    );
-
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, type]);
-
-  // Create virtualizer
+  // Create virtualizer with scroll range tracking
   const virtualizer = useVirtualizer({
     count: data?.flatAnalyses?.length || 0,
     getScrollElement: () => parentRef.current,
@@ -108,6 +87,17 @@ const AnalysisTabContent = memo(function AnalysisTabContent({
       return ANALYSIS_HEIGHTS[type] || 160;
     },
     overscan: 5,
+    onChange: (instance) => {
+      // Track scroll range for infinite scroll trigger
+      const range = instance.calculateRange();
+      if (range) {
+        scrollRangeRef.current = {
+          start: range.startIndex,
+          end: range.endIndex
+        };
+        handleScrollRangeChanged();
+      }
+    },
   });
 
   const getLayoutConfig = () => {
@@ -201,8 +191,6 @@ const AnalysisTabContent = memo(function AnalysisTabContent({
         })}
       </div>
       
-      {/* Intersection observer trigger for infinite scroll */}
-      <div ref={inViewRef} className="h-4" />
       
       {/* Loading indicator for infinite scroll */}
       {isFetchingNextPage && (
@@ -240,43 +228,56 @@ export const AnalysisTabs = memo(function AnalysisTabs({
     setActiveTab(newTab);
   }, [activeTab]);
   
-  // Memoize tab queries to prevent re-renders
+  // Call hooks at top level - KHÔNG VI PHẠM QUY TẮC HOOKS
+  console.log('[AnalysisTabs] DEBUG: Gọi hooks ở top level - ĐÚNG QUY TẮC');
+  console.log('[AnalysisTabs] DEBUG: activeTab hiện tại:', activeTab);
+  
+  const wordQuery = useSessionAnalysesByType({
+    sessionId,
+    type: 'word',
+    pageSize: 15,
+    enabled: activeTab === 'word', // Only fetch when active
+    invalidateOnMount: false,
+    staleTime: 5 * 60 * 1000,
+  });
+  
+  const phraseQuery = useSessionAnalysesByType({
+    sessionId,
+    type: 'phrase',
+    pageSize: 15,
+    enabled: activeTab === 'phrase', // Only fetch when active
+    invalidateOnMount: false,
+    staleTime: 5 * 60 * 1000,
+  });
+  
+  const sentenceQuery = useSessionAnalysesByType({
+    sessionId,
+    type: 'sentence',
+    pageSize: 15,
+    enabled: activeTab === 'sentence', // Only fetch when active
+    invalidateOnMount: false,
+    staleTime: 5 * 60 * 1000,
+  });
+  
+  const paragraphQuery = useSessionAnalysesByType({
+    sessionId,
+    type: 'paragraph',
+    pageSize: 15,
+    enabled: activeTab === 'paragraph', // Only fetch when active
+    invalidateOnMount: false,
+    staleTime: 5 * 60 * 1000,
+  });
+  
+  // Memoize tab queries object to prevent re-renders
   const tabQueries = useMemo(() => {
+    console.log('[AnalysisTabs] DEBUG: Tạo tabQueries object - ĐÚNG QUY TẮC');
     return {
-      word: useSessionAnalysesByType({
-        sessionId,
-        type: 'word',
-        pageSize: 15,
-        enabled: activeTab === 'word', // Only fetch when active
-        invalidateOnMount: false,
-        staleTime: 5 * 60 * 1000,
-      }),
-      phrase: useSessionAnalysesByType({
-        sessionId,
-        type: 'phrase',
-        pageSize: 15,
-        enabled: activeTab === 'phrase', // Only fetch when active
-        invalidateOnMount: false,
-        staleTime: 5 * 60 * 1000,
-      }),
-      sentence: useSessionAnalysesByType({
-        sessionId,
-        type: 'sentence',
-        pageSize: 15,
-        enabled: activeTab === 'sentence', // Only fetch when active
-        invalidateOnMount: false,
-        staleTime: 5 * 60 * 1000,
-      }),
-      paragraph: useSessionAnalysesByType({
-        sessionId,
-        type: 'paragraph',
-        pageSize: 15,
-        enabled: activeTab === 'paragraph', // Only fetch when active
-        invalidateOnMount: false,
-        staleTime: 5 * 60 * 1000,
-      }),
+      word: wordQuery,
+      phrase: phraseQuery,
+      sentence: sentenceQuery,
+      paragraph: paragraphQuery,
     };
-  }, [sessionId]); // Only depend on sessionId, not activeTab to prevent re-renders
+  }, [sessionId, wordQuery, phraseQuery, sentenceQuery, paragraphQuery]);
 
   const tabConfig = [
     { value: 'word' as AnalysisType, label: 'Từ', icon: Type },
