@@ -51,6 +51,28 @@ export function AnalysisItemCard({
   const layouts = layoutConfig === 'compact' ? COMPACT_LAYOUTS : DEFAULT_LAYOUTS;
   const layout = layouts[analysis.analysisType];
   
+  // Get card min height based on analysis type and layout
+  const getCardMinHeight = () => {
+    const type = analysis.analysisType;
+    if (compact) {
+      switch (type) {
+        case 'word': return 'min-h-[100px]';
+        case 'phrase': return 'min-h-[120px]';
+        case 'sentence': return 'min-h-[140px]';
+        case 'paragraph': return 'min-h-[160px]';
+        default: return '';
+      }
+    } else {
+      switch (type) {
+        case 'word': return 'min-h-[120px]';
+        case 'phrase': return 'min-h-[140px]';
+        case 'sentence': return 'min-h-[160px]';
+        case 'paragraph': return 'min-h-[200px]';
+        default: return '';
+      }
+    }
+  };
+  
   // Determine content to display based on analysis type
   const getContent = () => {
     switch (analysis.analysisType) {
@@ -141,7 +163,7 @@ export function AnalysisItemCard({
   };
   
   return (
-    <Card className={`analysis-card analysis-card-${analysis.analysisType} ${compact ? 'analysis-card-' + analysis.analysisType + '-compact' : ''} hover:shadow-md transition-all duration-200 cursor-pointer ${layout.cardPadding} ${layout.maxHeight || ''}`}>
+    <Card className={`hover:shadow-md transition-all duration-200 cursor-pointer hover:-translate-y-0.5 rounded-lg overflow-hidden ${layout.cardPadding} ${layout.maxHeight || ''} ${getCardMinHeight()}`}>
       <div onClick={() => onClick?.(analysis)}>
         {/* Header with title and actions */}
         <div className="flex items-start justify-between mb-2">

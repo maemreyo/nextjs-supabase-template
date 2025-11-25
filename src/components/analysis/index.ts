@@ -110,6 +110,3 @@ export type {
   ValidationResult,
   MappedVocabularyData
 } from './analysisUtils';
-
-// Export styles
-import './styles.css';

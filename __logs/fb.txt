@@ -1,0 +1,189 @@
+[HMR] connected
+🔍 [DEBUG] AnalysisResultDialog - Props: 
+Object { isOpen: false, analysisType: "word", hasAnalysis: false, analysisKeys: null }
+🔍 [DEBUG] AnalysisResultDialog - No analysis, returning null
+🔍 [DEBUG] AnalysisResultDialog - Props:  
+Object { isOpen: false, analysisType: "word", hasAnalysis: false, analysisKeys: null }
+🔍 [DEBUG] AnalysisResultDialog - No analysis, returning null
+🔍 [DEBUG] useSessionData - Fetching session detail 
+Object { sessionId: "bfd6ec15-e9ca-46e9-8995-ebec4072c0fe" }
+[API GET] Requesting: /api/sessions/bfd6ec15-e9ca-46e9-8995-ebec4072c0fe/detail
+🔍 [DEBUG] useSessionData - Fetching session analyses 
+Object { sessionId: "bfd6ec15-e9ca-46e9-8995-ebec4072c0fe", wordsLimit: 20, wordsOffset: 0 }
+[API] getAnalyses called with params: 
+Object { limit: 20, offset: 0 }
+ URL: /api/sessions/bfd6ec15-e9ca-46e9-8995-ebec4072c0fe/analyses?limit=20&offset=0
+[API GET] Requesting: /api/sessions/bfd6ec15-e9ca-46e9-8995-ebec4072c0fe/analyses?limit=20&offset=0
+[useSessionAnalysesByType] Initializing hook for word, enabled: true, pageSize: 15
+[useSessionAnalysesByType] Initializing hook for phrase, enabled: false, pageSize: 15
+[useSessionAnalysesByType] Initializing hook for sentence, enabled: false, pageSize: 15
+[useSessionAnalysesByType] Initializing hook for paragraph, enabled: false, pageSize: 15
+[AnalysisTabContent] Rendering tab: word, active: true
+[useSessionAnalysesByType] Initializing hook for word, enabled: true, pageSize: 15
+[AnalysisTabContent] Rendering tab: word, active: true
+[useSessionAnalysesByType] Initializing hook for word, enabled: true, pageSize: 15
+🔍 [DEBUG] AnalysisResultDialog - Props: 
+Object { isOpen: false, analysisType: "word", hasAnalysis: false, analysisKeys: null }
+🔍 [DEBUG] AnalysisResultDialog - No analysis, returning null
+🔍 [DEBUG] AnalysisResultDialog - Props:  
+Object { isOpen: false, analysisType: "word", hasAnalysis: false, analysisKeys: null }
+🔍 [DEBUG] AnalysisResultDialog - No analysis, returning null
+[API] Fetching analyses for word, offset: 0, limit: 15
+[API] getAnalyses called with params: 
+Object { limit: 15, offset: 0, type: "word" }
+ URL: /api/sessions/bfd6ec15-e9ca-46e9-8995-ebec4072c0fe/analyses?limit=15&offset=0&type=word
+[API GET] Requesting: /api/sessions/bfd6ec15-e9ca-46e9-8995-ebec4072c0fe/analyses?limit=15&offset=0&type=word
+[API GET] Requesting: /api/sessions/bfd6ec15-e9ca-46e9-8995-ebec4072c0fe/detail
+[API GET] Success for /api/sessions/bfd6ec15-e9ca-46e9-8995-ebec4072c0fe/detail: 
+Object { success: true, data: {…} }
+[AnalysisTabContent] Rendering tab: word, active: true
+[useSessionAnalysesByType] Initializing hook for word, enabled: true, pageSize: 15
+[AnalysisTabContent] Rendering tab: word, active: true
+[useSessionAnalysesByType] Initializing hook for word, enabled: true, pageSize: 15
+[API GET] Success for /api/sessions/bfd6ec15-e9ca-46e9-8995-ebec4072c0fe/detail: 
+Object { success: true, data: {…} }
+🔍 [DEBUG] getSessionHTML - Session data: 
+[AnalysisTabContent] Rendering tab: word, active: true
+[useSessionAnalysesByType] Initializing hook for word, enabled: true, pageSize: 15
+[AnalysisTabContent] Rendering tab: word, active: true
+[useSessionAnalysesByType] Initializing hook for word, enabled: true, pageSize: 15
+🔍 [DEBUG] AnalysisResultDialog - Props: 
+Object { isOpen: false, analysisType: "word", hasAnalysis: false, analysisKeys: null }
+🔍 [DEBUG] AnalysisResultDialog - No analysis, returning null
+🔍 [DEBUG] AnalysisResultDialog - Props:  
+Object { isOpen: false, analysisType: "word", hasAnalysis: false, analysisKeys: null }
+🔍 [DEBUG] AnalysisResultDialog - No analysis, returning null
+🔍 [DEBUG] getSessionHTML - Session data: 
+[API GET] Success for /api/sessions/bfd6ec15-e9ca-46e9-8995-ebec4072c0fe/analyses?limit=20&offset=0: 
+Object { success: true, data: {…} }
+🔍 [DEBUG] getSessionHTML - Session data: 
+[AnalysisTabContent] Rendering tab: word, active: true
+[useSessionAnalysesByType] Initializing hook for word, enabled: true, pageSize: 15
+[AnalysisTabContent] Rendering tab: word, active: true
+[useSessionAnalysesByType] Initializing hook for word, enabled: true, pageSize: 15
+🔍 [DEBUG] AnalysisResultDialog - Props: 
+Object { isOpen: false, analysisType: "word", hasAnalysis: false, analysisKeys: null }
+🔍 [DEBUG] AnalysisResultDialog - No analysis, returning null
+🔍 [DEBUG] AnalysisResultDialog - Props:  
+Object { isOpen: false, analysisType: "word", hasAnalysis: false, analysisKeys: null }
+🔍 [DEBUG] AnalysisResultDialog - No analysis, returning null
+🔍 [DEBUG] getSessionHTML - Session data: 
+Object { hasContent: true, hasContentHTML: true, hasContentData: true, contentFormat: "tiptap" }
+🔍 [DEBUG] getSessionHTML - Using content_html: <p xmlns="http://www.w3.org/1999/xhtml">For my presentation today I want to tell you about how group...
+🔍 [DEBUG] getSessionHTML - Session data:  
+Object { hasContent: true, hasContentHTML: true, hasContentData: true, contentFormat: "tiptap" }
+🔍 [DEBUG] getSessionHTML - Using content_html: <p xmlns="http://www.w3.org/1999/xhtml">For my presentation today I want to tell you about how group...
+🔍 [DEBUG] getSessionHTML - Session data:  
+Object { hasContent: true, hasContentHTML: true, hasContentData: true, contentFormat: "tiptap" }
+🔍 [DEBUG] getSessionHTML - Using content_html: <p xmlns="http://www.w3.org/1999/xhtml">For my presentation today I want to tell you about how group...
+[AnalysisTabContent] Rendering tab: word, active: true
+[useSessionAnalysesByType] Initializing hook for word, enabled: true, pageSize: 15
+[AnalysisTabContent] Rendering tab: word, active: true
+[useSessionAnalysesByType] Initializing hook for word, enabled: true, pageSize: 15
+🔍 [DEBUG] AnalysisResultDialog - Props: 
+Object { isOpen: false, analysisType: "word", hasAnalysis: false, analysisKeys: null }
+🔍 [DEBUG] AnalysisResultDialog - No analysis, returning null
+🔍 [DEBUG] AnalysisResultDialog - Props:  
+Object { isOpen: false, analysisType: "word", hasAnalysis: false, analysisKeys: null }
+🔍 [DEBUG] AnalysisResultDialog - No analysis, returning null
+[API GET] Success for /api/sessions/bfd6ec15-e9ca-46e9-8995-ebec4072c0fe/analyses?limit=15&offset=0&type=word: 
+Object { success: true, data: {…} }
+[API] Response for word, analyses count: 26, hasMore: undefined
+[select] word: total analyses after filtering: 26, totalCount: 0
+[getNextPageParam] word: hasMore=undefined, nextPageOffset=15
+[select] word: total analyses after filtering: 26, totalCount: 0
+[getNextPageParam] word: hasMore=undefined, nextPageOffset=15
+[useSessionAnalysesByType] Initializing hook for word, enabled: true, pageSize: 15
+[select] word: total analyses after filtering: 26, totalCount: 0
+[getNextPageParam] word: hasMore=undefined, nextPageOffset=15
+[useSessionAnalysesByType] Initializing hook for phrase, enabled: false, pageSize: 15
+[useSessionAnalysesByType] Initializing hook for sentence, enabled: false, pageSize: 15
+[useSessionAnalysesByType] Initializing hook for paragraph, enabled: false, pageSize: 15
+[useSessionAnalysesByType] Initializing hook for word, enabled: true, pageSize: 15
+[select] word: total analyses after filtering: 26, totalCount: 0
+[getNextPageParam] word: hasMore=undefined, nextPageOffset=15
+[useSessionAnalysesByType] Initializing hook for phrase, enabled: false, pageSize: 15
+[useSessionAnalysesByType] Initializing hook for sentence, enabled: false, pageSize: 15
+[useSessionAnalysesByType] Initializing hook for paragraph, enabled: false, pageSize: 15
+[AnalysisTabContent] Rendering tab: word, active: true
+[useSessionAnalysesByType] Initializing hook for word, enabled: true, pageSize: 15
+[select] word: total analyses after filtering: 26, totalCount: 0
+[getNextPageParam] word: hasMore=undefined, nextPageOffset=15
+[AnalysisTabContent] Rendering tab: word, active: true
+[useSessionAnalysesByType] Initializing hook for word, enabled: true, pageSize: 15
+[select] word: total analyses after filtering: 26, totalCount: 0
+[getNextPageParam] word: hasMore=undefined, nextPageOffset=15
+[getNextPageParam] word: hasMore=undefined, nextPageOffset=15 2
+[AnalysisTabContent] Rendering tab: word, active: true
+[useSessionAnalysesByType] Initializing hook for word, enabled: true, pageSize: 15
+[select] word: total analyses after filtering: 26, totalCount: 0
+[getNextPageParam] word: hasMore=undefined, nextPageOffset=15
+[AnalysisTabContent] Rendering tab: word, active: true
+[useSessionAnalysesByType] Initializing hook for word, enabled: true, pageSize: 15
+[select] word: total analyses after filtering: 26, totalCount: 0
+[getNextPageParam] word: hasMore=undefined, nextPageOffset=15
+[getNextPageParam] word: hasMore=undefined, nextPageOffset=15
+🔍 [DEBUG] getSessionHTML - Session data: 
+Object { hasContent: true, hasContentHTML: true, hasContentData: true, contentFormat: "tiptap" }
+🔍 [DEBUG] getSessionHTML - Using content_html: <p xmlns="http://www.w3.org/1999/xhtml">For my presentation today I want to tell you about how group...
+🔍 [DEBUG] getSessionHTML - Session data:  
+Object { hasContent: true, hasContentHTML: true, hasContentData: true, contentFormat: "tiptap" }
+🔍 [DEBUG] getSessionHTML - Using content_html: <p xmlns="http://www.w3.org/1999/xhtml">For my presentation today I want to tell you about how group...
+🔍 [DEBUG] getSessionHTML - Session data:  
+Object { hasContent: true, hasContentHTML: true, hasContentData: true, contentFormat: "tiptap" }
+🔍 [DEBUG] getSessionHTML - Using content_html: <p xmlns="http://www.w3.org/1999/xhtml">For my presentation today I want to tell you about how group...
+[useSessionAnalysesByType] Initializing hook for word, enabled: true, pageSize: 15
+[select] word: total analyses after filtering: 26, totalCount: 0
+[getNextPageParam] word: hasMore=undefined, nextPageOffset=15
+[useSessionAnalysesByType] Initializing hook for phrase, enabled: false, pageSize: 15
+[useSessionAnalysesByType] Initializing hook for sentence, enabled: false, pageSize: 15
+[useSessionAnalysesByType] Initializing hook for paragraph, enabled: false, pageSize: 15
+[useSessionAnalysesByType] Initializing hook for word, enabled: true, pageSize: 15
+[select] word: total analyses after filtering: 26, totalCount: 0
+[getNextPageParam] word: hasMore=undefined, nextPageOffset=15
+[useSessionAnalysesByType] Initializing hook for phrase, enabled: false, pageSize: 15
+[useSessionAnalysesByType] Initializing hook for sentence, enabled: false, pageSize: 15
+[useSessionAnalysesByType] Initializing hook for paragraph, enabled: false, pageSize: 15
+[AnalysisTabContent] Rendering tab: word, active: true
+[useSessionAnalysesByType] Initializing hook for word, enabled: true, pageSize: 15
+[select] word: total analyses after filtering: 26, totalCount: 0
+[getNextPageParam] word: hasMore=undefined, nextPageOffset=15
+[AnalysisTabContent] Rendering tab: word, active: true
+[useSessionAnalysesByType] Initializing hook for word, enabled: true, pageSize: 15
+[select] word: total analyses after filtering: 26, totalCount: 0
+[getNextPageParam] word: hasMore=undefined, nextPageOffset=15
+🔍 [DEBUG] AnalysisResultDialog - Props: 
+Object { isOpen: false, analysisType: "word", hasAnalysis: false, analysisKeys: null }
+🔍 [DEBUG] AnalysisResultDialog - No analysis, returning null
+🔍 [DEBUG] AnalysisResultDialog - Props:  
+Object { isOpen: false, analysisType: "word", hasAnalysis: false, analysisKeys: null }
+🔍 [DEBUG] AnalysisResultDialog - No analysis, returning null
+[getNextPageParam] word: hasMore=undefined, nextPageOffset=15 2
+🔍 [DEBUG] getSessionHTML - Session data: 
+[useSessionAnalysesByType] Initializing hook for word, enabled: true, pageSize: 15
+[select] word: total analyses after filtering: 26, totalCount: 0
+[getNextPageParam] word: hasMore=undefined, nextPageOffset=15
+[useSessionAnalysesByType] Initializing hook for phrase, enabled: false, pageSize: 15
+[useSessionAnalysesByType] Initializing hook for sentence, enabled: false, pageSize: 15
+[useSessionAnalysesByType] Initializing hook for paragraph, enabled: false, pageSize: 15
+[useSessionAnalysesByType] Initializing hook for word, enabled: true, pageSize: 15
+[select] word: total analyses after filtering: 26, totalCount: 0
+[getNextPageParam] word: hasMore=undefined, nextPageOffset=15
+[useSessionAnalysesByType] Initializing hook for phrase, enabled: false, pageSize: 15
+[useSessionAnalysesByType] Initializing hook for sentence, enabled: false, pageSize: 15
+[useSessionAnalysesByType] Initializing hook for paragraph, enabled: false, pageSize: 15
+[AnalysisTabContent] Rendering tab: word, active: true
+[useSessionAnalysesByType] Initializing hook for word, enabled: true, pageSize: 15
+[select] word: total analyses after filtering: 26, totalCount: 0
+[getNextPageParam] word: hasMore=undefined, nextPageOffset=15
+[AnalysisTabContent] Rendering tab: word, active: true
+[useSessionAnalysesByType] Initializing hook for word, enabled: true, pageSize: 15
+[select] word: total analyses after filtering: 26, totalCount: 0
+[getNextPageParam] word: hasMore=undefined, nextPageOffset=15
+🔍 [DEBUG] AnalysisResultDialog - Props: 
+Object { isOpen: false, analysisType: "word", hasAnalysis: false, analysisKeys: null }
+🔍 [DEBUG] AnalysisResultDialog - No analysis, returning null
+🔍 [DEBUG] AnalysisResultDialog - Props:  
+Object { isOpen: false, analysisType: "word", hasAnalysis: false, analysisKeys: null }
+🔍 [DEBUG] AnalysisResultDialog - No analysis, returning null
+[getNextPageParam] word: hasMore=undefined, nextPageOffset=15 2

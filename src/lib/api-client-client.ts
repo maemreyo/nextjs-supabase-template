@@ -19,6 +19,7 @@ export class ApiClient {
   }
 
   static async get<T = any>(url: string, options?: RequestInit): Promise<T> {
+    console.log(`[API GET] Requesting: ${url}`);
     const headers = await this.getHeaders();
     
     const response = await fetch(url, {
@@ -29,12 +30,15 @@ export class ApiClient {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      console.error(`[API GET] Error for ${url}:`, errorData);
       throw new Error(
         errorData.error || `Request failed: ${response.status} ${response.statusText}`
       );
     }
 
-    return response.json();
+    const data = await response.json();
+    console.log(`[API GET] Success for ${url}:`, data);
+    return data;
   }
 
   static async post<T = any>(url: string, data?: any, options?: RequestInit): Promise<T> {
@@ -140,13 +144,27 @@ export const api = {
     
     // New endpoint for session analyses with pagination
     getAnalyses: (id: string, params?: { limit?: number; offset?: number; type?: string }) => {
-      const queryParams = {
-        wordsLimit: params?.limit || 20,
-        wordsOffset: params?.offset || 0,
-        type: params?.type || 'all'
-      };
-      const queryString = `?${new URLSearchParams(queryParams as any).toString()}`;
-      return ApiClient.get(`/api/sessions/${id}/analyses${queryString}`);
+      const queryParams: Record<string, string> = {};
+      
+      if (params?.limit !== undefined) {
+        queryParams.limit = params.limit.toString();
+      }
+      
+      if (params?.offset !== undefined) {
+        queryParams.offset = params.offset.toString();
+      }
+      
+      if (params?.type !== undefined) {
+        queryParams.type = params.type;
+      }
+      
+      const queryString = Object.keys(queryParams).length > 0
+        ? `?${new URLSearchParams(queryParams).toString()}`
+        : '';
+      
+      const url = `/api/sessions/${id}/analyses${queryString}`;
+      console.log(`[API] getAnalyses called with params:`, params, `URL: ${url}`);
+      return ApiClient.get(url);
     },
     
     create: (data: any) => ApiClient.post('/api/sessions', data),

@@ -6,7 +6,7 @@ interface SessionAnalysesResponse {
   data?: {
     analyses: any[]; // Using any for now due to complex joins
     pagination?: {
-      words: {
+      [key: string]: { // Dynamic key based on analysis type
         limit: number;
         offset: number;
         total: number;
@@ -35,15 +35,15 @@ export const GET = withAuth(
 
       // Parse pagination and filter parameters
       const { searchParams } = new URL(request.url);
-      const wordsLimit = parseInt(searchParams.get('wordsLimit') || '20');
-      const wordsOffset = parseInt(searchParams.get('wordsOffset') || '0');
+      const limit = parseInt(searchParams.get('limit') || '20');
+      const offset = parseInt(searchParams.get('offset') || '0');
       const analysisType = searchParams.get('type') || 'all'; // Filter by type: word, sentence, paragraph, phrase, or all
       
-      console.log('🔍 [DEBUG] API analyses route - Params:', { 
-        sessionId, 
-        wordsLimit, 
-        wordsOffset, 
-        analysisType 
+      console.log('🔍 [DEBUG] API analyses route - Params:', {
+        sessionId,
+        limit,
+        offset,
+        analysisType
       });
 
       console.log('🔍 [DEBUG] API analyses route - Processing session ID:', sessionId);
@@ -64,6 +64,24 @@ export const GET = withAuth(
 
       const { data: sessionAnalyses, error: analysesError } = await sessionAnalysesQuery;
 
+      // Get total count for session analyses with type filter
+      let totalSessionAnalysesCount = 0;
+      let sessionCountQuery = supabase
+        .from('session_analyses')
+        .select('*', { count: 'exact', head: true })
+        .eq('session_id', sessionId)
+        .eq('user_id', user.id);
+      
+      if (analysisType !== 'all') {
+        sessionCountQuery = sessionCountQuery.eq('analysis_type', analysisType);
+      }
+      
+      const { count: sessionCount, error: sessionCountError } = await sessionCountQuery;
+      
+      if (!sessionCountError && sessionCount !== null) {
+        totalSessionAnalysesCount = sessionCount;
+      }
+
       console.log('🔍 [DEBUG] API analyses route - Session analyses result:', {
         analysesError,
         count: sessionAnalyses?.length || 0,
@@ -82,14 +100,17 @@ export const GET = withAuth(
           .eq('document_id', sessionId)
           .eq('user_id', user.id)
           .order('created_at', { ascending: true })
-          .range(wordsOffset, wordsOffset + wordsLimit - 1);
+          .range(offset, offset + limit - 1);
 
         // Get total count of word analyses for pagination info
-        const { count: wordCount, error: countError } = await supabase
+        // Apply type filter if specified for accurate count
+        let countQuery = supabase
           .from('word_analyses')
           .select('*', { count: 'exact', head: true })
           .eq('document_id', sessionId)
           .eq('user_id', user.id);
+
+        const { count: wordCount, error: countError } = await countQuery;
 
         if (!wordAnalysesError && wordAnalyses) {
           wordAnalysesData = wordAnalyses;
@@ -99,13 +120,17 @@ export const GET = withAuth(
           totalWordsCount = wordCount;
         }
 
+        // Fixed hasMore logic: hasMore = (offset + limit) < totalWordsCount
+        const hasMore = (offset + limit) < totalWordsCount;
+
         console.log('🔍 [DEBUG] API analyses route - Word analyses result:', {
           wordAnalysesError,
           count: wordAnalysesData.length,
           totalWordsCount,
-          wordsOffset,
-          wordsLimit,
-          hasMore: (wordsOffset + wordsLimit) < totalWordsCount
+          offset,
+          limit,
+          hasMore,
+          hasMoreLogic: '(offset + limit) < totalWordsCount'
         });
       }
 
@@ -241,18 +266,52 @@ export const GET = withAuth(
         return createErrorResponse('Failed to fetch session analyses', 500);
       }
 
+      // Calculate total count based on analysis type filter
+      let totalCount = 0;
+      let hasMore = false;
+      let currentCount = 0;
+
+      if (analysisType === 'word') {
+        // For word type, combine session word analyses + direct word analyses
+        const sessionWordAnalyses = sessionAnalysesWithDetails.filter(a => a.analysis_type === 'word');
+        totalCount = sessionWordAnalyses.length + totalWordsCount;
+        currentCount = sessionWordAnalyses.length + wordAnalysesData.length;
+        hasMore = (offset + limit) < totalCount; // Fixed: hasMore = (offset + limit) < totalCount
+      } else if (analysisType === 'all') {
+        // For all types, combine both counts
+        totalCount = totalSessionAnalysesCount + totalWordsCount;
+        currentCount = sessionAnalysesWithDetails.length + wordAnalysesData.length;
+        hasMore = (offset + limit) < totalWordsCount; // Only word analyses are paginated
+      } else {
+        // For other types (sentence, paragraph, phrase), use session analyses count
+        totalCount = totalSessionAnalysesCount;
+        currentCount = sessionAnalysesWithDetails.length;
+        hasMore = false; // Session analyses are not paginated currently
+      }
+
       const responseData = {
         analyses: allAnalyses,
         pagination: {
-          words: {
-            limit: wordsLimit,
-            offset: wordsOffset,
-            total: totalWordsCount,
-            hasMore: (wordsOffset + wordsLimit) < totalWordsCount,
-            currentCount: wordAnalysesData.length
+          [analysisType]: {
+            limit: limit,
+            offset: offset,
+            total: totalCount,
+            hasMore: hasMore,
+            currentCount: currentCount
           }
         }
       };
+
+      console.log('🔍 [DEBUG] API analyses route - Final pagination data:', {
+        analysisType,
+        totalCount,
+        currentCount,
+        hasMore,
+        hasMoreLogic: 'fetchedAnalyses.length === limit for word analyses',
+        limit,
+        offset,
+        paginationStructure: `pagination.${analysisType}`
+      });
 
       console.log('🔍 [DEBUG] API analyses route - Successfully processed session analyses:', sessionId);
       return createSuccessResponse(responseData);
