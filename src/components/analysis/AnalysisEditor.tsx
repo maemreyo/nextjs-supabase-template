@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 import type { AnalysisEditorProps, WordAnalysis, SentenceAnalysis, ParagraphAnalysis, PhraseAnalysis } from './types';
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useSessionStore } from '@/stores/session-store';
@@ -36,6 +36,7 @@ import EditorToolbar from './EditorToolbar';
 import EditorContent from './EditorContent';
 import EditorStatusBar from './EditorStatusBar';
 import BubbleMenu from './BubbleMenu';
+import AnalysisDynamicIslandStatusBar from './AnalysisDynamicIslandStatusBar';
 
 // Import new hooks
 import useAnalysisLogic from '@/hooks/useAnalysisLogic';
@@ -49,7 +50,8 @@ export function AnalysisEditor({
   className = "",
   isAnalyzing: parentIsAnalyzing = false,
   sessionId: propSessionId,
-  onEditorReady
+  onEditorReady,
+  onOverlayVisibilityChange
 }: AnalysisEditorProps & {
   onAnalysisComplete?: (result: {
     text: string;
@@ -89,6 +91,12 @@ export function AnalysisEditor({
   const [selectedSessionId, setSelectedSessionId] = useState('');
   const [sessionQuickActionsOpen, setSessionQuickActionsOpen] = useState(false);
   const [analysisType, setAnalysisType] = useState<'word' | 'phrase' | 'sentence' | 'paragraph'>('word');
+  const [overlayVisible, setOverlayVisible] = useState(false);
+  
+  // Dynamic Island state
+  const [dynamicIslandVisible, setDynamicIslandVisible] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
 
   // Session store
   const { sessions, createSession, setCurrentSession } = useSessionStore();
@@ -192,9 +200,19 @@ export function AnalysisEditor({
     setLastResult,
   } = useAnalysisLogic({
     onAnalyze: onAnalyze ? async (text: string, type: 'word' | 'phrase' | 'sentence' | 'paragraph') => {
-      return await onAnalyze(text, type);
+      try {
+        setAnalysisError(null);
+        setAnalysisProgress(0);
+        return await onAnalyze(text, type);
+      } catch (error) {
+        setAnalysisError(error instanceof Error ? error.message : 'Đã xảy ra lỗi không xác định');
+        throw error;
+      }
     } : undefined,
-    onAnalysisComplete,
+    onAnalysisComplete: (result) => {
+      setAnalysisProgress(100);
+      onAnalysisComplete?.(result);
+    },
   });
 
   // Hook for saving analysis (fallback when no session)
@@ -339,6 +357,56 @@ export function AnalysisEditor({
     // Implement pronunciation logic here
   }, []);
 
+  // Handle overlay visibility change
+  const handleOverlayVisibilityChange = useCallback((isVisible: boolean) => {
+    setOverlayVisible(isVisible);
+  }, []);
+
+  // Handle Dynamic Island trigger
+  const handleDynamicIslandTrigger = useCallback(() => {
+    setDynamicIslandVisible(true);
+    setAnalysisProgress(0);
+    // Simulate progress
+    const progressInterval = setInterval(() => {
+      setAnalysisProgress(prev => {
+        if (prev >= 90) {
+          clearInterval(progressInterval);
+          return 90;
+        }
+        return prev + 10;
+      });
+    }, 200);
+  }, []);
+
+  // Handle Dynamic Island close
+  const handleDynamicIslandClose = useCallback(() => {
+    setDynamicIslandVisible(false);
+    setAnalysisError(null);
+    setAnalysisProgress(0);
+  }, []);
+
+  // Handle view details from Dynamic Island
+  const handleDynamicIslandViewDetails = useCallback(() => {
+    // This will trigger the detail dialog in the parent component
+    // We'll use the existing onAnalysisComplete callback
+    if (lastAnalysisResult) {
+      onAnalysisComplete?.(lastAnalysisResult);
+    }
+  }, [lastAnalysisResult, onAnalysisComplete]);
+
+  // Update Dynamic Island visibility when analysis completes
+  useEffect(() => {
+    if (isAnalyzing) {
+      setDynamicIslandVisible(true);
+      setAnalysisError(null);
+    } else if (lastAnalysisResult) {
+      setAnalysisProgress(100);
+      // Keep the Dynamic Island visible to show results
+    } else if (analysisError) {
+      // Keep visible to show error
+    }
+  }, [isAnalyzing, lastAnalysisResult, analysisError]);
+
   // Initialize content once and load session data
   useEffect(() => {
     // Set current session in store when session data is loaded
@@ -471,7 +539,7 @@ export function AnalysisEditor({
 
         {/* Bubble Menu */}
         <BubbleMenu
-          position={bubbleMenuPosition}
+          position={bubbleMenuPosition as any}
           selection={{
             text: selection.text,
             type: selection.type,
@@ -486,6 +554,18 @@ export function AnalysisEditor({
           onSave={handleSave}
           onPronounce={handlePronounce}
           onHighlight={handleHighlight}
+          onDynamicIslandTrigger={handleDynamicIslandTrigger}
+        />
+
+        {/* Dynamic Island Status Bar */}
+        <AnalysisDynamicIslandStatusBar
+          isVisible={dynamicIslandVisible}
+          isAnalyzing={effectiveIsAnalyzing}
+          analysisResult={lastAnalysisResult as any}
+          error={analysisError}
+          onClose={handleDynamicIslandClose}
+          onViewDetails={handleDynamicIslandViewDetails}
+          progress={analysisProgress}
         />
 
         {/* Session Quick Actions Dialog */}

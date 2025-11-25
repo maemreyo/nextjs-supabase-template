@@ -13,6 +13,7 @@ interface AnalysisSidebarProps {
   isLoading: boolean;
   error: string | null;
   isDetailDialogOpen: boolean;
+  hideResultCard?: boolean; // New prop to hide CompactResultCard when overlay is active
 
   // History props
   recentHistory: Array<{
@@ -51,6 +52,7 @@ export function AnalysisSidebar({
   isLoading,
   error,
   isDetailDialogOpen,
+  hideResultCard = false, // Default to false for backward compatibility
 
   // History props
   recentHistory,
@@ -73,14 +75,16 @@ export function AnalysisSidebar({
 }: AnalysisSidebarProps) {
   return (
     <div className="lg:col-span-1 space-y-3 lg:space-y-4 overflow-y-auto">
-      {/* Compact Analysis Results */}
-      <CompactResultCard
-        analysis={analysisResult}
-        analysisType={activeTab}
-        isLoading={isLoading}
-        error={error}
-        onViewDetails={onViewDetails}
-      />
+      {/* Compact Analysis Results - Hide when overlay is active */}
+      {/* {!hideResultCard && (
+        <CompactResultCard
+          analysis={analysisResult}
+          analysisType={activeTab}
+          isLoading={isLoading}
+          error={error}
+          onViewDetails={onViewDetails}
+        />
+      )} */}
 
       {/* Session Word List */}
       {sessionId && (

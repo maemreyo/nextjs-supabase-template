@@ -109,6 +109,7 @@ export interface AnalysisEditorProps {
   isAnalyzing?: boolean;
   sessionId?: string;
   onEditorReady?: (editor: any) => void;
+  onOverlayVisibilityChange?: (isVisible: boolean) => void;
 }
 
 // Props cho AnalysisTabs component

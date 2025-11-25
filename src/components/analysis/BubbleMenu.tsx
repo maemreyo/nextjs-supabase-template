@@ -55,6 +55,7 @@ const MemoizedBubbleMenu = React.memo(function BubbleMenu({
   onSave,
   onPronounce,
   onHighlight,
+  onDynamicIslandTrigger, // New callback to trigger Dynamic Island
   className
 }: BubbleMenuProps) {
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -63,6 +64,12 @@ const MemoizedBubbleMenu = React.memo(function BubbleMenu({
   if (!position.show) {
     return null;
   }
+
+  // Handle analyze button click - trigger Dynamic Island
+  const handleAnalyzeClick = () => {
+    onDynamicIslandTrigger?.();
+    onAnalyze();
+  };
 
   const handlePronounce = () => {
     if (isSpeaking) {
@@ -98,107 +105,110 @@ const MemoizedBubbleMenu = React.memo(function BubbleMenu({
   const currentColor = HIGHLIGHT_COLORS[currentColorIndex] || HIGHLIGHT_COLORS[0] as any;
 
   return (
-    <div
-      data-bubble-menu
-      className={cn(
-        "fixed bg-background rounded-lg shadow-lg border border-border p-2 flex items-center gap-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200",
-        className
-      )}
-      style={{
-        left: position.x,
-        top: position.y,
-        transform: 'translate(-50%, -100%)'
-      }}
-    >
-      {/* Analyze Button */}
-      <Button
-        size="sm"
-        onMouseDown={(e) => e.preventDefault()}
-        onClick={onAnalyze}
-        disabled={isAnalyzing}
-        className="h-7 px-2 text-xs"
-      >
-        <BookMarked size={12} className="mr-1" />
-        {isAnalyzing ? 'Analyzing...' : 'Analyze'}
-      </Button>
-
-      {/* Save Button - Only show if there's a last analysis result and auto-save is disabled */}
-      {lastAnalysisResult && !autoSaveEnabled && (
-        <Button
-          size="sm"
-          variant="outline"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={onSave}
-          disabled={isSaving}
-          className="h-7 px-2 text-xs"
-          title={sessionId ? "Lưu kết quả phân tích vào session" : "Lưu kết quả phân tích"}
-        >
-          {isSaving ? (
-            <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Đang lưu...</>
-          ) : (
-            <><Save size={12} className="mr-1" />{sessionId ? 'Lưu vào session' : 'Lưu'}</>
-          )}
-        </Button>
-      )}
-
-      {/* Pronounce Button */}
-      <Button
-        variant="ghost"
-        size="sm"
-        onMouseDown={(e) => e.preventDefault()}
-        onClick={handlePronounce}
+    <>
+      {/* Bubble Menu */}
+      <div
+        data-bubble-menu
         className={cn(
-          "h-7 w-7 p-0",
-          isSpeaking && "bg-primary/10"
+          "fixed bg-background rounded-lg shadow-lg border border-border p-2 flex items-center gap-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200",
+          className
         )}
-        title={isSpeaking ? "Stop pronunciation" : "Pronounce"}
+        style={{
+          left: position.x,
+          top: position.y,
+          transform: 'translate(-50%, -100%)'
+        }}
       >
-        <Volume2 size={14} className={cn(isSpeaking && "text-primary animate-pulse")} />
-      </Button>
+        {/* Analyze Button */}
+        <Button
+          size="sm"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={handleAnalyzeClick}
+          disabled={isAnalyzing}
+          className="h-7 px-2 text-xs"
+        >
+          <BookMarked size={12} className="mr-1" />
+          {isAnalyzing ? 'Analyzing...' : 'Analyze'}
+        </Button>
 
-      {/* Highlight Color Picker with Navigation */}
-      <div className="flex items-center gap-1">
-        <div className="w-px h-5 bg-border mx-1" />
-        
-        {/* Previous Color Button */}
+        {/* Save Button - Only show if there's a last analysis result and auto-save is disabled */}
+        {lastAnalysisResult && !autoSaveEnabled && (
+          <Button
+            size="sm"
+            variant="outline"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={onSave}
+            disabled={isSaving}
+            className="h-7 px-2 text-xs"
+            title={sessionId ? "Lưu kết quả phân tích vào session" : "Lưu kết quả phân tích"}
+          >
+            {isSaving ? (
+              <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Đang lưu...</>
+            ) : (
+              <><Save size={12} className="mr-1" />{sessionId ? 'Lưu vào session' : 'Lưu'}</>
+            )}
+          </Button>
+        )}
+
+        {/* Pronounce Button */}
         <Button
           variant="ghost"
           size="sm"
           onMouseDown={(e) => e.preventDefault()}
-          onClick={handlePrevColor}
-          className="h-7 w-6 p-0"
-          title="Previous color"
+          onClick={handlePronounce}
+          className={cn(
+            "h-7 w-7 p-0",
+            isSpeaking && "bg-primary/10"
+          )}
+          title={isSpeaking ? "Stop pronunciation" : "Pronounce"}
         >
-          <ChevronLeft size={12} />
+          <Volume2 size={14} className={cn(isSpeaking && "text-primary animate-pulse")} />
         </Button>
 
-        {/* Current Color Button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => onHighlight(currentColor.value)}
-          className="h-7 px-0 py-0"
-          title={`Highlight with ${currentColor.label}`}
-        >
-          <div
-            className={cn("w-4 h-4 rounded border border-border", currentColor.className)}
-          />
-        </Button>
+        {/* Highlight Color Picker with Navigation */}
+        <div className="flex items-center gap-1">
+          <div className="w-px h-5 bg-border mx-1" />
 
-        {/* Next Color Button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={handleNextColor}
-          className="h-7 w-6 p-0"
-          title="Next color"
-        >
-          <ChevronRight size={12} />
-        </Button>
+          {/* Previous Color Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={handlePrevColor}
+            className="h-7 w-6 p-0"
+            title="Previous color"
+          >
+            <ChevronLeft size={12} />
+          </Button>
+
+          {/* Current Color Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => onHighlight(currentColor.value)}
+            className="h-7 px-0 py-0"
+            title={`Highlight with ${currentColor.label}`}
+          >
+            <div
+              className={cn("w-4 h-4 rounded border border-border", currentColor.className)}
+            />
+          </Button>
+
+          {/* Next Color Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={handleNextColor}
+            className="h-7 w-6 p-0"
+            title="Next color"
+          >
+            <ChevronRight size={12} />
+          </Button>
+        </div>
       </div>
-    </div>
+    </>
   );
 }, (prevProps, nextProps) => {
   // Custom comparison function to prevent unnecessary re-renders
@@ -251,6 +261,7 @@ interface BubbleMenuProps {
   onSave: () => void;
   onPronounce?: (text: string) => void;
   onHighlight: (color: string) => void;
+  onDynamicIslandTrigger?: () => void; // New callback to trigger Dynamic Island
   className?: string;
 }
 

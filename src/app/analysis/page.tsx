@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, lazy, startTransition } from 'react';
+import React, { Suspense, lazy, startTransition, useCallback, useEffect } from 'react';
 import { useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 
@@ -15,6 +15,7 @@ import {
   AnalysisErrorAlert,
   AnalysisSidebarSkeleton
 } from '@/components/analysis';
+import AnalysisDynamicIslandStatusBar from '@/components/analysis/AnalysisDynamicIslandStatusBar';
 
 // Lazy load AnalysisSidebar
 const LazyAnalysisSidebar = lazy(() => import('@/components/analysis/AnalysisSidebar'));
@@ -49,6 +50,17 @@ function ImprovedAnalysisPageContent() {
 
   // Editor reference to pass to useAnalysisPageLogic
   const [editor, setEditor] = useState<Editor | null>(null);
+  const [overlayVisible, setOverlayVisible] = useState(false);
+  
+  // Dynamic Island state
+  const [dynamicIslandVisible, setDynamicIslandVisible] = useState(false);
+  const [dynamicIslandResult, setDynamicIslandResult] = useState<{
+    text: string;
+    type: 'word' | 'phrase' | 'sentence' | 'paragraph';
+    data: WordAnalysis | PhraseAnalysis | SentenceAnalysis | ParagraphAnalysis;
+  } | null>(null);
+  const [dynamicIslandError, setDynamicIslandError] = useState<string | null>(null);
+  const [dynamicIslandProgress, setDynamicIslandProgress] = useState(0);
 
   // Analysis page logic
   const {
@@ -89,7 +101,31 @@ function ImprovedAnalysisPageContent() {
     handleFeedbackApply,
     handleClearAll,
     handleWordFromSessionAnalyze,
-  } = useAnalysisPageLogic({ sessionId: sessionId || undefined, editor });
+  } = useAnalysisPageLogic({
+    sessionId: sessionId || undefined,
+    editor
+  });
+
+  // Update Dynamic Island when analysis state changes
+  useEffect(() => {
+    if (isAnalyzing) {
+      // Show Dynamic Island when analysis starts
+      setDynamicIslandVisible(true);
+      setDynamicIslandError(null);
+      setDynamicIslandProgress(0);
+    } else if (analysisResult) {
+      // Update Dynamic Island with analysis result
+      setDynamicIslandResult({
+        text: selectedText,
+        type: analysisType,
+        data: analysisResult
+      });
+      setDynamicIslandProgress(100);
+    } else if (error) {
+      // Show error in Dynamic Island
+      setDynamicIslandError(error);
+    }
+  }, [isAnalyzing, analysisResult, error, selectedText, analysisType]);
 
   // Determine current mutation based on analysis type
   const currentMutation = analysisType === 'word'
@@ -227,6 +263,28 @@ const transformWordAnalysisDB = (dbData: WordAnalysisDB): WordAnalysis => {
     console.log('Word removed:', wordId);
   };
 
+  // Handle overlay visibility change from BubbleMenu
+  const handleOverlayVisibilityChange = useCallback((isVisible: boolean) => {
+    setOverlayVisible(isVisible);
+  }, []);
+
+  // Handle Dynamic Island close
+  const handleDynamicIslandClose = useCallback(() => {
+    setDynamicIslandVisible(false);
+    setDynamicIslandError(null);
+    setDynamicIslandProgress(0);
+  }, []);
+
+  // Handle view details from Dynamic Island
+  const handleDynamicIslandViewDetails = useCallback(() => {
+    // Open detail dialog when viewing from Dynamic Island
+    if (dynamicIslandResult) {
+      setAnalysisResult(dynamicIslandResult.data);
+      setAnalysisType(dynamicIslandResult.type);
+      setIsDetailDialogOpen(true);
+    }
+  }, [dynamicIslandResult, setAnalysisResult, setAnalysisType, setIsDetailDialogOpen]);
+
   return (
     <div
       className="w-full h-[calc(100vh-2rem)] flex flex-col px-4 py-4 sm:px-6 lg:px-8"
@@ -265,6 +323,7 @@ const transformWordAnalysisDB = (dbData: WordAnalysisDB): WordAnalysis => {
             className="h-full"
             sessionId={sessionId || undefined}
             onEditorReady={setEditor}
+            onOverlayVisibilityChange={handleOverlayVisibilityChange}
           />
         </div>
 
@@ -277,6 +336,7 @@ const transformWordAnalysisDB = (dbData: WordAnalysisDB): WordAnalysis => {
             isLoading={currentLoading}
             error={error}
             isDetailDialogOpen={isDetailDialogOpen}
+            hideResultCard={overlayVisible}
             
             // History props
             recentHistory={recentHistory}
@@ -303,6 +363,17 @@ const transformWordAnalysisDB = (dbData: WordAnalysisDB): WordAnalysis => {
         onClose={() => setIsDetailDialogOpen(false)}
         analysis={analysisResult}
         analysisType={analysisType}
+      />
+
+      {/* Dynamic Island Status Bar */}
+      <AnalysisDynamicIslandStatusBar
+        isVisible={dynamicIslandVisible}
+        isAnalyzing={isAnalyzing}
+        analysisResult={dynamicIslandResult}
+        error={dynamicIslandError}
+        onClose={handleDynamicIslandClose}
+        onViewDetails={handleDynamicIslandViewDetails}
+        progress={dynamicIslandProgress}
       />
     </div>
   );
