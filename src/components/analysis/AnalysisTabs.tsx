@@ -11,12 +11,12 @@ import { DEFAULT_LAYOUTS, COMPACT_LAYOUTS } from './types/analysis-types';
 import { getAnalysisTypeDisplayName, getAnalysisTypeIcon } from './helpers/data-transformers';
 import useSessionAnalysesByType from '@/hooks/useSessionAnalysesByType';
 
-// Height estimates for different analysis types
+// Height estimates for different analysis types (increased to prevent overlap)
 const ANALYSIS_HEIGHTS = {
-  word: 140,
-  phrase: 160,
-  sentence: 180,
-  paragraph: 220,
+  word: 150,
+  phrase: 170,
+  sentence: 190,
+  paragraph: 230,
 };
 
 interface AnalysisTabContentProps {
@@ -150,10 +150,10 @@ const AnalysisTabContent = memo(function AnalysisTabContent({
     <div
       ref={parentRef}
       className="overflow-auto"
-      style={{ height: '500px' }}
+      style={{ height: '600px' }}
     >
       <div
-        className={`${gridClassName} grid gap-3 p-4`}
+        className={`${gridClassName} grid gap-4 p-4`}
         style={{
           height: `${virtualizer.getTotalSize()}px`,
           width: '100%',
@@ -174,6 +174,7 @@ const AnalysisTabContent = memo(function AnalysisTabContent({
                 width: '100%',
                 height: `${virtualItem.size}px`,
                 transform: `translateY(${virtualItem.start}px)`,
+                padding: '2px', // Add small padding to prevent edge overlap
               }}
             >
               <AnalysisItemCard

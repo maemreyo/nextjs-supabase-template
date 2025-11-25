@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { Card } from '@/components/ui/card';
+import React, { useState, useMemo } from 'react';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -8,9 +8,7 @@ import {
   MoreHorizontal,
   ChevronDown,
   ChevronUp,
-  Trash2,
-  Copy,
-  BookmarkPlus
+  ExternalLink,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -19,29 +17,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { AnalysisItem, AnalysisItemProps, DEFAULT_LAYOUTS, COMPACT_LAYOUTS } from '../types/analysis-types';
+import { cn } from '@/lib/utils'; // Đảm bảo bạn có utility này (thường mặc định khi cài shadcn)
+import { AnalysisItemProps, DEFAULT_LAYOUTS, COMPACT_LAYOUTS } from '../types/analysis-types';
 import { normalizePOS } from '../helpers/pos-normalizer';
 
 interface AnalysisItemCardProps extends AnalysisItemProps {
   layoutConfig?: 'default' | 'compact';
+  className?: string;
 }
-
-// Improved tooltip component with better accessibility
-const SimpleTooltip = ({ children, content }: { children: React.ReactNode; content: string }) => (
-  <div className="group relative inline-block">
-    {children}
-    <div
-      className="invisible group-hover:visible absolute z-50 w-auto max-w-xs p-2 mt-1 text-xs text-white bg-gray-900 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 bottom-full left-1/2 transform -translate-x-1/2 mb-2 pointer-events-none"
-      role="tooltip"
-      aria-hidden="true"
-    >
-      <div className="relative">
-        {content}
-        <div className="absolute w-2 h-2 bg-gray-900 transform rotate-45 -bottom-1 left-1/2 -translate-x-1/2"></div>
-      </div>
-    </div>
-  </div>
-);
 
 export function AnalysisItemCard({
   analysis,
@@ -51,310 +34,226 @@ export function AnalysisItemCard({
   compact = false,
   showPhonetic = true,
   truncateLength,
-  layoutConfig = compact ? 'compact' : 'default'
+  layoutConfig = compact ? 'compact' : 'default',
+  className
 }: AnalysisItemCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  
-  // Get appropriate layout config with memoization
-  const layout = useMemo(() => {
-    const layouts = layoutConfig === 'compact' ? COMPACT_LAYOUTS : DEFAULT_LAYOUTS;
-    return layouts[analysis.analysisType];
-  }, [layoutConfig, analysis.analysisType]);
-  
-  // Get card min height based on analysis type and layout
-  const getCardMinHeight = () => {
-    const type = analysis.analysisType;
-    if (compact) {
-      switch (type) {
-        case 'word': return 'min-h-[100px]';
-        case 'phrase': return 'min-h-[120px]';
-        case 'sentence': return 'min-h-[140px]';
-        case 'paragraph': return 'min-h-[160px]';
-        default: return '';
-      }
-    } else {
-      switch (type) {
-        case 'word': return 'min-h-[120px]';
-        case 'phrase': return 'min-h-[140px]';
-        case 'sentence': return 'min-h-[160px]';
-        case 'paragraph': return 'min-h-[200px]';
-        default: return '';
-      }
-    }
-  };
-  
-  // Determine content to display based on analysis type
-  const getContent = () => {
+
+  // Layout Strategy
+  const layoutStyle = layoutConfig === 'compact' ? COMPACT_LAYOUTS : DEFAULT_LAYOUTS;
+  const activeLayout = layoutStyle[analysis.analysisType] || {};
+
+  // Data Normalization Logic - Extracted for clarity
+  const normalizedData = useMemo(() => {
+    const commonProps = {
+      phonetic: null as string | null,
+      badges: [] as Array<{ label: string; variant?: 'default' | 'secondary' | 'outline' | 'destructive'; color?: string; icon?: React.ReactNode; tooltip?: string }>,
+      isLongText: false,
+    };
+
     switch (analysis.analysisType) {
-      case 'word':
-        return getWordContent(analysis);
-      case 'phrase':
-        return getPhraseContent(analysis);
-      case 'sentence':
-        return getSentenceContent(analysis);
-      case 'paragraph':
-        return getParagraphContent(analysis);
+      case 'word': {
+        const posInfo = normalizePOS(analysis.pos);
+        return {
+          ...commonProps,
+          title: analysis.word,
+          subtitle: analysis.translation,
+          phonetic: analysis.ipa,
+          description: analysis.definition || analysis.contextMeaning,
+          badges: [],
+        };
+      }
+      case 'phrase': {
+        const posInfo = normalizePOS(analysis.partOfSpeech);
+        return {
+          ...commonProps,
+          title: analysis.phrase,
+          subtitle: analysis.naturalTranslation || analysis.vietnameseTranslation,
+          description: analysis.contextualMeaning || analysis.literalMeaning,
+          badges: [
+            ...(analysis.phraseType ? [{ label: analysis.phraseType, variant: 'secondary' as const }] : []),
+          ],
+        };
+      }
+      case 'sentence': {
+        return {
+          ...commonProps,
+          title: analysis.sentence,
+          subtitle: analysis.naturalTranslation,
+          description: analysis.mainIdea,
+          badges: [
+            ...(analysis.sentenceType ? [{ label: analysis.sentenceType, variant: 'outline' as const }] : []),
+          ],
+        };
+      }
+      case 'paragraph': {
+        return {
+          ...commonProps,
+          title: analysis.paragraph, // Will handle truncation in render
+          subtitle: analysis.mainTopic,
+          description: analysis.mainTopic, // Fallback description
+          isLongText: true,
+          badges: [
+            ...(analysis.type ? [{ label: analysis.type, variant: 'outline' as const }] : []),
+            ...(analysis.sentimentLabel ? [{ label: analysis.sentimentLabel, variant: 'secondary' as const }] : []),
+          ],
+        };
+      }
       default:
         return null;
     }
-  };
-  
-  const getWordContent = (wordAnalysis: any) => {
-    const posInfo = normalizePOS(wordAnalysis.pos);
-    return {
-      title: wordAnalysis.word,
-      subtitle: wordAnalysis.translation,
-      phonetic: wordAnalysis.ipa,
-      badges: [
-        ...(wordAnalysis.pos ? [{ label: posInfo.abbreviation, color: posInfo.color, icon: posInfo.icon, tooltip: posInfo.label }] : []),
-        ...(wordAnalysis.cefr ? [{ label: wordAnalysis.cefr, variant: 'secondary' as const }] : []),
-      ],
-      description: wordAnalysis.definition || wordAnalysis.contextMeaning,
-    };
-  };
-  
-  const getPhraseContent = (phraseAnalysis: any) => {
-    const posInfo = normalizePOS(phraseAnalysis.partOfSpeech);
-    return {
-      title: phraseAnalysis.phrase,
-      subtitle: phraseAnalysis.naturalTranslation || phraseAnalysis.vietnameseTranslation,
-      phonetic: null, // Phrases don't typically have phonetic
-      badges: [
-        ...(phraseAnalysis.partOfSpeech ? [{ label: posInfo.abbreviation, color: posInfo.color, icon: posInfo.icon, tooltip: posInfo.label }] : []),
-        ...(phraseAnalysis.phraseType ? [{ label: phraseAnalysis.phraseType, variant: 'secondary' as const }] : []),
-      ],
-      description: phraseAnalysis.contextualMeaning || phraseAnalysis.literalMeaning,
-    };
-  };
-  
-  const getSentenceContent = (sentenceAnalysis: any) => {
-    return {
-      title: sentenceAnalysis.sentence,
-      subtitle: sentenceAnalysis.naturalTranslation,
-      phonetic: null, // Sentences don't typically have phonetic
-      badges: [
-        ...(sentenceAnalysis.sentenceType ? [{ label: sentenceAnalysis.sentenceType, variant: 'outline' as const }] : []),
-        ...(sentenceAnalysis.complexityLevel ? [{ label: sentenceAnalysis.complexityLevel, variant: 'secondary' as const }] : []),
-      ],
-      description: sentenceAnalysis.mainIdea,
-    };
-  };
-  
-  const getParagraphContent = (paragraphAnalysis: any) => {
-    return {
-      title: paragraphAnalysis.paragraph.substring(0, 100) + (paragraphAnalysis.paragraph.length > 100 ? '...' : ''),
-      subtitle: paragraphAnalysis.mainTopic,
-      phonetic: null, // Paragraphs don't have phonetic
-      badges: [
-        ...(paragraphAnalysis.type ? [{ label: paragraphAnalysis.type, variant: 'outline' as const }] : []),
-        ...(paragraphAnalysis.vocabularyLevel ? [{ label: paragraphAnalysis.vocabularyLevel, variant: 'secondary' as const }] : []),
-        ...(paragraphAnalysis.sentimentLabel ? [{ label: paragraphAnalysis.sentimentLabel, variant: 'secondary' as const }] : []),
-      ],
-      description: paragraphAnalysis.mainTopic,
-    };
-  };
-  
-  const content = getContent();
-  if (!content) return null;
-  
-  // Handle text truncation with memoization
-  const displayDescription = useMemo(() => {
-    if (!content.description) return null;
-    
-    const shouldTruncate = truncateLength && content.description.length > truncateLength;
-    return shouldTruncate && !isExpanded
-      ? content.description.substring(0, truncateLength) + '...'
-      : content.description;
-  }, [content.description, truncateLength, isExpanded]);
-  
-  // Improved pronunciation handler with state management
-  const handlePronounce = useCallback((text: string) => {
-    if (!('speechSynthesis' in window) || isSpeaking) return;
-    
-    setIsSpeaking(true);
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-US';
-    utterance.rate = 0.8;
-    
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-    
-    speechSynthesis.speak(utterance);
-  }, [isSpeaking]);
+  }, [analysis]);
 
-  // Copy to clipboard functionality
-  const handleCopy = useCallback(async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      // You could add a toast notification here
-    } catch (err) {
-      console.error('Failed to copy text: ', err);
+  if (!normalizedData) return null;
+
+  // Render Helpers
+  const isWordOrPhrase = analysis.analysisType === 'word' || analysis.analysisType === 'phrase';
+
+  // Description Truncation Logic
+  const descriptionText = normalizedData.description || '';
+  const shouldTruncateDesc = truncateLength && descriptionText.length > truncateLength;
+  const displayDescription = shouldTruncateDesc && !isExpanded
+    ? `${descriptionText.substring(0, truncateLength)}...`
+    : descriptionText;
+
+  // Title Truncation for Paragraphs
+  const displayTitle = normalizedData.isLongText
+    ? (normalizedData.title.length > 100 ? `${normalizedData.title.substring(0, 100)}...` : normalizedData.title)
+    : normalizedData.title;
+
+  const handlePronounce = (text: string) => {
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      utterance.rate = 0.8;
+      speechSynthesis.speak(utterance);
     }
-  }, []);
+  };
 
-  // Toggle expanded state
-  const toggleExpanded = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsExpanded(prev => !prev);
-  }, []);
-  
-  const shouldTruncate = truncateLength && content.description && content.description.length > truncateLength;
-  
+  const handleCardClick = () => onClick?.(analysis);
+
   return (
     <Card
-      className={`hover:shadow-lg transition-all duration-300 cursor-pointer hover:-translate-y-1 rounded-lg overflow-hidden border-border/50 bg-card ${layout.cardPadding} ${layout.maxHeight || ''} ${getCardMinHeight()} group`}
-      role="button"
-      tabIndex={0}
-      onClick={() => onClick?.(analysis)}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onClick?.(analysis);
-        }
-      }}
-      aria-label={`${content.title} - ${content.subtitle || ''}`}
+      className={cn(
+        "group relative flex flex-col justify-between transition-all duration-200",
+        "hover:shadow-md hover:border-primary/50",
+        "cursor-pointer bg-card text-card-foreground",
+        activeLayout.maxHeight,
+        className
+      )}
+      onClick={handleCardClick}
     >
-      <div className="h-full flex flex-col">
-        {/* Header with title and actions */}
-        <div className="flex items-start justify-between mb-3 flex-1">
-          <div className="min-w-0 flex-1 pr-2">
-            <h3 className={`${layout.titleSize} text-primary font-semibold truncate mb-1 group-hover:text-primary/90 transition-colors`}>
-              {content.title}
-            </h3>
-            {content.subtitle && (
-              <p className="text-sm text-muted-foreground truncate mb-2">
-                {content.subtitle}
+      <CardHeader className={cn("p-4 pb-2 space-y-0", activeLayout.cardPadding)}>
+        <div className="flex items-start justify-between gap-2">
+          {/* Main Content Area */}
+          <div className="flex-1 min-w-0 space-y-1">
+            <div className="flex items-center gap-2">
+              <h3 className={cn("font-semibold leading-none tracking-tight truncate", activeLayout.titleSize)}>
+                {displayTitle.toLowerCase()}
+              </h3>
+
+              {/* Badges List */}
+              {normalizedData.badges.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {normalizedData.badges.map((badge: any, index) => {
+                    const BadgeEl = (
+                      <Badge
+                        key={index}
+                        variant={badge.variant || 'outline'}
+                        className={cn(
+                          "text-[10px] px-1.5 h-5 font-normal border-transparent bg-secondary/50 text-secondary-foreground hover:bg-secondary/70",
+                          badge.color // Allow custom color override if really needed, but try to rely on variant
+                        )}
+                      >
+                        {badge.icon && <span className="mr-1">{badge.icon}</span>}
+                        {badge.label}
+                      </Badge>
+                    );
+
+                    return BadgeEl;
+                  })}
+                </div>
+              )}
+
+              {/* Phonetic Badge */}
+              {showPhonetic && normalizedData.phonetic && (
+                <span className="inline-flex items-center rounded-md bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground font-mono">
+                  {normalizedData.phonetic}
+                </span>
+              )}
+
+
+            </div>
+            {/* POS Badge */}
+            {isWordOrPhrase && (
+              (analysis.analysisType === 'word' && analysis.pos) ||
+              (analysis.analysisType === 'phrase' && analysis.partOfSpeech)
+            ) && (
+                <span className="text-xs text-muted-foreground font-mono">
+                  {(analysis.analysisType === 'word' ? analysis.pos : analysis.partOfSpeech)?.toLowerCase()}
+                </span>
+              )}
+            {/* Subtitle / Translation */}
+            {normalizedData.subtitle && (
+              <p className="text-sm text-muted-foreground truncate mt-4">
+                {normalizedData.subtitle.toLowerCase()}
               </p>
             )}
-            {/* Phonetic display */}
-            {showPhonetic && content.phonetic && (
-              <code className="text-xs bg-muted/50 px-2 py-1 rounded-md block font-mono border border-border/30">
-                {content.phonetic}
-              </code>
-            )}
           </div>
-          
-          <div className="flex items-center gap-1 ml-2 flex-shrink-0">
-            {/* Pronounce button for words and phrases */}
-            {(analysis.analysisType === 'word' || analysis.analysisType === 'phrase') && (
+
+          {/* Actions Area */}
+          <div className="flex items-center gap-0.5 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+            {isWordOrPhrase && (
               <Button
                 variant="ghost"
-                size="sm"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
                 onClick={(e) => {
                   e.stopPropagation();
-                  handlePronounce(content.title);
+                  handlePronounce(normalizedData.title);
                 }}
-                className={`h-7 w-7 p-0 hover:bg-muted/50 ${isSpeaking ? 'text-primary animate-pulse' : ''}`}
-                title="Phát âm"
-                aria-label="Phát âm"
-                disabled={isSpeaking}
               >
-                <Volume2 className="h-3 w-3" />
+                <Volume2 className="h-4 w-4" />
+                <span className="sr-only">Phát âm</span>
               </Button>
             )}
-            
-            {/* More options menu */}
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0 hover:bg-muted/50 opacity-0 group-hover:opacity-100 transition-opacity"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
                   onClick={(e) => e.stopPropagation()}
-                  aria-label="Thêm tùy chọn"
                 >
-                  <MoreHorizontal className="h-3 w-3" />
+                  <MoreHorizontal className="h-4 w-4" />
+                  <span className="sr-only">Thêm</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={() => onAnalyze?.(analysis)} className="cursor-pointer">
+                <DropdownMenuItem onClick={() => onAnalyze?.(analysis)}>
                   <BookOpen className="h-4 w-4 mr-2" />
                   Phân tích chi tiết
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleCopy(content.title)} className="cursor-pointer">
-                  <Copy className="h-4 w-4 mr-2" />
-                  Sao chép
-                </DropdownMenuItem>
-                {content.phonetic && (
-                  <DropdownMenuItem onClick={() => handlePronounce(content.title)} className="cursor-pointer">
+                {normalizedData.phonetic && (
+                  <DropdownMenuItem onClick={() => handlePronounce(normalizedData.title)}>
                     <Volume2 className="h-4 w-4 mr-2" />
                     Phát âm
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem className="cursor-pointer">
-                  <BookmarkPlus className="h-4 w-4 mr-2" />
-                  Lưu vào danh sách
-                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => onRemove?.(analysis.analysisId, analysis.analysisType)}
-                  className="text-destructive cursor-pointer"
+                  className="text-destructive focus:text-destructive"
                 >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Xóa
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Xóa khỏi danh sách
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </div>
-        
-        {/* Badges */}
-        {content.badges && content.badges.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-3">
-            {content.badges.map((badge: any, index: number) => (
-              badge.tooltip ? (
-                <SimpleTooltip key={index} content={badge.tooltip}>
-                  <Badge
-                    variant="outline"
-                    className={`${badge.color || ''} text-xs px-2 py-0.5 flex items-center gap-1 hover:bg-muted/30 transition-colors cursor-default`}
-                  >
-                    {badge.icon && <span className="text-xs">{badge.icon}</span>}
-                    {badge.label}
-                  </Badge>
-                </SimpleTooltip>
-              ) : (
-                <Badge
-                  key={index}
-                  variant={badge.variant || 'outline'}
-                  className="text-xs px-2 py-0.5 hover:bg-muted/30 transition-colors cursor-default"
-                >
-                  {badge.label}
-                </Badge>
-              )
-            ))}
-          </div>
-        )}
-        
-        {/* Description with truncation */}
-        {displayDescription && (
-          <div className={`${layout.textSize} text-muted-foreground mt-auto`}>
-            <p className="leading-relaxed">{displayDescription}</p>
-            {shouldTruncate && (
-              <Button
-                variant="link"
-                size="sm"
-                className="p-0 h-auto text-xs mt-2 hover:text-primary transition-colors"
-                onClick={toggleExpanded}
-                aria-expanded={isExpanded}
-                aria-controls={`description-${analysis.analysisId}`}
-              >
-                {isExpanded ? (
-                  <>
-                    <ChevronUp className="h-3 w-3 mr-1" />
-                    Thu gọn
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="h-3 w-3 mr-1" />
-                    Đọc thêm
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
-        )}
-      </div>
+      </CardHeader>
     </Card>
   );
 }
