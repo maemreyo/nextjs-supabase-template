@@ -578,9 +578,24 @@ export class AIServiceServer {
         }
       })
       
-      // Parse and validate response
-      const analysisResult = JSON.parse(aiResponse.text)
-      const analysis = require('./prompt-utils').validatePhraseAnalysis(analysisResult)
+      // Parse and validate response with error handling
+      let analysisResult;
+      try {
+        analysisResult = JSON.parse(aiResponse.text)
+      } catch (parseError) {
+        console.error('Failed to parse AI response as JSON:', parseError)
+        console.error('Raw AI response:', aiResponse.text)
+        throw new Error('Invalid JSON response from AI service')
+      }
+      
+      let analysis;
+      try {
+        analysis = require('./prompt-utils').validatePhraseAnalysis(analysisResult)
+      } catch (validateError) {
+        console.error('Failed to validate phrase analysis:', validateError)
+        console.error('Analysis result:', analysisResult)
+        throw new Error('Invalid phrase analysis structure from AI service')
+      }
       
       // Save to database
       const phraseAnalysisId = await this.savePhraseAnalysis(userId, request, analysis)
@@ -901,12 +916,14 @@ export class AIServiceServer {
                           analysis.meta.register === 'informal' ? 'informal' : 'neutral'
       
       // Save main phrase analysis
+      // FIX: Đảm bảo phrase_type luôn là 'phrase' để tránh constraint violation
+      // Database constraint đã được cập nhật để bao gồm 'phrase'
       const { data: phraseAnalysisData, error: phraseError } = await supabase
         .from('phrase_analyses')
         .insert({
           user_id: userId,
           phrase: analysis.meta.phrase,
-          phrase_type: analysis.meta.type,
+          phrase_type: 'phrase', // Sử dụng 'phrase' sau khi đã cập nhật constraint
           complexity_level: complexityLevel,
           register_level: registerLevel,
           literal_meaning: analysis.definitions.literal_meaning,

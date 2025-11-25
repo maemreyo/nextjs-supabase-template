@@ -13,7 +13,7 @@ interface AnalysisSidebarProps {
   isLoading: boolean;
   error: string | null;
   isDetailDialogOpen: boolean;
-  
+
   // History props
   recentHistory: Array<{
     id: string;
@@ -25,14 +25,14 @@ interface AnalysisSidebarProps {
   isHistoryOpen: boolean;
   onHistoryToggle: () => void;
   onHistoryItemClick: (item: any) => void;
-  
+
   // Session props
   sessionId: string | null;
   getWordList: () => any[];
   onWordClick?: (wordItem: any) => void;
   onWordAnalyze?: (wordItem: any) => void;
   onWordRemove?: (wordId: string) => void;
-  
+
   // Dialog actions
   onViewDetails: () => void;
 }
@@ -48,35 +48,33 @@ export function AnalysisSidebar({
   isLoading,
   error,
   isDetailDialogOpen,
-  
+
   // History props
   recentHistory,
   isHistoryOpen,
   onHistoryToggle,
   onHistoryItemClick,
-  
+
   // Session props
   sessionId,
   getWordList,
   onWordClick,
   onWordAnalyze,
   onWordRemove,
-  
+
   // Dialog actions
   onViewDetails
 }: AnalysisSidebarProps) {
   return (
     <div className="lg:col-span-1 space-y-3 lg:space-y-4 overflow-y-auto">
       {/* Compact Analysis Results */}
-      {selectedText && (
-        <CompactResultCard
-          analysis={analysisResult}
-          analysisType={activeTab}
-          isLoading={isLoading}
-          error={error}
-          onViewDetails={onViewDetails}
-        />
-      )}
+      <CompactResultCard
+        analysis={analysisResult}
+        analysisType={activeTab}
+        isLoading={isLoading}
+        error={error}
+        onViewDetails={onViewDetails}
+      />
 
       {/* Session Word List */}
       {sessionId && (

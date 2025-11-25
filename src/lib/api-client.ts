@@ -16,7 +16,35 @@ export async function authenticateRequest(request: Request): Promise<{
   const supabase = await createClient();
   const token = authHeader.replace('Bearer ', '');
   
-  const { data: { user }, error } = await supabase.auth.getUser(token);
+  // Add retry mechanism for DNS resolution issues
+  let retryCount = 0;
+  const maxRetries = 3;
+  let user = null;
+  let error = null;
+  
+  while (retryCount < maxRetries && !user) {
+    try {
+      const result = await supabase.auth.getUser(token);
+      user = result.data.user;
+      error = result.error;
+      
+      if (error) {
+        console.log(`Auth attempt ${retryCount + 1} failed:`, error.message);
+        if (retryCount < maxRetries - 1) {
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+        }
+      }
+    } catch (err) {
+      console.log(`Auth attempt ${retryCount + 1} error:`, err);
+      error = err;
+      if (retryCount < maxRetries - 1) {
+        // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+      }
+    }
+    retryCount++;
+  }
   
   if (error || !user) {
     throw new Error('Invalid or expired token');

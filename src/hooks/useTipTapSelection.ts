@@ -466,12 +466,12 @@ function extractParagraphContext(editor: Editor | null, from: number, to: number
     // Update last analysis ref
     lastAnalysisRef.current = {
       text: selection.text,
-      type: analysisType,
+      type: selection.type, // FIX: Sử dụng selection.type thay vì analysisType từ state
       timestamp: Date.now(),
     };
     
     onAnalysisRequest?.(selection);
-  }, [selection.text, analysisType, onAnalysisRequest]);
+  }, [selection.text, selection.type, onAnalysisRequest]);
 
   // Setup event listeners
   useEffect(() => {

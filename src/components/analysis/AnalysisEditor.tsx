@@ -267,7 +267,6 @@ export function AnalysisEditor({
 
     // DEBUG: Log values to verify the issue
     console.log('🔍 [DEBUG] handleAnalyze - selection.type:', selection.type);
-    console.log('🔍 [DEBUG] handleAnalyze - analysisType from state:', analysisType);
     console.log('🔍 [DEBUG] handleAnalyze - textToAnalyze:', textToAnalyze);
 
     // Validate and sanitize input
@@ -294,9 +293,15 @@ export function AnalysisEditor({
       return;
     }
 
-    await triggerAnalysis(securityResult.sanitized, analysisType);
+    // FIX: Luôn sử dụng selection.type trực tiếp, không fallback sang analysisType state
+    // selection.type luôn có giá trị hợp lệ khi có text được chọn
+    const analysisTypeToUse = selection.type;
+    
+    console.log('🔍 [DEBUG] handleAnalyze - analysisTypeToUse (from selection):', analysisTypeToUse);
+    
+    await triggerAnalysis(securityResult.sanitized, analysisTypeToUse);
     hideBubbleMenu();
-  }, [selection.text, analysisType, triggerAnalysis, getContent.text, hideBubbleMenu]);
+  }, [selection.text, selection.type, triggerAnalysis, getContent.text, hideBubbleMenu]);
 
   // Handle save
   const handleSave = useCallback(() => {
