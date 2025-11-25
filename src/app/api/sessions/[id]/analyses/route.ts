@@ -272,14 +272,43 @@ export const GET = withAuth(
       let currentCount = 0;
 
       if (analysisType === 'word') {
-        // For word type, combine session word analyses + direct word analyses
+        // For word type, we need to avoid double-counting word analyses that exist in both tables
         const sessionWordAnalyses = sessionAnalysesWithDetails.filter(a => a.analysis_type === 'word');
-        totalCount = sessionWordAnalyses.length + totalWordsCount;
+        
+        // Extract word analysis IDs from session_analyses to identify duplicates
+        const sessionWordAnalysisIds = new Set(
+          sessionWordAnalyses.map(a => a.analysis_id).filter(Boolean)
+        );
+        
+        // Count only unique word analyses by excluding duplicates from direct word analyses
+        const uniqueDirectWordAnalyses = wordAnalysesData.filter(
+          word => !sessionWordAnalysisIds.has(word.id)
+        );
+        
+        // Total count = unique session word analyses + unique direct word analyses
+        // This ensures we don't double-count word analyses that exist in both tables
+        totalCount = sessionWordAnalyses.length + uniqueDirectWordAnalyses.length;
         currentCount = sessionWordAnalyses.length + wordAnalysesData.length;
-        hasMore = (offset + limit) < totalCount; // Fixed: hasMore = (offset + limit) < totalCount
+        hasMore = (offset + limit) < totalCount;
       } else if (analysisType === 'all') {
-        // For all types, combine both counts
-        totalCount = totalSessionAnalysesCount + totalWordsCount;
+        // For all types, we need to avoid double-counting word analyses that exist in both tables
+        const sessionWordAnalyses = sessionAnalysesWithDetails.filter(a => a.analysis_type === 'word');
+        
+        // Extract word analysis IDs from session_analyses to identify duplicates
+        const sessionWordAnalysisIds = new Set(
+          sessionWordAnalyses.map(a => a.analysis_id).filter(Boolean)
+        );
+        
+        // Count only unique word analyses by excluding duplicates from direct word analyses
+        const uniqueDirectWordAnalyses = wordAnalysesData.filter(
+          word => !sessionWordAnalysisIds.has(word.id)
+        );
+        
+        // Calculate non-word analyses count
+        const nonWordAnalysesCount = sessionAnalysesWithDetails.filter(a => a.analysis_type !== 'word').length;
+        
+        // Total count = non-word analyses + unique word analyses from both tables
+        totalCount = nonWordAnalysesCount + sessionWordAnalyses.length + uniqueDirectWordAnalyses.length;
         currentCount = sessionAnalysesWithDetails.length + wordAnalysesData.length;
         hasMore = (offset + limit) < totalWordsCount; // Only word analyses are paginated
       } else {
