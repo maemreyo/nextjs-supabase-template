@@ -67,7 +67,7 @@ export function SessionActions({
       {/* Right Section - Actions */}
       <div className="flex items-center gap-2 flex-shrink-0">
         {/* New Session Button */}
-        <Button
+        {/* <Button
           variant="outline"
           size="sm"
           onClick={onCreateNewSession}
@@ -76,7 +76,7 @@ export function SessionActions({
           <Plus className="h-4 w-4 mr-1" />
           <span className="hidden sm:inline">Mới</span>
           <span className="sm:hidden">+</span>
-        </Button>
+        </Button> */}
       </div>
     </div>
   );

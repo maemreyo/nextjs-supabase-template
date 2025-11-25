@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -55,35 +55,122 @@ export function AnalysisDynamicIslandStatusBar({
     const [isDragging, setIsDragging] = useState(false);
     const [startY, setStartY] = useState(0);
     const [currentY, setCurrentY] = useState(0);
+    const [showGuidePopover, setShowGuidePopover] = useState(false);
     const statusBarRef = useRef<HTMLDivElement>(null);
+    const popoverRef = useRef<HTMLDivElement>(null);
+    
+    // Refs để theo dõi state và cleanup
+    const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const guideTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const lastAnalysisResultRef = useRef<any>(null);
+    const isProcessingRef = useRef(false);
 
     useEffect(() => {
-        if (isAnalyzing) {
+        // Chỉ cập nhật state khi có sự thay đổi thực sự
+        if (isAnalyzing && !isProcessingRef.current) {
             setStatus('loading');
             setIsExpanded(false);
             setIsCollapsed(false);
-        } else if (error) {
+            setShowGuidePopover(false);
+            isProcessingRef.current = true;
+        } else if (error && isProcessingRef.current) {
             setStatus('error');
             setIsCollapsed(false);
-        } else if (analysisResult) {
+            setShowGuidePopover(false);
+            isProcessingRef.current = false;
+            // Cleanup progress interval khi có lỗi
+            if (progressIntervalRef.current) {
+                clearInterval(progressIntervalRef.current);
+                progressIntervalRef.current = null;
+            }
+        } else if (analysisResult && !lastAnalysisResultRef.current) {
             setStatus('success');
             setIsCollapsed(false);
-        } else {
+            setShowGuidePopover(false);
+            isProcessingRef.current = false;
+            lastAnalysisResultRef.current = analysisResult;
+            // Cleanup progress interval khi hoàn thành
+            if (progressIntervalRef.current) {
+                clearInterval(progressIntervalRef.current);
+                progressIntervalRef.current = null;
+            }
+        } else if (!isAnalyzing && !error && !analysisResult) {
             setStatus('idle');
+            isProcessingRef.current = false;
+            lastAnalysisResultRef.current = null;
+            // Cleanup progress interval khi idle
+            if (progressIntervalRef.current) {
+                clearInterval(progressIntervalRef.current);
+                progressIntervalRef.current = null;
+            }
         }
     }, [isAnalyzing, error, analysisResult]);
 
-    const handleMouseDown = (e: React.MouseEvent) => {
-        setIsDragging(true);
-        setStartY(e.clientY);
-    };
+    // Auto hide guide popover after 5 seconds with proper cleanup
+    useEffect(() => {
+        if (showGuidePopover) {
+            // Cleanup timer cũ nếu có
+            if (guideTimerRef.current) {
+                clearTimeout(guideTimerRef.current);
+            }
+            
+            guideTimerRef.current = setTimeout(() => {
+                setShowGuidePopover(false);
+                guideTimerRef.current = null;
+            }, 5000);
+            
+            return () => {
+                if (guideTimerRef.current) {
+                    clearTimeout(guideTimerRef.current);
+                    guideTimerRef.current = null;
+                }
+            };
+        }
+    }, [showGuidePopover]);
 
-    const handleMouseMove = (e: React.MouseEvent) => {
+    // Close popover when clicking outside with proper cleanup
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (
+                showGuidePopover &&
+                popoverRef.current &&
+                !popoverRef.current.contains(event.target as Node) &&
+                statusBarRef.current &&
+                !statusBarRef.current.contains(event.target as Node)
+            ) {
+                setShowGuidePopover(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            // Cleanup tất cả timers khi component unmount
+            if (progressIntervalRef.current) {
+                clearInterval(progressIntervalRef.current);
+                progressIntervalRef.current = null;
+            }
+            if (guideTimerRef.current) {
+                clearTimeout(guideTimerRef.current);
+                guideTimerRef.current = null;
+            }
+        };
+    }, [showGuidePopover]);
+
+    const handleMouseDown = useCallback((e: React.MouseEvent) => {
+        // Chỉ cho phép drag khi không đang analyzing
+        if (!isAnalyzing) {
+            setIsDragging(true);
+            setStartY(e.clientY);
+        }
+    }, [isAnalyzing]);
+
+    const handleMouseMove = useCallback((e: React.MouseEvent) => {
         if (!isDragging) return;
         setCurrentY(e.clientY);
-    };
+    }, [isDragging]);
 
-    const handleMouseUp = () => {
+    const handleMouseUp = useCallback(() => {
         if (!isDragging) return;
         const diff = currentY - startY;
         if (diff > 50) {
@@ -92,23 +179,24 @@ export function AnalysisDynamicIslandStatusBar({
         }
         setIsDragging(false);
         setCurrentY(0);
-    };
+    }, [isDragging, currentY, startY]);
 
-    const handleTouchStart = (e: React.TouchEvent) => {
-        if (e.touches && e.touches[0]) {
+    const handleTouchStart = useCallback((e: React.TouchEvent) => {
+        // Chỉ cho phép drag khi không đang analyzing
+        if (!isAnalyzing && e.touches && e.touches[0]) {
             setIsDragging(true);
             setStartY(e.touches[0].clientY);
         }
-    };
+    }, [isAnalyzing]);
 
-    const handleTouchMove = (e: React.TouchEvent) => {
+    const handleTouchMove = useCallback((e: React.TouchEvent) => {
         if (!isDragging) return;
         if (e.touches && e.touches[0]) {
             setCurrentY(e.touches[0].clientY);
         }
-    };
+    }, [isDragging]);
 
-    const handleTouchEnd = () => {
+    const handleTouchEnd = useCallback(() => {
         if (!isDragging) return;
         const diff = currentY - startY;
         if (diff > 50) {
@@ -117,7 +205,7 @@ export function AnalysisDynamicIslandStatusBar({
         }
         setIsDragging(false);
         setCurrentY(0);
-    };
+    }, [isDragging, currentY, startY]);
 
     // Component luôn hiển thị, không bao giờ return null
     // Chỉ thay đổi trạng thái collapsed/expanded
@@ -135,8 +223,11 @@ export function AnalysisDynamicIslandStatusBar({
                 <div
                     className="bg-black dark:bg-zinc-900 rounded-full shadow-2xl backdrop-blur-xl border border-zinc-800/50 p-3 cursor-pointer hover:scale-110 transition-transform duration-200"
                     onClick={() => {
-                        setIsCollapsed(false);
-                        setIsExpanded(true);
+                        // Chỉ mở lại khi không đang analyzing
+                        if (!isAnalyzing) {
+                            setIsCollapsed(false);
+                            setIsExpanded(true);
+                        }
                     }}
                 >
                     <div className="relative">
@@ -175,7 +266,12 @@ export function AnalysisDynamicIslandStatusBar({
                         "transition-all duration-500 ease-out overflow-hidden cursor-pointer",
                         isExpanded ? "rounded-3xl" : "rounded-full"
                     )}
-                    onClick={() => !isExpanded && setIsExpanded(true)}
+                    onClick={() => {
+                        // Chỉ mở rộng khi không đang analyzing
+                        if (!isExpanded && !isAnalyzing) {
+                            setIsExpanded(true);
+                        }
+                    }}
                 >
                     <div className={cn(
                         "flex items-center gap-3 transition-all duration-500",
@@ -241,7 +337,12 @@ export function AnalysisDynamicIslandStatusBar({
                         "transition-all duration-500 ease-out overflow-hidden cursor-pointer",
                         isExpanded ? "rounded-3xl" : "rounded-full"
                     )}
-                    onClick={() => !isExpanded && setIsExpanded(true)}
+                    onClick={() => {
+                        // Chỉ mở rộng khi không đang analyzing
+                        if (!isExpanded && !isAnalyzing) {
+                            setIsExpanded(true);
+                        }
+                    }}
                 >
                     <div className={cn(
                         "flex items-center gap-3 transition-all duration-500",
@@ -371,7 +472,12 @@ export function AnalysisDynamicIslandStatusBar({
                         "transition-all duration-500 ease-out overflow-hidden cursor-pointer",
                         isExpanded ? "rounded-3xl" : "rounded-full"
                     )}
-                    onClick={() => !isExpanded && setIsExpanded(true)}
+                    onClick={() => {
+                        // Chỉ mở rộng khi không đang analyzing
+                        if (!isExpanded && !isAnalyzing) {
+                            setIsExpanded(true);
+                        }
+                    }}
                 >
                     <div className={cn(
                         "flex items-center transition-all duration-500",
@@ -479,22 +585,71 @@ export function AnalysisDynamicIslandStatusBar({
 
     // Component luôn hiển thị một indicator nhỏ ngay cả ở trạng thái idle
     return (
-        <div
-            ref={statusBarRef}
-            className="fixed bottom-6 right-6 z-50 transition-all duration-300 ease-out"
-        >
+        <>
             <div
-                className="bg-black dark:bg-zinc-900 rounded-full shadow-2xl backdrop-blur-xl border border-zinc-800/50 p-3 cursor-pointer hover:scale-110 transition-transform duration-200"
-                onClick={() => setIsExpanded(true)}
+                ref={statusBarRef}
+                className="fixed top-4 right-4 z-50 transition-all duration-300 ease-out"
             >
-                <div className="relative">
-                    <div className="h-6 w-6 rounded-full bg-gradient-to-br from-gray-500 to-gray-600" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <ChevronUp className="h-3 w-3 text-white" />
+                <div
+                    className="bg-black dark:bg-zinc-900 rounded-full shadow-2xl backdrop-blur-xl border border-zinc-800/50 p-3 cursor-pointer hover:scale-110 transition-transform duration-200"
+                    onClick={() => {
+                        // Chỉ hiển thị guide khi không đang analyzing
+                        if (!isAnalyzing) {
+                            setShowGuidePopover(true);
+                        }
+                    }}
+                >
+                    <div className="relative">
+                        <div className="h-6 w-6 rounded-full bg-gradient-to-br from-gray-500 to-gray-600" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <ChevronDown className="h-3 w-3 text-white" />
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+
+            {/* Guide Popover */}
+            {showGuidePopover && (
+                <div
+                    ref={popoverRef}
+                    className="fixed top-20 right-6 z-[60] animate-in fade-in slide-in-from-bottom-5 duration-300 max-w-xs"
+                >
+                    <div className="bg-black dark:bg-zinc-900 rounded-2xl shadow-2xl backdrop-blur-xl border border-zinc-800/50 p-4 relative">
+                        <button
+                            className="absolute top-2 right-2 text-zinc-400 hover:text-white transition-colors"
+                            onClick={() => setShowGuidePopover(false)}
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                        
+                        <div className="flex items-start gap-3 mb-3">
+                            <div className="bg-blue-500/20 rounded-full p-2 flex-shrink-0">
+                                <Lightbulb className="h-4 w-4 text-blue-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-white font-medium text-sm mb-1">Hướng dẫn phân tích</h3>
+                                <p className="text-zinc-300 text-xs leading-relaxed">
+                                    Chọn từ, cụm từ, câu hoặc đoạn trong văn bản để phân tích. Sau đó nhấn nút Analyze và theo dõi kết quả tại thanh trạng thái này.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-zinc-800">
+                            <span className="text-zinc-500 text-xs">Tự động ẩn sau 5 giây</span>
+                            <button
+                                className="bg-blue-500 hover:bg-blue-600 text-white text-xs px-3 py-1 rounded-full transition-colors"
+                                onClick={() => setShowGuidePopover(false)}
+                            >
+                                Đã hiểu
+                            </button>
+                        </div>
+                    </div>
+                    
+                    {/* Arrow pointing to the icon */}
+                    <div className="absolute -bottom-2 right-6 w-4 h-4 bg-black dark:bg-zinc-900 transform rotate-45 border-r border-b border-zinc-800/50"></div>
+                </div>
+            )}
+        </>
     );
 }
 

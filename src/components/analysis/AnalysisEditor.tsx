@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle, Loader2 } from 'lucide-react';
@@ -97,6 +97,10 @@ export function AnalysisEditor({
   const [dynamicIslandVisible, setDynamicIslandVisible] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [analysisProgress, setAnalysisProgress] = useState(0);
+  
+  // Refs để tránh race conditions
+  const analysisInProgressRef = useRef(false);
+  const lastAnalysisRequestRef = useRef<string>('');
 
   // Session store
   const { sessions, createSession, setCurrentSession } = useSessionStore();
@@ -283,39 +287,71 @@ export function AnalysisEditor({
     // DEBUG: Log values to verify the issue
     console.log('🔍 [DEBUG] handleAnalyze - selection.type:', selection.type);
     console.log('🔍 [DEBUG] handleAnalyze - textToAnalyze:', textToAnalyze);
-
-    // Validate and sanitize input
-    const validation = validateAnalysisText(textToAnalyze, {
-      maxLength: 10000,
-      allowEmpty: false
-    });
-
-    if (!validation.isValid) {
-      toast.error('Invalid input', {
-        description: validation.errors.join(', '),
-        duration: 3000,
-      });
+    
+    // Tạo unique key cho request này để tránh duplicate
+    const requestKey = `${textToAnalyze.trim()}-${selection.type}`;
+    
+    // Kiểm tra race condition
+    if (analysisInProgressRef.current) {
+      console.log('🔍 [DEBUG] handleAnalyze - Analysis already in progress, ignoring');
       return;
     }
-
-    // Additional security check
-    const securityResult = securityCheck(validation.sanitized);
-    if (!securityResult.isSafe) {
-      toast.error('Security check failed', {
-        description: 'Input contains potentially dangerous content',
-        duration: 3000,
-      });
+    
+    // Kiểm tra duplicate request
+    if (lastAnalysisRequestRef.current === requestKey) {
+      console.log('🔍 [DEBUG] handleAnalyze - Duplicate request detected, ignoring');
       return;
     }
+    
+    // Đặt flags để theo dõi
+    analysisInProgressRef.current = true;
+    lastAnalysisRequestRef.current = requestKey;
 
-    // FIX: Luôn sử dụng selection.type trực tiếp, không fallback sang analysisType state
-    // selection.type luôn có giá trị hợp lệ khi có text được chọn
-    const analysisTypeToUse = selection.type;
-    
-    console.log('🔍 [DEBUG] handleAnalyze - analysisTypeToUse (from selection):', analysisTypeToUse);
-    
-    await triggerAnalysis(securityResult.sanitized, analysisTypeToUse);
-    hideBubbleMenu();
+    try {
+      // Validate and sanitize input
+      const validation = validateAnalysisText(textToAnalyze, {
+        maxLength: 10000,
+        allowEmpty: false
+      });
+
+      if (!validation.isValid) {
+        toast.error('Invalid input', {
+          description: validation.errors.join(', '),
+          duration: 3000,
+        });
+        return;
+      }
+
+      // Additional security check
+      const securityResult = securityCheck(validation.sanitized);
+      if (!securityResult.isSafe) {
+        toast.error('Security check failed', {
+          description: 'Input contains potentially dangerous content',
+          duration: 3000,
+        });
+        return;
+      }
+
+      // FIX: Luôn sử dụng selection.type trực tiếp, không fallback sang analysisType state
+      // selection.type luôn có giá trị hợp lệ khi có text được chọn
+      const analysisTypeToUse = selection.type;
+      
+      console.log('🔍 [DEBUG] handleAnalyze - analysisTypeToUse (from selection):', analysisTypeToUse);
+      
+      await triggerAnalysis(securityResult.sanitized, analysisTypeToUse);
+      hideBubbleMenu();
+    } catch (error) {
+      console.error('🔍 [DEBUG] handleAnalyze - Error during analysis:', error);
+      setAnalysisError(error instanceof Error ? error.message : 'Đã xảy ra lỗi không xác định');
+      toast.error('Phân tích thất bại', {
+        description: error instanceof Error ? error.message : 'Đã xảy ra lỗi không xác định',
+        duration: 3000,
+      });
+    } finally {
+      // Reset flags sau khi hoàn thành
+      analysisInProgressRef.current = false;
+      lastAnalysisRequestRef.current = '';
+    }
   }, [selection.text, selection.type, triggerAnalysis, getContent.text, hideBubbleMenu]);
 
   // Handle save
@@ -364,18 +400,21 @@ export function AnalysisEditor({
 
   // Handle Dynamic Island trigger
   const handleDynamicIslandTrigger = useCallback(() => {
-    setDynamicIslandVisible(true);
-    setAnalysisProgress(0);
-    // Simulate progress
-    const progressInterval = setInterval(() => {
-      setAnalysisProgress(prev => {
-        if (prev >= 90) {
-          clearInterval(progressInterval);
-          return 90;
-        }
-        return prev + 10;
-      });
-    }, 200);
+    // Chỉ trigger nếu không có analysis đang chạy
+    if (!analysisInProgressRef.current) {
+      setDynamicIslandVisible(true);
+      setAnalysisProgress(0);
+      // Simulate progress
+      const progressInterval = setInterval(() => {
+        setAnalysisProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 200);
+    }
   }, []);
 
   // Handle Dynamic Island close
@@ -402,8 +441,14 @@ export function AnalysisEditor({
     } else if (lastAnalysisResult) {
       setAnalysisProgress(100);
       // Keep the Dynamic Island visible to show results
+      // Reset flags khi analysis hoàn thành
+      analysisInProgressRef.current = false;
+      lastAnalysisRequestRef.current = '';
     } else if (analysisError) {
       // Keep visible to show error
+      // Reset flags khi có lỗi
+      analysisInProgressRef.current = false;
+      lastAnalysisRequestRef.current = '';
     }
   }, [isAnalyzing, lastAnalysisResult, analysisError]);
 

@@ -361,9 +361,26 @@ export class AIServiceServer {
         }
       })
       
-      // Parse and validate response
-      const analysisResult = JSON.parse(aiResponse.text)
-      const analysis = require('./prompt-utils').validateWordAnalysis(analysisResult)
+      // Parse and validate response with error handling
+      let analysisResult;
+      try {
+        console.log('DEBUG: AI response text length:', aiResponse.text.length)
+        console.log('DEBUG: AI response preview:', aiResponse.text.substring(0, 200))
+        analysisResult = JSON.parse(aiResponse.text)
+      } catch (parseError) {
+        console.error('DEBUG: Failed to parse AI response as JSON:', parseError)
+        console.error('DEBUG: Raw AI response:', aiResponse.text)
+        throw new Error('Invalid JSON response from AI service')
+      }
+      
+      let analysis;
+      try {
+        analysis = require('./prompt-utils').validateWordAnalysis(analysisResult)
+      } catch (validateError) {
+        console.error('DEBUG: Failed to validate word analysis:', validateError)
+        console.error('DEBUG: Analysis result:', analysisResult)
+        throw new Error('Invalid word analysis structure from AI service')
+      }
       
       // Save to database
       const wordAnalysisId = await this.saveWordAnalysis(userId, request, analysis)
@@ -433,9 +450,26 @@ export class AIServiceServer {
         }
       })
       
-      // Parse and validate response
-      const analysisResult = JSON.parse(aiResponse.text)
-      const analysis = require('./prompt-utils').validateSentenceAnalysis(analysisResult)
+      // Parse and validate response with error handling
+      let analysisResult;
+      try {
+        console.log('DEBUG: Sentence AI response text length:', aiResponse.text.length)
+        console.log('DEBUG: Sentence AI response preview:', aiResponse.text.substring(0, 200))
+        analysisResult = JSON.parse(aiResponse.text)
+      } catch (parseError) {
+        console.error('DEBUG: Failed to parse sentence AI response as JSON:', parseError)
+        console.error('DEBUG: Raw sentence AI response:', aiResponse.text)
+        throw new Error('Invalid JSON response from AI service')
+      }
+      
+      let analysis;
+      try {
+        analysis = require('./prompt-utils').validateSentenceAnalysis(analysisResult)
+      } catch (validateError) {
+        console.error('DEBUG: Failed to validate sentence analysis:', validateError)
+        console.error('DEBUG: Sentence analysis result:', analysisResult)
+        throw new Error('Invalid sentence analysis structure from AI service')
+      }
       
       // Save to database
       const sentenceAnalysisId = await this.saveSentenceAnalysis(userId, request, analysis)
@@ -505,9 +539,26 @@ export class AIServiceServer {
         }
       })
       
-      // Parse and validate response
-      const analysisResult = JSON.parse(aiResponse.text)
-      const analysis = require('./prompt-utils').validateParagraphAnalysis(analysisResult)
+      // Parse and validate response with error handling
+      let analysisResult;
+      try {
+        console.log('DEBUG: Paragraph AI response text length:', aiResponse.text.length)
+        console.log('DEBUG: Paragraph AI response preview:', aiResponse.text.substring(0, 200))
+        analysisResult = JSON.parse(aiResponse.text)
+      } catch (parseError) {
+        console.error('DEBUG: Failed to parse paragraph AI response as JSON:', parseError)
+        console.error('DEBUG: Raw paragraph AI response:', aiResponse.text)
+        throw new Error('Invalid JSON response from AI service')
+      }
+      
+      let analysis;
+      try {
+        analysis = require('./prompt-utils').validateParagraphAnalysis(analysisResult)
+      } catch (validateError) {
+        console.error('DEBUG: Failed to validate paragraph analysis:', validateError)
+        console.error('DEBUG: Paragraph analysis result:', analysisResult)
+        throw new Error('Invalid paragraph analysis structure from AI service')
+      }
       
       // Save to database
       const paragraphAnalysisId = await this.saveParagraphAnalysis(userId, request, analysis)
@@ -581,10 +632,12 @@ export class AIServiceServer {
       // Parse and validate response with error handling
       let analysisResult;
       try {
+        console.log('DEBUG: Phrase AI response text length:', aiResponse.text.length)
+        console.log('DEBUG: Phrase AI response preview:', aiResponse.text.substring(0, 200))
         analysisResult = JSON.parse(aiResponse.text)
       } catch (parseError) {
-        console.error('Failed to parse AI response as JSON:', parseError)
-        console.error('Raw AI response:', aiResponse.text)
+        console.error('DEBUG: Failed to parse phrase AI response as JSON:', parseError)
+        console.error('DEBUG: Raw phrase AI response:', aiResponse.text)
         throw new Error('Invalid JSON response from AI service')
       }
       
@@ -592,8 +645,8 @@ export class AIServiceServer {
       try {
         analysis = require('./prompt-utils').validatePhraseAnalysis(analysisResult)
       } catch (validateError) {
-        console.error('Failed to validate phrase analysis:', validateError)
-        console.error('Analysis result:', analysisResult)
+        console.error('DEBUG: Failed to validate phrase analysis:', validateError)
+        console.error('DEBUG: Phrase analysis result:', analysisResult)
         throw new Error('Invalid phrase analysis structure from AI service')
       }
       
@@ -655,10 +708,12 @@ export class AIServiceServer {
     try {
       console.log('DEBUG: Attempting to save main word analysis to database')
       console.log('DEBUG: Will save with document_id:', request.sessionId || null)
-      // Save main word analysis
-      const { data: wordAnalysisData, error: wordError } = await supabase
+      
+      // Save main word analysis using upsert with proper constraint handling
+      // Sử dụng constraint name thay vì column list để tránh lỗi 42P10
+      const { data, error } = await supabase
         .from('word_analyses')
-        .insert({
+        .upsert({
           user_id: userId,
           word: analysis.meta.word,
           ipa: analysis.meta.ipa,
@@ -670,28 +725,30 @@ export class AIServiceServer {
           vietnamese_translation: analysis.definitions.vietnamese_translation,
           inference_clues: analysis.inference_strategy.clues,
           inference_reasoning: analysis.inference_strategy.reasoning,
-          sentence_context: request.sentenceContext,
+          sentence_context: request.sentenceContext || '', // Đảm bảo không null
           paragraph_context: request.paragraphContext,
           example_sentence: analysis.usage.example_sentence,
           example_translation: analysis.usage.example_translation,
-          document_id: request.sessionId || null
+          document_id: request.sessionId || null // Đảm bảo null thay vì rỗng
+        }, {
+          onConflict: 'user_id,word,sentence_context,document_id' // Sử dụng array cột thay vì constraint name
         })
         .select()
-        .single()
+        .single();
 
-      if (wordError || !wordAnalysisData) {
-        console.error('DEBUG: Database error when saving word analysis:', wordError)
+      if (error) {
+        console.error('DEBUG: Database error when saving word analysis:', error)
         throw new Error('Failed to save word analysis')
       }
 
-      wordAnalysisId = wordAnalysisData.id
+      wordAnalysisId = data.id;
       console.log('DEBUG: Successfully saved word analysis with ID:', wordAnalysisId)
 
       // Save synonyms
       if (analysis.relations.synonyms.length > 0) {
         console.log('DEBUG: Saving', analysis.relations.synonyms.length, 'synonyms')
         const synonymsToInsert = analysis.relations.synonyms.map(synonym => ({
-          word_analysis_id: wordAnalysisData.id,
+          word_analysis_id: wordAnalysisId,
           synonym_word: synonym.word,
           ipa: synonym.ipa,
           meaning_en: synonym.meaning_en,
@@ -705,7 +762,7 @@ export class AIServiceServer {
       if (analysis.relations.antonyms.length > 0) {
         console.log('DEBUG: Saving', analysis.relations.antonyms.length, 'antonyms')
         const antonymsToInsert = analysis.relations.antonyms.map(antonym => ({
-          word_analysis_id: wordAnalysisData.id,
+          word_analysis_id: wordAnalysisId,
           antonym_word: antonym.word,
           ipa: antonym.ipa,
           meaning_en: antonym.meaning_en,
@@ -719,7 +776,7 @@ export class AIServiceServer {
       if (analysis.usage.collocations.length > 0) {
         console.log('DEBUG: Saving', analysis.usage.collocations.length, 'collocations')
         const collocationsToInsert = analysis.usage.collocations.map(collocation => ({
-          word_analysis_id: wordAnalysisData.id,
+          word_analysis_id: wordAnalysisId,
           phrase: collocation.phrase,
           meaning: collocation.meaning,
           usage_example: collocation.usage_example,
@@ -747,10 +804,11 @@ export class AIServiceServer {
     
     try {
       console.log('DEBUG: Attempting to save main sentence analysis to database')
-      // Save main sentence analysis
-      const { data: sentenceAnalysisData, error: sentenceError } = await supabase
+      // Save main sentence analysis using upsert with proper constraint handling
+      // Sử dụng constraint name thay vì column list để tránh lỗi 42P10
+      const { data, error } = await supabase
         .from('sentence_analyses')
-        .insert({
+        .upsert({
           user_id: userId,
           sentence: analysis.meta.sentence,
           complexity_level: analysis.meta.complexity_level,
@@ -761,30 +819,33 @@ export class AIServiceServer {
           subject: analysis.grammar_breakdown.subject,
           main_verb: analysis.grammar_breakdown.main_verb,
           object: analysis.grammar_breakdown.object,
+          clauses: analysis.grammar_breakdown.clauses,
           function: analysis.contextual_role.function,
           relation_to_previous: analysis.contextual_role.relation_to_previous,
           literal_translation: analysis.translation.literal,
           natural_translation: analysis.translation.natural,
           paragraph_context: request.paragraphContext,
-          clauses: analysis.grammar_breakdown.clauses,
-          document_id: request.sessionId || null
+          document_id: request.sessionId || null // Đảm bảo null thay vì rỗng
+        }, {
+          onConflict: 'user_id,sentence,document_id' // Sử dụng array cột thay vì constraint name
         })
         .select()
-        .single()
+        .single();
 
-      if (sentenceError || !sentenceAnalysisData) {
-        console.error('DEBUG: Database error when saving sentence analysis:', sentenceError)
+      if (error) {
+        console.error('DEBUG: Database error when saving sentence analysis:', error)
         throw new Error('Failed to save sentence analysis')
       }
 
-      sentenceAnalysisId = sentenceAnalysisData.id
+      sentenceAnalysisId = data.id;
+      
       console.log('DEBUG: Successfully saved sentence analysis with ID:', sentenceAnalysisId)
 
       // Save key components
       if (analysis.key_components.length > 0) {
         console.log('DEBUG: Saving', analysis.key_components.length, 'key components')
         const componentsToInsert = analysis.key_components.map(component => ({
-          sentence_analysis_id: sentenceAnalysisData.id,
+          sentence_analysis_id: sentenceAnalysisId,
           phrase: component.phrase,
           type: component.type,
           meaning: component.meaning,
@@ -798,7 +859,7 @@ export class AIServiceServer {
       if (analysis.rewrite_suggestions.length > 0) {
         console.log('DEBUG: Saving', analysis.rewrite_suggestions.length, 'rewrite suggestions')
         const suggestionsToInsert = analysis.rewrite_suggestions.map(suggestion => ({
-          sentence_analysis_id: sentenceAnalysisData.id,
+          sentence_analysis_id: sentenceAnalysisId,
           style: suggestion.style,
           text: suggestion.text,
           change_log: suggestion.change_log
@@ -825,10 +886,11 @@ export class AIServiceServer {
     
     try {
       console.log('DEBUG: Attempting to save main paragraph analysis to database')
-      // Save main paragraph analysis
-      const { data: paragraphAnalysisData, error: paragraphError } = await supabase
+      // Save main paragraph analysis using upsert with proper constraint handling
+      // Sử dụng constraint name thay vì column list để tránh lỗi 42P10
+      const { data, error } = await supabase
         .from('paragraph_analyses')
-        .insert({
+        .upsert({
           user_id: userId,
           paragraph: request.paragraph,
           type: analysis.meta.type,
@@ -846,24 +908,27 @@ export class AIServiceServer {
           vocabulary_level: analysis.stylistic_evaluation.vocabulary_level,
           sentence_variety: analysis.stylistic_evaluation.sentence_variety,
           better_version: analysis.constructive_feedback.better_version,
-          document_id: request.sessionId || null
+          document_id: request.sessionId || null // Đảm bảo null thay vì rỗng
+        }, {
+          onConflict: 'user_id,paragraph,document_id' // Sử dụng array cột thay vì constraint name
         })
         .select()
-        .single()
+        .single();
 
-      if (paragraphError || !paragraphAnalysisData) {
-        console.error('DEBUG: Database error when saving paragraph analysis:', paragraphError)
+      if (error) {
+        console.error('DEBUG: Database error when saving paragraph analysis:', error)
         throw new Error('Failed to save paragraph analysis')
       }
 
-      paragraphAnalysisId = paragraphAnalysisData.id
+      paragraphAnalysisId = data.id;
+      
       console.log('DEBUG: Successfully saved paragraph analysis with ID:', paragraphAnalysisId)
 
       // Save structure breakdown
       if (analysis.structure_breakdown.length > 0) {
         console.log('DEBUG: Saving', analysis.structure_breakdown.length, 'structure breakdown items')
         const structureToInsert = analysis.structure_breakdown.map(item => ({
-          paragraph_analysis_id: paragraphAnalysisData.id,
+          paragraph_analysis_id: paragraphAnalysisId,
           sentence_index: item.sentence_index,
           snippet: item.snippet,
           role: item.role,
@@ -877,7 +942,7 @@ export class AIServiceServer {
       if (analysis.constructive_feedback.critiques.length > 0) {
         console.log('DEBUG: Saving', analysis.constructive_feedback.critiques.length, 'critiques')
         const feedbackToInsert = analysis.constructive_feedback.critiques.map(critique => ({
-          paragraph_analysis_id: paragraphAnalysisData.id,
+          paragraph_analysis_id: paragraphAnalysisId,
           issue_type: critique.issue_type,
           description: critique.description,
           suggestion: critique.suggestion
@@ -915,12 +980,11 @@ export class AIServiceServer {
       const registerLevel = analysis.meta.register === 'formal' ? 'formal' :
                           analysis.meta.register === 'informal' ? 'informal' : 'neutral'
       
-      // Save main phrase analysis
-      // FIX: Đảm bảo phrase_type luôn là 'phrase' để tránh constraint violation
-      // Database constraint đã được cập nhật để bao gồm 'phrase'
+      // Save main phrase analysis using upsert instead of insert to handle duplicates
+      // Đảm bảo nhất quán với unique constraint: (user_id, phrase, sentence_context, document_id)
       const { data: phraseAnalysisData, error: phraseError } = await supabase
         .from('phrase_analyses')
-        .insert({
+        .upsert({
           user_id: userId,
           phrase: analysis.meta.phrase,
           phrase_type: 'phrase', // Sử dụng 'phrase' sau khi đã cập nhật constraint
@@ -930,7 +994,7 @@ export class AIServiceServer {
           contextual_meaning: analysis.definitions.figurative_meaning,
           vietnamese_translation: analysis.definitions.vietnamese_translation,
           stylistic_notes: analysis.definitions.usage_notes,
-          sentence_context: request.sentenceContext,
+          sentence_context: request.sentenceContext || '', // Đảm bảo không null
           paragraph_context: request.paragraphContext,
           grammatical_pattern: analysis.grammar_and_structure.pattern,
           part_of_speech: analysis.meta.pos,
@@ -952,6 +1016,8 @@ export class AIServiceServer {
             variations: analysis.grammar_and_structure.variations
           },
           document_id: request.sessionId || null
+        }, {
+          onConflict: 'user_id,phrase,sentence_context,document_id'
         })
         .select()
         .single()

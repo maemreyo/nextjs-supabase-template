@@ -7,6 +7,7 @@ import type {
   ParagraphAnalysis,
   PhraseAnalysis
 } from '@/lib/ai/types';
+import crypto from 'crypto';
 
 interface SaveAnalysisRequest {
   type: 'word' | 'sentence' | 'paragraph' | 'phrase';
@@ -24,6 +25,67 @@ interface SaveAnalysisResponse {
     type: string;
   };
   error?: string;
+}
+
+// Helper function to generate content hash for deduplication
+function generateContentHash(type: string, text: string, context?: string, documentId?: string): string {
+  const hashInput = `${type}:${text}:${context || ''}:${documentId || ''}`;
+  return crypto.createHash('sha256').update(hashInput).digest('hex');
+}
+
+// Helper function to check if analysis already exists
+async function checkExistingAnalysis(supabase: any, type: string, userId: string, text: string, context?: string, documentId?: string): Promise<any | null> {
+  let query;
+  
+  switch (type) {
+    case 'word':
+      query = supabase
+        .from('word_analyses')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('word', text)
+        .eq('sentence_context', context || null)
+        .eq('document_id', documentId || null)
+        .single();
+      break;
+    case 'sentence':
+      query = supabase
+        .from('sentence_analyses')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('sentence', text)
+        .eq('document_id', documentId || null)
+        .single();
+      break;
+    case 'paragraph':
+      query = supabase
+        .from('paragraph_analyses')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('paragraph', text)
+        .eq('document_id', documentId || null)
+        .single();
+      break;
+    case 'phrase':
+      query = supabase
+        .from('phrase_analyses')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('phrase', text)
+        .eq('sentence_context', context || null)
+        .eq('document_id', documentId || null)
+        .single();
+      break;
+    default:
+      return null;
+  }
+  
+  const { data, error } = await query;
+  if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+    console.error('Error checking existing analysis:', error);
+  }
+  
+  return data || null;
 }
 
 // Helper function to transform WordAnalysis to database format
@@ -198,10 +260,70 @@ export const POST = withAuth(
         );
       }
 
+    // Generate content hash for logging
+    const contentHash = generateContentHash(
+      body.type,
+      body.text,
+      body.type === 'word' || body.type === 'phrase' ? (body.analysisData as any).usage?.example_sentence : undefined,
+      body.documentId
+    );
+
+    console.log(`[DEDUPLICATION] Processing ${body.type} analysis with hash: ${contentHash}`);
+
+    // Check if analysis already exists
+    const existingAnalysis = await checkExistingAnalysis(
+      supabase,
+      body.type,
+      user.id,
+      body.text,
+      body.type === 'word' || body.type === 'phrase' ? (body.analysisData as any).usage?.example_sentence : undefined,
+      body.documentId
+    );
+
+    if (existingAnalysis) {
+      console.log(`[DEDUPLICATION] Found existing ${body.type} analysis: ${existingAnalysis.id}`);
+      
+      // Link to session if sessionId is provided
+      if (body.sessionId) {
+        const sessionAnalysisData = createSessionAnalysisEntry(
+          body.sessionId,
+          existingAnalysis.id,
+          body.type,
+          body.analysisData,
+          body.text,
+          user.id
+        );
+        
+        // Use upsert for session analysis to prevent duplicates
+        const { error: sessionError } = await supabase
+          .from('session_analyses')
+          .upsert(sessionAnalysisData, {
+            onConflict: 'session_id,analysis_id'
+          })
+          .select();
+        
+        if (sessionError) {
+          console.error('Error linking existing analysis to session:', sessionError);
+          // Don't fail the operation, just log the error
+        } else {
+          console.log(`[DEDUPLICATION] Linked existing analysis to session: ${body.sessionId}`);
+        }
+      }
+
+      return createSuccessResponse({
+        analysisId: existingAnalysis.id,
+        type: body.type,
+        isDuplicate: true,
+        message: 'Analysis already exists, returning existing record'
+      });
+    }
+
+    console.log(`[DEDUPLICATION] No existing analysis found, creating new ${body.type} analysis`);
+
     let analysisId: string = '';
     let analysisData: any;
 
-    // Save analysis to appropriate table based on type
+    // Save analysis to appropriate table based on type using upsert
     if (body.type === 'word') {
       const wordAnalysisData = transformWordAnalysis(
         body.analysisData as WordAnalysis,
@@ -210,9 +332,12 @@ export const POST = withAuth(
         body.documentId
       );
       
+      // Use upsert to handle conflicts properly
       const { data, error } = await supabase
         .from('word_analyses')
-        .insert(wordAnalysisData)
+        .upsert(wordAnalysisData, {
+          onConflict: 'user_id,word,sentence_context,document_id'
+        })
         .select()
         .single();
       
@@ -222,7 +347,18 @@ export const POST = withAuth(
       }
       
       analysisId = data.id;
-      analysisData = data;
+      // Get the full analysis data
+      const { data: fullData, error: fetchError } = await supabase
+        .from('word_analyses')
+        .select('*')
+        .eq('id', data)
+        .single();
+      
+      if (fetchError) {
+        console.error('Error fetching word analysis data:', fetchError);
+      } else {
+        analysisData = fullData;
+      }
       
       // Save related data (synonyms, antonyms, collocations)
       const wordAnalysis = body.analysisData as WordAnalysis;
@@ -297,7 +433,9 @@ export const POST = withAuth(
       
       const { data, error } = await supabase
         .from('sentence_analyses')
-        .insert(sentenceAnalysisData)
+        .upsert(sentenceAnalysisData, {
+          onConflict: 'user_id,sentence,document_id'
+        })
         .select()
         .single();
       
@@ -361,7 +499,9 @@ export const POST = withAuth(
       
       const { data, error } = await supabase
         .from('paragraph_analyses')
-        .insert(paragraphAnalysisData)
+        .upsert(paragraphAnalysisData, {
+          onConflict: 'user_id,paragraph,document_id'
+        })
         .select()
         .single();
       
@@ -422,9 +562,12 @@ export const POST = withAuth(
         body.documentId
       );
       
+      // Use upsert to handle conflicts properly
       const { data, error } = await supabase
         .from('phrase_analyses')
-        .insert(phraseAnalysisData)
+        .upsert(phraseAnalysisData, {
+          onConflict: 'user_id,phrase,sentence_context,document_id'
+        })
         .select()
         .single();
       
@@ -434,7 +577,18 @@ export const POST = withAuth(
       }
       
       analysisId = data.id;
-      analysisData = data;
+      // Get the full analysis data
+      const { data: fullData, error: fetchError } = await supabase
+        .from('phrase_analyses')
+        .select('*')
+        .eq('id', data)
+        .single();
+      
+      if (fetchError) {
+        console.error('Error fetching phrase analysis data:', fetchError);
+      } else {
+        analysisData = fullData;
+      }
     }
 
     let sessionAnalysisId: string | undefined;
@@ -450,17 +604,20 @@ export const POST = withAuth(
         user.id
       );
       
+      // Use upsert for session analysis to prevent duplicates
       const { data: sessionAnalysis, error: sessionAnalysisError } = await supabase
         .from('session_analyses')
-        .insert(sessionAnalysisData)
-        .select()
-        .single();
+        .upsert(sessionAnalysisData, {
+          onConflict: 'session_id,analysis_id'
+        })
+        .select();
       
       if (sessionAnalysisError) {
         console.error('Error linking analysis to session:', sessionAnalysisError);
         // Don't fail the whole operation if session linking fails
       } else {
         sessionAnalysisId = sessionAnalysis.id;
+        console.log(`[DEDUPLICATION] Linked new analysis to session: ${body.sessionId}`);
         
         // Update session counts
         // First get current counts
@@ -501,12 +658,14 @@ export const POST = withAuth(
       }
     }
 
-      console.log(`Analysis saved successfully: ${body.type} analysis with ID ${analysisId}`);
+      console.log(`[DEDUPLICATION] Analysis saved successfully: ${body.type} analysis with ID ${analysisId}`);
 
       const response = {
         analysisId,
         sessionAnalysisId,
         type: body.type,
+        isDuplicate: false,
+        message: 'New analysis created successfully'
       };
 
       return createSuccessResponse(response);

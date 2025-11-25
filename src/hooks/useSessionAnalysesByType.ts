@@ -11,6 +11,9 @@ interface UseSessionAnalysesByTypeProps {
   enabled?: boolean;
   invalidateOnMount?: boolean;
   staleTime?: number;
+  // Thêm tabId/componentId để đảm bảo queryKey unique
+  tabId?: string;
+  componentId?: string;
 }
 
 interface SessionAnalysesResponse {
@@ -33,11 +36,20 @@ export function useSessionAnalysesByType({
   enabled = true,
   invalidateOnMount = false,
   staleTime = 5 * 60 * 1000, // 5 minutes
+  tabId,
+  componentId,
 }: UseSessionAnalysesByTypeProps) {
-  console.log(`[useSessionAnalysesByType] Initializing hook for ${type}, enabled: ${enabled}, pageSize: ${pageSize}`);
+  // Tạo queryKey unique với tabId/componentId để tránh multiple instances
+  const queryKey = tabId
+    ? ['session-analyses', sessionId, type, 'tab', tabId] as const
+    : componentId
+      ? ['session-analyses', sessionId, type, 'component', componentId] as const
+      : ['session-analyses', sessionId, type] as const;
+      
+  console.log(`[useSessionAnalysesByType] Initializing hook for ${type}, enabled: ${enabled}, pageSize: ${pageSize}, queryKey:`, queryKey);
   
   return useInfiniteQuery({
-    queryKey: ['session-analyses', sessionId, type] as const,
+    queryKey,
     queryFn: async ({ pageParam = 0 }): Promise<SessionAnalysesResponse> => {
       console.log(`[API] Fetching analyses for ${type}, offset: ${pageParam}, limit: ${pageSize}`);
       
@@ -73,8 +85,11 @@ export function useSessionAnalysesByType({
     initialPageParam: 0,
     enabled: enabled && !!sessionId,
     refetchOnMount: invalidateOnMount ? 'always' : false,
-    staleTime,
+    staleTime: staleTime || 10 * 60 * 1000, // Tăng staleTime lên 10 phút
+    gcTime: 15 * 60 * 1000, // Tăng gcTime lên 15 phút
     refetchOnWindowFocus: false,
+    retry: 2, // Thêm retry limit
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
     select: (data) => {
       // Transform all analyses and filter by type
       const allAnalyses = data.pages.flatMap(page =>

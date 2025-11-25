@@ -1,0 +1,122 @@
+Generated cache key for operation: text key length: 4432
+Flushing usage logs: [
+  {
+    provider: 'google',
+    model: 'gemini-2.5-flash',
+    operation: 'text-generation',
+    inputTokens: 818,
+    outputTokens: 1104,
+    totalTokens: 3481,
+    cost: 0.000261075,
+    duration: 12832,
+    success: true,
+    metadata: {
+      operation: 'word-analysis',
+      word: 'presence',
+      context: 'to continue to grow. Their presence is also helping to rebalance Nkhotakota’s damaged ecosystem and providing a sustainable conservation model, which could be replic'
+    },
+    timestamp: 2025-11-25T16:48:52.014Z,
+    id: '2rq0x0alj'
+  }
+]
+DEBUG: AI response text length: 3783
+DEBUG: AI response preview: {"meta": {"word": "presence", "ipa": "/ˈprɛzəns/", "pos": "Noun", "cefr": "B1", "tone": "Neutral"}, "definitions": {"root_meaning": "The fact or state of being in a particular place or at a particular
+DEBUG: Starting saveWordAnalysis for word: presence
+DEBUG: sessionId in request: bfd6ec15-e9ca-46e9-8995-ebec4072c0fe
+DEBUG: Attempting to save main word analysis to database
+DEBUG: Will save with document_id: bfd6ec15-e9ca-46e9-8995-ebec4072c0fe
+DEBUG: Database error when saving word analysis: {
+  code: '42703',
+  details: null,
+  hint: null,
+  message: 'column "word_analyses_unique_content" does not exist'
+}
+DEBUG: Failed to save word analysis: Error: Failed to save word analysis
+    at AIServiceServer.saveWordAnalysis (src/lib/ai/ai-service-server.ts:741:15)
+    at async AIServiceServer.analyzeWord (src/lib/ai/ai-service-server.ts:386:30)
+    at async POST (src/app/api/ai/analyze-word/route.ts:156:20)
+  739 |       if (error) {
+  740 |         console.error('DEBUG: Database error when saving word analysis:', error)
+> 741 |         throw new Error('Failed to save word analysis')
+      |               ^
+  742 |       }
+  743 |
+  744 |       wordAnalysisId = data.id;
+DEBUG: wordAnalysisId at error time: null
+Error analyzing word: Error: Failed to save word analysis
+    at AIServiceServer.saveWordAnalysis (src/lib/ai/ai-service-server.ts:741:15)
+    at async AIServiceServer.analyzeWord (src/lib/ai/ai-service-server.ts:386:30)
+    at async POST (src/app/api/ai/analyze-word/route.ts:156:20)
+  739 |       if (error) {
+  740 |         console.error('DEBUG: Database error when saving word analysis:', error)
+> 741 |         throw new Error('Failed to save word analysis')
+      |               ^
+  742 |       }
+  743 |
+  744 |       wordAnalysisId = data.id;
+ POST /api/ai/analyze-word 500 in 14.7s (compile: 205ms, proxy.ts: 14ms, render: 14.5s)
+AI Service Initializing with: {
+  defaultProvider: 'gemini',
+  defaultModel: 'gemini-2.5-flash-lite',
+  envProvider: 'gemini',
+  envModel: 'gemini-2.5-flash-lite'
+}
+[Performance] ai-analyze-word: 0.11454199999570847ms
+Generated cache key for operation: text key length: 4432
+Generated cache key for operation: text key length: 4432
+Flushing usage logs: [
+  {
+    provider: 'google',
+    model: 'gemini-2.5-flash',
+    operation: 'text-generation',
+    inputTokens: 818,
+    outputTokens: 1137,
+    totalTokens: 3561,
+    cost: 0.000267075,
+    duration: 13736,
+    success: true,
+    metadata: {
+      operation: 'word-analysis',
+      word: 'presence',
+      context: 'to continue to grow. Their presence is also helping to rebalance Nkhotakota’s damaged ecosystem and providing a sustainable conservation model, which could be replic'
+    },
+    timestamp: 2025-11-25T16:49:08.022Z,
+    id: '9ofx3jj8r'
+  }
+]
+DEBUG: AI response text length: 3769
+DEBUG: AI response preview: {"meta": {"word": "presence", "ipa": "/ˈprez.əns/", "pos": "Noun", "cefr": "B1", "tone": "Neutral"}, "definitions": {"root_meaning": "The fact or state of being in a particular place or of existing.",
+DEBUG: Starting saveWordAnalysis for word: presence
+DEBUG: sessionId in request: bfd6ec15-e9ca-46e9-8995-ebec4072c0fe
+DEBUG: Attempting to save main word analysis to database
+DEBUG: Will save with document_id: bfd6ec15-e9ca-46e9-8995-ebec4072c0fe
+DEBUG: Database error when saving word analysis: {
+  code: '42703',
+  details: null,
+  hint: null,
+  message: 'column "word_analyses_unique_content" does not exist'
+}
+DEBUG: Failed to save word analysis: Error: Failed to save word analysis
+    at AIServiceServer.saveWordAnalysis (src/lib/ai/ai-service-server.ts:741:15)
+    at async AIServiceServer.analyzeWord (src/lib/ai/ai-service-server.ts:386:30)
+    at async POST (src/app/api/ai/analyze-word/route.ts:156:20)
+  739 |       if (error) {
+  740 |         console.error('DEBUG: Database error when saving word analysis:', error)
+> 741 |         throw new Error('Failed to save word analysis')
+      |               ^
+  742 |       }
+  743 |
+  744 |       wordAnalysisId = data.id;
+DEBUG: wordAnalysisId at error time: null
+Error analyzing word: Error: Failed to save word analysis
+    at AIServiceServer.saveWordAnalysis (src/lib/ai/ai-service-server.ts:741:15)
+    at async AIServiceServer.analyzeWord (src/lib/ai/ai-service-server.ts:386:30)
+    at async POST (src/app/api/ai/analyze-word/route.ts:156:20)
+  739 |       if (error) {
+  740 |         console.error('DEBUG: Database error when saving word analysis:', error)
+> 741 |         throw new Error('Failed to save word analysis')
+      |               ^
+  742 |       }
+  743 |
+  744 |       wordAnalysisId = data.id;
+ POST /api/ai/analyze-word 500 in 15.0s (compile: 8ms, proxy.ts: 6ms, render: 14.9s)

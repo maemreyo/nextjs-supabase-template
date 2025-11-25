@@ -48,7 +48,21 @@ export async function addAnalysisToSession(options: SessionAnalysisOptions) {
       throw sessionError
     }
 
-    // 2. Tạo session analysis record
+    // 2. Check if session analysis already exists to prevent duplicates
+    const { data: existingSessionAnalysis } = await supabase
+      .from('session_analyses')
+      .select('id')
+      .eq('session_id', options.sessionId)
+      .eq('analysis_id', options.analysisId)
+      .eq('user_id', options.userId)
+      .single();
+    
+    if (existingSessionAnalysis) {
+      console.log('DEBUG: Found existing session analysis:', existingSessionAnalysis.id)
+      return { success: true, data: existingSessionAnalysis }
+    }
+
+    // 3. Tạo session analysis record sử dụng upsert để tránh trùng lặp
     const sessionAnalysisData: SessionAnalysis = {
       session_id: options.sessionId,
       analysis_id: options.analysisId,
@@ -63,7 +77,9 @@ export async function addAnalysisToSession(options: SessionAnalysisOptions) {
 
     const { data: sessionAnalysis, error: analysisError } = await supabase
       .from('session_analyses')
-      .insert(sessionAnalysisData)
+      .upsert(sessionAnalysisData, {
+        onConflict: 'session_id,analysis_id,user_id'
+      })
       .select()
       .single()
 
@@ -71,7 +87,7 @@ export async function addAnalysisToSession(options: SessionAnalysisOptions) {
       throw analysisError
     }
 
-    // 3. Cập nhật counters trong analysis_sessions
+    // 4. Cập nhật counters trong analysis_sessions
     const updateData: AnalysisSession = {
       last_accessed_at: new Date().toISOString(),
       updated_at: new Date().toISOString()

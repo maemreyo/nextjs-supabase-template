@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -60,18 +60,35 @@ const MemoizedBubbleMenu = React.memo(function BubbleMenu({
 }: BubbleMenuProps) {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentColorIndex, setCurrentColorIndex] = useState(0);
-
-  if (!position.show) {
-    return null;
-  }
+  
+  // Ref để theo dõi việc gọi onAnalyze để tránh multiple calls
+  const analyzeCallRef = useRef(false);
+  const lastAnalysisTimeRef = useRef<number>(0);
 
   // Handle analyze button click - trigger Dynamic Island
-  const handleAnalyzeClick = () => {
+  const handleAnalyzeClick = useCallback(() => {
+    // Ngăn chặn multiple calls trong khoảng thời gian ngắn
+    const now = Date.now();
+    if (analyzeCallRef.current || (now - lastAnalysisTimeRef.current < 3000)) {
+      console.log('[BubbleMenu] Throttling analyze call');
+      return;
+    }
+    
+    // Đặt flag để ngăn chặn additional calls
+    analyzeCallRef.current = true;
+    lastAnalysisTimeRef.current = now;
+    
+    console.log('[BubbleMenu] Triggering analysis');
     onDynamicIslandTrigger?.();
     onAnalyze();
-  };
+    
+    // Reset flag sau 3 giây
+    setTimeout(() => {
+      analyzeCallRef.current = false;
+    }, 3000);
+  }, [onDynamicIslandTrigger, onAnalyze]);
 
-  const handlePronounce = () => {
+  const handlePronounce = useCallback(() => {
     if (isSpeaking) {
       // Stop speaking
       window.speechSynthesis.cancel();
@@ -92,17 +109,22 @@ const MemoizedBubbleMenu = React.memo(function BubbleMenu({
 
     // Call the original onPronounce if provided
     onPronounce?.(selection.text);
-  };
+  }, [isSpeaking, onPronounce, selection.text]);
 
-  const handlePrevColor = () => {
+  const handlePrevColor = useCallback(() => {
     setCurrentColorIndex((prev) => (prev - 1 + HIGHLIGHT_COLORS.length) % HIGHLIGHT_COLORS.length);
-  };
+  }, []);
 
-  const handleNextColor = () => {
+  const handleNextColor = useCallback(() => {
     setCurrentColorIndex((prev) => (prev + 1) % HIGHLIGHT_COLORS.length);
-  };
+  }, []);
 
   const currentColor = HIGHLIGHT_COLORS[currentColorIndex] || HIGHLIGHT_COLORS[0] as any;
+
+  // Early return sau khi tất cả hooks đã được khai báo
+  if (!position.show) {
+    return null;
+  }
 
   return (
     <>
@@ -124,11 +146,12 @@ const MemoizedBubbleMenu = React.memo(function BubbleMenu({
           size="sm"
           onMouseDown={(e) => e.preventDefault()}
           onClick={handleAnalyzeClick}
-          disabled={isAnalyzing}
+          disabled={isAnalyzing || analyzeCallRef.current}
           className="h-7 px-2 text-xs"
+          title={isAnalyzing ? 'Đang phân tích...' : analyzeCallRef.current ? 'Vui lòng đợi...' : 'Phân tích'}
         >
           <BookMarked size={12} className="mr-1" />
-          {isAnalyzing ? 'Analyzing...' : 'Analyze'}
+          {isAnalyzing ? 'Analyzing...' : analyzeCallRef.current ? 'Đang xử lý...' : 'Analyze'}
         </Button>
 
         {/* Save Button - Only show if there's a last analysis result and auto-save is disabled */}
