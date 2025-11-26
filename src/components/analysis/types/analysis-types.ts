@@ -145,6 +145,41 @@ export interface AnalysisItemProps {
   truncateLength?: number;
 }
 
+// Extended props for AnalysisItemCard with dialog system integration
+export interface AnalysisItemCardProps extends AnalysisItemProps {
+  layoutConfig?: 'default' | 'compact';
+  className?: string;
+  
+  // Dialog system integration props
+  enableDialogSystem?: boolean; // Feature flag to enable/disable new dialog system
+  onViewDetails?: (analysis: AnalysisItem) => void; // Open view details dialog
+  onEdit?: (analysis: AnalysisItem) => void; // Open edit dialog
+  onExport?: (analysis: AnalysisItem, format?: 'pdf' | 'json' | 'csv' | 'txt' | 'html') => void; // Open export dialog
+  onAddToVocabulary?: (analysis: AnalysisItem) => void; // Add to vocabulary
+  onPractice?: (analysis: AnalysisItem) => void; // Open practice dialog
+  
+  // Dialog options
+  dialogOptions?: {
+    size?: 'default' | 'large' | 'xlarge' | 'xxlarge' | 'fullscreen';
+    enableFullscreen?: boolean;
+    enableResize?: boolean;
+  };
+  
+  // Loading and error states
+  loading?: boolean;
+  error?: string | null;
+  
+  // Accessibility
+  ariaLabels?: {
+    viewDetails?: string;
+    edit?: string;
+    export?: string;
+    addToVocabulary?: string;
+    practice?: string;
+    remove?: string;
+  };
+}
+
 // Layout configuration based on analysis type
 export interface LayoutConfig {
   gridCols: string;

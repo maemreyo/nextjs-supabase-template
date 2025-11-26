@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,11 @@ import {
   ChevronDown,
   ChevronUp,
   ExternalLink,
+  Eye,
+  Edit,
+  Download,
+  Plus,
+  Play,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -18,13 +23,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils'; // Đảm bảo bạn có utility này (thường mặc định khi cài shadcn)
-import { AnalysisItemProps, DEFAULT_LAYOUTS, COMPACT_LAYOUTS } from '../types/analysis-types';
+import { AnalysisItemCardProps, DEFAULT_LAYOUTS, COMPACT_LAYOUTS } from '../types/analysis-types';
 import { normalizePOS } from '../helpers/pos-normalizer';
-
-interface AnalysisItemCardProps extends AnalysisItemProps {
-  layoutConfig?: 'default' | 'compact';
-  className?: string;
-}
+import { useDialogDispatcher } from '../dialogs/utils/dialog-dispatcher';
+import { ExportFormat } from '../dialogs/types/dialog-types';
 
 export function AnalysisItemCard({
   analysis,
@@ -35,9 +37,24 @@ export function AnalysisItemCard({
   showPhonetic = true,
   truncateLength,
   layoutConfig = compact ? 'compact' : 'default',
-  className
+  className,
+  
+  // Dialog system integration props
+  enableDialogSystem = true,
+  onViewDetails,
+  onEdit,
+  onExport,
+  onAddToVocabulary,
+  onPractice,
+  dialogOptions,
+  loading = false,
+  error = null,
+  ariaLabels,
 }: AnalysisItemCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  
+  // Dialog system integration
+  const dialogDispatcher = useDialogDispatcher();
 
   // Layout Strategy
   const layoutStyle = layoutConfig === 'compact' ? COMPACT_LAYOUTS : DEFAULT_LAYOUTS;
@@ -148,7 +165,80 @@ export function AnalysisItemCard({
     }
   };
 
-  const handleCardClick = () => onClick?.(analysis);
+  const handleCardClick = () => {
+    if (enableDialogSystem && onViewDetails) {
+      dialogDispatcher.openViewDetails(analysis, dialogOptions, onClick);
+    } else {
+      onClick?.(analysis);
+    }
+  };
+
+  // Dialog system click handlers
+  const handleViewDetails = useCallback(() => {
+    if (enableDialogSystem && onViewDetails) {
+      dialogDispatcher.openViewDetails(analysis, dialogOptions, onClick);
+    } else {
+      onClick?.(analysis);
+    }
+  }, [analysis, enableDialogSystem, onViewDetails, onClick, dialogOptions, dialogDispatcher]);
+
+  const handleEdit = useCallback(() => {
+    if (enableDialogSystem && onEdit) {
+      dialogDispatcher.openEditDialog(analysis, dialogOptions, onAnalyze);
+    } else {
+      onAnalyze?.(analysis);
+    }
+  }, [analysis, enableDialogSystem, onEdit, onAnalyze, dialogOptions, dialogDispatcher]);
+
+  const handleExport = useCallback((format?: ExportFormat) => {
+    if (enableDialogSystem && onExport) {
+      dialogDispatcher.openExportDialog(analysis, format, () => {
+        // Fallback: try to download as JSON
+        const dataStr = JSON.stringify(analysis, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${analysis.analysisType}-${analysis.id}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      });
+    } else {
+      // Fallback export behavior
+      const dataStr = JSON.stringify(analysis, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${analysis.analysisType}-${analysis.id}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+  }, [analysis, enableDialogSystem, onExport, dialogDispatcher]);
+
+  const handleAddToVocabulary = useCallback(() => {
+    if (enableDialogSystem && onAddToVocabulary) {
+      dialogDispatcher.addToVocabulary(analysis, () => {
+        // Fallback: log to console
+        console.log('Added to vocabulary:', analysis);
+      });
+    } else {
+      // Fallback: log to console
+      console.log('Added to vocabulary:', analysis);
+    }
+  }, [analysis, enableDialogSystem, onAddToVocabulary, dialogDispatcher]);
+
+  const handlePractice = useCallback(() => {
+    if (enableDialogSystem && onPractice) {
+      dialogDispatcher.openPracticeDialog(analysis, onAnalyze);
+    } else {
+      onAnalyze?.(analysis);
+    }
+  }, [analysis, enableDialogSystem, onPractice, onAnalyze, dialogDispatcher]);
 
   return (
     <Card
@@ -157,9 +247,13 @@ export function AnalysisItemCard({
         "hover:shadow-md hover:border-primary/50",
         "cursor-pointer bg-card text-card-foreground",
         activeLayout.maxHeight,
+        loading && "opacity-50 cursor-not-allowed",
+        error && "border-destructive/50",
         className
       )}
-      onClick={handleCardClick}
+      onClick={loading ? undefined : handleCardClick}
+      aria-busy={loading}
+      aria-invalid={!!error}
     >
       <CardHeader className={cn("p-4 pb-2 space-y-0", activeLayout.cardPadding)}>
         <div className="flex items-start justify-between gap-2">
@@ -255,21 +349,80 @@ export function AnalysisItemCard({
                   <span className="sr-only">Thêm</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={() => onAnalyze?.(analysis)}>
-                  <BookOpen className="h-4 w-4 mr-2" />
-                  Phân tích chi tiết
+              <DropdownMenuContent align="end" className="w-56">
+                {/* View Details */}
+                <DropdownMenuItem
+                  onClick={handleViewDetails}
+                  aria-label={ariaLabels?.viewDetails || `Xem chi tiết ${analysis.analysisType}`}
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  Xem chi tiết
                 </DropdownMenuItem>
+                
+                {/* Edit */}
+                <DropdownMenuItem
+                  onClick={handleEdit}
+                  aria-label={ariaLabels?.edit || `Chỉnh sửa ${analysis.analysisType}`}
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Chỉnh sửa
+                </DropdownMenuItem>
+                
+                {/* Original Analyze */}
+                {onAnalyze && (
+                  <DropdownMenuItem onClick={() => onAnalyze(analysis)}>
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    Phân tích chi tiết
+                  </DropdownMenuItem>
+                )}
+                
+                {/* Pronunciation */}
                 {normalizedData.phonetic && (
-                  <DropdownMenuItem onClick={() => handlePronounce(normalizedData.title)}>
+                  <DropdownMenuItem
+                    onClick={() => handlePronounce(normalizedData.title)}
+                    aria-label={ariaLabels?.practice || `Phát âm ${normalizedData.title}`}
+                  >
                     <Volume2 className="h-4 w-4 mr-2" />
                     Phát âm
                   </DropdownMenuItem>
                 )}
+                
                 <DropdownMenuSeparator />
+                
+                {/* Export */}
+                <DropdownMenuItem
+                  onClick={() => handleExport()}
+                  aria-label={ariaLabels?.export || `Xuất ${analysis.analysisType}`}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Xuất
+                </DropdownMenuItem>
+                
+                {/* Add to Vocabulary */}
+                <DropdownMenuItem
+                  onClick={handleAddToVocabulary}
+                  aria-label={ariaLabels?.addToVocabulary || `Thêm vào từ vựng`}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Thêm vào từ vựng
+                </DropdownMenuItem>
+                
+                {/* Practice */}
+                <DropdownMenuItem
+                  onClick={handlePractice}
+                  aria-label={ariaLabels?.practice || `Luyện tập ${analysis.analysisType}`}
+                >
+                  <Play className="h-4 w-4 mr-2" />
+                  Luyện tập
+                </DropdownMenuItem>
+                
+                <DropdownMenuSeparator />
+                
+                {/* Remove */}
                 <DropdownMenuItem
                   onClick={() => onRemove?.(analysis.analysisId, analysis.analysisType)}
                   className="text-destructive focus:text-destructive"
+                  aria-label={ariaLabels?.remove || `Xóa ${analysis.analysisType}`}
                 >
                   <ExternalLink className="h-4 w-4 mr-2" />
                   Xóa khỏi danh sách
@@ -279,6 +432,35 @@ export function AnalysisItemCard({
           </div>
         </div>
       </CardHeader>
+      
+      {/* Error Display */}
+      {error && (
+        <div className="mx-4 mb-2 p-2 bg-destructive/10 border border-destructive/20 rounded-md">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-destructive rounded-full flex items-center justify-center">
+              <span className="text-white text-xs">!</span>
+            </div>
+            <p className="text-xs text-destructive">{error}</p>
+            <button
+              onClick={() => {/* Clear error handler could be passed as prop */}}
+              className="ml-auto text-destructive hover:text-destructive/80"
+              aria-label="Đóng thông báo lỗi"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {/* Loading Overlay */}
+      {loading && (
+        <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg">
+          <div className="flex flex-col items-center gap-2">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary border-t-transparent"></div>
+            <span className="text-xs text-muted-foreground">Đang xử lý...</span>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }

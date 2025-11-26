@@ -262,6 +262,7 @@ const AnalysisTabContent = memo(function AnalysisTabContent({
                 compact={compact}
                 showPhonetic={true}
                 truncateLength={layout.truncateLength}
+                enableDialogSystem={false} // Disable dialog system in tabs for now
               />
             </div>
           );
