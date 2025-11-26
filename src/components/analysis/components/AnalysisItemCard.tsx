@@ -109,6 +109,24 @@ export function AnalysisItemCard({
   // Render Helpers
   const isWordOrPhrase = analysis.analysisType === 'word' || analysis.analysisType === 'phrase';
 
+  // Multi-line truncation configuration for each analysis type
+  const getTruncationConfig = (type: string) => {
+    switch (type) {
+      case 'word':
+        return { titleLines: 1, subtitleLines: 1 };
+      case 'phrase':
+        return { titleLines: 2, subtitleLines: 1 };
+      case 'sentence':
+        return { titleLines: 2, subtitleLines: 2 };
+      case 'paragraph':
+        return { titleLines: 3, subtitleLines: 2 };
+      default:
+        return { titleLines: 1, subtitleLines: 1 };
+    }
+  };
+
+  const truncationConfig = getTruncationConfig(analysis.analysisType);
+
   // Description Truncation Logic
   const descriptionText = normalizedData.description || '';
   const shouldTruncateDesc = truncateLength && descriptionText.length > truncateLength;
@@ -116,9 +134,9 @@ export function AnalysisItemCard({
     ? `${descriptionText.substring(0, truncateLength)}...`
     : descriptionText;
 
-  // Title Truncation for Paragraphs
-  const displayTitle = normalizedData.isLongText
-    ? (normalizedData.title.length > 100 ? `${normalizedData.title.substring(0, 100)}...` : normalizedData.title)
+  // Title Truncation Logic - use truncateLength instead of hardcoded 100
+  const displayTitle = normalizedData.isLongText && truncateLength
+    ? (normalizedData.title.length > truncateLength ? `${normalizedData.title.substring(0, truncateLength)}...` : normalizedData.title)
     : normalizedData.title;
 
   const handlePronounce = (text: string) => {
@@ -148,7 +166,11 @@ export function AnalysisItemCard({
           {/* Main Content Area */}
           <div className="flex-1 min-w-0 space-y-1">
             <div className="flex items-center gap-2">
-              <h3 className={cn("font-semibold leading-none tracking-tight truncate", activeLayout.titleSize)}>
+              <h3 className={cn(
+                "font-semibold leading-none tracking-tight",
+                `line-clamp-${truncationConfig.titleLines}`,
+                activeLayout.titleSize
+              )}>
                 {displayTitle.toLowerCase()}
               </h3>
 
@@ -195,7 +217,10 @@ export function AnalysisItemCard({
               )}
             {/* Subtitle / Translation */}
             {normalizedData.subtitle && (
-              <p className="text-sm text-muted-foreground truncate mt-4">
+              <p className={cn(
+                "text-sm text-muted-foreground mt-4",
+                `line-clamp-${truncationConfig.subtitleLines}`
+              )}>
                 {normalizedData.subtitle.toLowerCase()}
               </p>
             )}

@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BookOpen, Type, MessageSquare, FileText } from 'lucide-react';
-import { AnalysisType, AnalysisItem, SessionAnalysesListProps } from './types/analysis-types';
+import { AnalysisType, AnalysisItem, SessionAnalysesListProps, isWordAnalysis, isPhraseAnalysis, isSentenceAnalysis, isParagraphAnalysis } from './types/analysis-types';
 import { AnalysisItemCard } from './components/AnalysisItemCard';
 import { DEFAULT_LAYOUTS, COMPACT_LAYOUTS } from './types/analysis-types';
 import { getAnalysisTypeDisplayName } from './helpers/data-transformers';
@@ -22,8 +22,57 @@ const ANALYSIS_HEIGHTS = {
   paragraph: 230,
 };
 
+// Maximum height limits to prevent overly tall cards
+const MAX_ANALYSIS_HEIGHTS = {
+  word: 300,
+  phrase: 350,
+  sentence: 400,
+  paragraph: 500,
+};
+
 // Single column layout for all analysis types
 const GRID_COLUMNS = 1;
+
+// Helper function to calculate dynamic height based on content length
+const calculateItemHeight = (analysis: AnalysisItem, type: AnalysisType): number => {
+  const baseHeight = ANALYSIS_HEIGHTS[type];
+  const maxHeight = MAX_ANALYSIS_HEIGHTS[type];
+  
+  // Get content length based on analysis type using type guards
+  let contentLength = 0;
+  if (isWordAnalysis(analysis)) {
+    contentLength = Math.max(
+      analysis.word?.length || 0,
+      analysis.translation?.length || 0,
+      analysis.definition?.length || 0,
+      analysis.contextMeaning?.length || 0
+    );
+  } else if (isPhraseAnalysis(analysis)) {
+    contentLength = Math.max(
+      analysis.phrase?.length || 0,
+      analysis.naturalTranslation?.length || 0,
+      analysis.contextualMeaning?.length || 0,
+      analysis.literalMeaning?.length || 0
+    );
+  } else if (isSentenceAnalysis(analysis)) {
+    contentLength = Math.max(
+      analysis.sentence?.length || 0,
+      analysis.naturalTranslation?.length || 0,
+      analysis.mainIdea?.length || 0
+    );
+  } else if (isParagraphAnalysis(analysis)) {
+    contentLength = Math.max(
+      analysis.paragraph?.length || 0,
+      analysis.mainTopic?.length || 0
+    );
+  }
+  
+  // Calculate additional height based on content length
+  // Rough estimate: every 100 characters adds about 20px of height
+  const additionalHeight = Math.floor(contentLength / 100) * 20;
+  
+  return Math.min(baseHeight + additionalHeight, maxHeight);
+};
 
 interface AnalysisTabContentProps {
   sessionId: string;
@@ -101,8 +150,10 @@ const AnalysisTabContent = memo(function AnalysisTabContent({
   const virtualizer = useVirtualizer({
     count: data?.flatAnalyses?.length || 0,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => {
-      return ANALYSIS_HEIGHTS[type] || 160;
+    estimateSize: (index) => {
+      const analysis = data?.flatAnalyses?.[index];
+      if (!analysis) return ANALYSIS_HEIGHTS[type] || 160;
+      return calculateItemHeight(analysis, type);
     },
     overscan: 5,
     onChange: (instance) => {
