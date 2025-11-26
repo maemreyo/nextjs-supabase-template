@@ -1,14 +1,14 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { 
-  Volume2, 
-  BookOpen, 
-  Copy, 
-  ChevronDown, 
-  ChevronUp, 
-  Languages, 
-  Lightbulb, 
-  Link, 
-  Book, 
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import {
+  Volume2,
+  BookOpen,
+  Copy,
+  ChevronDown,
+  ChevronUp,
+  Languages,
+  Lightbulb,
+  Link,
+  Book,
   MessageCircle,
   FileText,
   GitBranch,
@@ -44,6 +44,7 @@ import { Badge } from '../../../ui/badge';
 import { Separator } from '../../../ui/separator';
 import { Progress } from '../../../ui/progress';
 import { cn } from '@/lib/utils';
+import { useDialogState } from '../hooks/use-dialog-state';
 
 // Import new modular components
 import { ParagraphPrimaryInformationDisplayCard } from './paragraph-primary-information-display-card';
@@ -67,6 +68,27 @@ export const ParagraphDialogContent: React.FC<ParagraphDialogContentProps> = ({
   compact = false,
   className,
 }) => {
+  const { state, actions } = useDialogState('paragraph');
+  const loading = state.dialogState.loading;
+
+  // Clear loading state when data is available
+  useEffect(() => {
+    try {
+      if (analysis && loading) {
+        actions.setLoading(false);
+      }
+    } catch (error) {
+      console.error('Error clearing loading state in ParagraphDialogContent:', error);
+      // Fallback: try to clear loading state after a short delay
+      setTimeout(() => {
+        try {
+          actions.setLoading(false);
+        } catch (fallbackError) {
+          console.error('Fallback error clearing loading state:', fallbackError);
+        }
+      }, 100);
+    }
+  }, [analysis, loading, actions]);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     context: false,
     structure: true,

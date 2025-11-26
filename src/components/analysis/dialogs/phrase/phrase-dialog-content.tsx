@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Volume2, BookOpen, Copy, ChevronDown, ChevronUp, Languages, Lightbulb, Link, Book, MessageCircle } from 'lucide-react';
 import { PhraseAnalysis } from '../../types/analysis-types';
 import {
@@ -17,6 +17,7 @@ import { Button } from '../../../ui/button';
 import { Badge } from '../../../ui/badge';
 import { Separator } from '../../../ui/separator';
 import { cn } from '@/lib/utils';
+import { useDialogState } from '../hooks/use-dialog-state';
 
 // Import new modular components
 import { PhrasePrimaryInformationDisplayCard } from './phrase-primary-information-display-card';
@@ -37,6 +38,27 @@ export const PhraseDialogContent: React.FC<PhraseDialogContentProps> = ({
   showContext = true,
   className,
 }) => {
+  const { state, actions } = useDialogState('phrase');
+  const loading = state.dialogState.loading;
+
+  // Clear loading state when data is available
+  useEffect(() => {
+    try {
+      if (analysis && loading) {
+        actions.setLoading(false);
+      }
+    } catch (error) {
+      console.error('Error clearing loading state in PhraseDialogContent:', error);
+      // Fallback: try to clear loading state after a short delay
+      setTimeout(() => {
+        try {
+          actions.setLoading(false);
+        } catch (fallbackError) {
+          console.error('Fallback error clearing loading state:', fallbackError);
+        }
+      }, 100);
+    }
+  }, [analysis, loading, actions]);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     context: false,
     examples: true,

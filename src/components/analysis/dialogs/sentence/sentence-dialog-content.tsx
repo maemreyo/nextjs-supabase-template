@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   BookOpen,
   Copy,
@@ -19,6 +19,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '../../../ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../../ui/tabs';
 import { Button } from '../../../ui/button';
 import { cn } from '@/lib/utils';
+import { useDialogState } from '../hooks/use-dialog-state';
 
 /**
  * Main Sentence Dialog Content Component
@@ -33,6 +34,27 @@ export const SentenceDialogContent: React.FC<SentenceDialogContentProps> = ({
   compact = false,
   className,
 }) => {
+  const { state, actions } = useDialogState('sentence');
+  const loading = state.dialogState.loading;
+
+  // Clear loading state when data is available
+  useEffect(() => {
+    try {
+      if (analysis && loading) {
+        actions.setLoading(false);
+      }
+    } catch (error) {
+      console.error('Error clearing loading state in SentenceDialogContent:', error);
+      // Fallback: try to clear loading state after a short delay
+      setTimeout(() => {
+        try {
+          actions.setLoading(false);
+        } catch (fallbackError) {
+          console.error('Fallback error clearing loading state:', fallbackError);
+        }
+      }, 100);
+    }
+  }, [analysis, loading, actions]);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     context: false,
     structure: true,

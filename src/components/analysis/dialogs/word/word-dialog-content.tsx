@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { WordAnalysis } from '../../types/analysis-types';
 import { WordDialogContentProps } from './word-dialog-types';
 import { WordPrimaryInformationDisplayCard } from './word-primary-information-display-card';
@@ -8,6 +8,7 @@ import { WordSynonymsAntonymsRelatedTermsSection } from './word-synonyms-antonym
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../../ui/tabs';
 import { Card, CardHeader, CardTitle, CardContent } from '../../../ui/card';
 import { cn } from '@/lib/utils';
+import { useDialogState } from '../hooks/use-dialog-state';
 
 /**
  * Main Word Dialog Content Component
@@ -21,6 +22,27 @@ export const WordDialogContent: React.FC<WordDialogContentProps> = ({
   compact = false,
   className,
 }) => {
+  const { state, actions } = useDialogState('word');
+  const loading = state.dialogState.loading;
+
+  // Clear loading state when data is available
+  useEffect(() => {
+    try {
+      if (analysis && loading) {
+        actions.setLoading(false);
+      }
+    } catch (error) {
+      console.error('Error clearing loading state in WordDialogContent:', error);
+      // Fallback: try to clear loading state after a short delay
+      setTimeout(() => {
+        try {
+          actions.setLoading(false);
+        } catch (fallbackError) {
+          console.error('Fallback error clearing loading state:', fallbackError);
+        }
+      }, 100);
+    }
+  }, [analysis, loading, actions]);
 
   return (
     <div className={cn('space-y-4', className)}>
