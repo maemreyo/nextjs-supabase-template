@@ -336,11 +336,11 @@ export function useSidebarResponsive() {
     if (isMobile && open) {
       setOpen(false)
     }
-  }, [isMobile, open, setOpen])
+  }, [isMobile, open]) // Remove setOpen from deps to prevent infinite loop
   
   useEffect(() => {
     if (isMobile && !collapsed) {
       setCollapsed(true)
     }
-  }, [isMobile, collapsed, setCollapsed])
+  }, [isMobile, collapsed]) // Remove setCollapsed from deps to prevent infinite loop
 }

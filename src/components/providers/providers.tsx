@@ -7,6 +7,8 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { SupabaseProvider } from './supabase-provider'
 import { AuthSyncProvider } from './auth-sync-provider'
 import { ThemeProvider } from './theme-provider'
+import { ZustandProvider } from './zustand-provider'
+import { AnalysisDialogProvider } from './analysis-dialog-provider'
 import { getQueryClient } from '@/lib/query-client'
 
 interface ProvidersProps {
@@ -23,14 +25,18 @@ export function Providers({ children }: ProvidersProps) {
       enableSystem
       disableTransitionOnChange
     >
-      <SupabaseProvider>
-        <AuthSyncProvider>
-          <QueryClientProvider client={queryClient}>
-            {children}
-            {/* <ReactQueryDevtools initialIsOpen={false} /> */}
-          </QueryClientProvider>
-        </AuthSyncProvider>
-      </SupabaseProvider>
+      {/* <ZustandProvider> */}
+        <SupabaseProvider>
+          <AuthSyncProvider>
+            <QueryClientProvider client={queryClient}>
+              <AnalysisDialogProvider>
+                {children}
+                {/* <ReactQueryDevtools initialIsOpen={false} /> */}
+              </AnalysisDialogProvider>
+            </QueryClientProvider>
+          </AuthSyncProvider>
+        </SupabaseProvider>
+      {/* </ZustandProvider> */}
     </ThemeProvider>
   )
 }

@@ -204,11 +204,11 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
 
   // Clear error when dialog opens
   useEffect(() => {
-    if (open) {
+    if (open && (state.dialogState.error || pronunciationError)) {
       actions.setError(null);
       setPronunciationError(null);
     }
-  }, [open, actions]);
+  }, [open, state.dialogState.error, pronunciationError, actions]);
 
   // Auto-focus management
   useEffect(() => {
@@ -240,6 +240,7 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
       showCloseButton={showCloseButton}
       resizable={resizable}
       fullscreen={fullscreen}
+      type="phrase"
       className={cn(
         'phrase-analysis-dialog',
         isAnimating && 'animate-pulse',

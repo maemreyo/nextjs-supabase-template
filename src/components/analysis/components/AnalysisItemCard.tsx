@@ -23,7 +23,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils'; // Đảm bảo bạn có utility này (thường mặc định khi cài shadcn)
-import { AnalysisItemCardProps, DEFAULT_LAYOUTS, COMPACT_LAYOUTS } from '../types/analysis-types';
+import { AnalysisItemCardProps, DEFAULT_LAYOUTS, COMPACT_LAYOUTS, isDirectStructure, isLegacyStructure } from '../types/analysis-types';
 import { normalizePOS } from '../helpers/pos-normalizer';
 import { useDialogDispatcher } from '../dialogs/utils/dialog-dispatcher';
 import { ExportFormat } from '../dialogs/types/dialog-types';
@@ -166,7 +166,10 @@ export function AnalysisItemCard({
   };
 
   const handleCardClick = () => {
-    console.log(`[AnalysisItemCard] handleCardClick - enableDialogSystem: ${enableDialogSystem}, analysisType: ${analysis.analysisType}`);
+    // Improved logging with structure clarity
+    const structureType = isDirectStructure(analysis) ? 'direct' : (isLegacyStructure(analysis) ? 'legacy' : 'unknown');
+    console.log(`[AnalysisItemCard] handleCardClick - structure: ${structureType}, enableDialogSystem: ${enableDialogSystem}, analysisType: ${analysis.analysisType}`);
+    
     if (enableDialogSystem && onViewDetails) {
       dialogDispatcher.openViewDetails(analysis, dialogOptions, onClick);
     } else {

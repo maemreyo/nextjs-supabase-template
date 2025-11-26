@@ -60,6 +60,7 @@ export interface BaseDialogProps {
   showCloseButton?: boolean;
   resizable?: boolean;
   fullscreen?: boolean;
+  type?: AnalysisType;
 }
 
 // Word analysis dialog props

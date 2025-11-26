@@ -28,9 +28,11 @@ import { Editor } from '@tiptap/react';
 
 // Dialog system
 import { DialogDispatcher } from '@/components/analysis/dialogs/utils/dialog-dispatcher';
+import { DialogRootRenderer } from '@/components/analysis/dialogs/common/dialog-root-renderer';
 
 // Types
 import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis, PhraseAnalysis, WordAnalysisDB } from '@/lib/ai/types';
+import { isDirectStructure, isLegacyStructure, getAnalysisType, AnalysisItemWithLegacy } from '@/components/analysis/types/analysis-types';
 import { createBreadcrumbItems } from '@/lib/navigation';
 import { Breadcrumb, ResponsiveBreadcrumb, MobileBreadcrumb } from '@/components/ui/breadcrumb';
 
@@ -208,10 +210,32 @@ const transformWordAnalysisDB = (dbData: WordAnalysisDB): WordAnalysis => {
 };
   // Handle analysis click in session - unified handler for all analysis types
   const handleAnalysisClick = (analysisItem: any) => {
+    // Use helper functions for structure detection
+    const isDirect = isDirectStructure(analysisItem);
+    const isLegacy = isLegacyStructure(analysisItem);
+    const detectedType = getAnalysisType(analysisItem);
+    
     console.log('🔍 [DEBUG] handleAnalysisClick - Called with:', {
       analysisItem,
-      hasAnalysis: !!analysisItem?.analysis,
-      analysisType: analysisItem?.analysisType || typeof analysisItem?.analysis
+      structureType: isDirect ? 'direct' : (isLegacy ? 'legacy' : 'unknown'),
+      analysisType: analysisItem?.analysisType || detectedType,
+      detectedType,
+      // Log structure validation
+      hasValidStructure: isDirect || isLegacy,
+      // Log available data fields for debugging
+      availableFields: {
+        // Direct structure fields
+        word: !!analysisItem?.word,
+        phrase: !!analysisItem?.phrase,
+        sentence: !!analysisItem?.sentence,
+        paragraph: !!analysisItem?.paragraph,
+        // Legacy structure fields
+        hasNestedAnalysis: !!analysisItem?.analysis,
+        nestedWord: !!analysisItem?.analysis?.word,
+        nestedPhrase: !!analysisItem?.analysis?.phrase,
+        nestedSentence: !!analysisItem?.analysis?.sentence,
+        nestedParagraph: !!analysisItem?.analysis?.paragraph,
+      }
     });
     
     // ✅ FIXED: Added comprehensive null/undefined checks
@@ -220,76 +244,45 @@ const transformWordAnalysisDB = (dbData: WordAnalysisDB): WordAnalysis => {
       return;
     }
     
-    // ✅ FIXED: Ignore hasAnalysis check and use analysisType from analysisItem
-    if (analysisItem.analysisType) {
-      console.log(`🔍 [DEBUG] handleAnalysisClick - Using dialogDispatcher for ${analysisItem.analysisType} type`);
+    // ✅ FIXED: Use analysisType from analysisItem - primary data structure
+    if (isDirect && analysisItem.analysisType) {
+      const analysisType = analysisItem.analysisType;
+      console.log(`🔍 [DEBUG] handleAnalysisClick - Processing ${analysisType} with direct data structure`);
       
       // Create proper analysis item for dialog dispatcher based on type
-      let dialogItem;
+      let dialogItem: any;
       
-      switch (analysisItem.analysisType) {
+      switch (analysisType) {
         case 'word':
           dialogItem = {
-            analysisType: 'word',
-            id: analysisItem.id || analysisItem.word,
-            analysisId: analysisItem.analysisId || analysisItem.id,
-            sessionId: analysisItem.sessionId || sessionId,
+            ...analysisItem,
             word: analysisItem.word,
-            translation: analysisItem.translation,
-            definition: analysisItem.definition,
-            contextMeaning: analysisItem.contextMeaning,
-            pos: analysisItem.pos,
-            ipa: analysisItem.ipa,
-            cefr: analysisItem.cefr,
-            // Include any other relevant fields
-            ...analysisItem
           };
           break;
           
         case 'phrase':
           dialogItem = {
-            analysisType: 'phrase',
-            id: analysisItem.id || analysisItem.phrase,
-            analysisId: analysisItem.analysisId || analysisItem.id,
-            sessionId: analysisItem.sessionId || sessionId,
+            ...analysisItem,
             phrase: analysisItem.phrase,
-            naturalTranslation: analysisItem.naturalTranslation,
-            contextualMeaning: analysisItem.contextualMeaning,
-            partOfSpeech: analysisItem.partOfSpeech,
-            // Include any other relevant fields
-            ...analysisItem
           };
           break;
           
         case 'sentence':
           dialogItem = {
-            analysisType: 'sentence',
-            id: analysisItem.id || analysisItem.sentence,
-            analysisId: analysisItem.analysisId || analysisItem.id,
-            sessionId: analysisItem.sessionId || sessionId,
+            ...analysisItem,
             sentence: analysisItem.sentence,
-            naturalTranslation: analysisItem.naturalTranslation,
-            mainIdea: analysisItem.mainIdea,
-            // Include any other relevant fields
-            ...analysisItem
           };
           break;
           
         case 'paragraph':
           dialogItem = {
-            analysisType: 'paragraph',
-            id: analysisItem.id || analysisItem.paragraph,
-            analysisId: analysisItem.analysisId || analysisItem.id,
-            sessionId: analysisItem.sessionId || sessionId,
+            ...analysisItem,
             paragraph: analysisItem.paragraph,
-            mainTopic: analysisItem.mainTopic,
-            // Include any other relevant fields
-            ...analysisItem
           };
           break;
           
         default:
-          console.warn('🔍 [DEBUG] handleAnalysisClick - Unknown analysis type:', analysisItem.analysisType);
+          console.warn('🔍 [DEBUG] handleAnalysisClick - Unknown analysis type:', analysisType);
           return;
       }
       
@@ -298,38 +291,33 @@ const transformWordAnalysisDB = (dbData: WordAnalysisDB): WordAnalysis => {
       return;
     }
     
-    // Fallback to original logic for other cases
-    if (!analysisItem.analysis) {
-      console.warn('🔍 [DEBUG] handleAnalysisClick - No analysis data found in analysisItem:', analysisItem);
+    // Fallback to original logic for legacy data structure
+    if (isLegacy) {
+      console.log(`🔍 [DEBUG] handleAnalysisClick - Processing legacy structure with type: ${detectedType}`);
+    } else {
+      console.warn('🔍 [DEBUG] handleAnalysisClick - Invalid data structure - neither direct nor legacy format:', analysisItem);
+      console.log('🔍 [DEBUG] handleAnalysisClick - Expected direct structure (word/phrase/sentence/paragraph) or legacy nested analysis object');
       // Optional: Show toast notification to user
       return;
     }
     
-    // Try to determine type from analysis data and handle accordingly
+    // Try to determine type from legacy analysis data and handle accordingly
     try {
-      console.log('🔍 [DEBUG] handleAnalysisClick - Raw analysis data:', analysisItem.analysis);
+      // Use the already detected type from helper function
+      const legacyType = detectedType || 'word'; // fallback to word
       
-      // Determine type from analysis data structure
-      let detectedType = 'word'; // default
-      if (analysisItem.analysis.word) {
-        detectedType = 'word';
-      } else if (analysisItem.analysis.phrase) {
-        detectedType = 'phrase';
-      } else if (analysisItem.analysis.sentence) {
-        detectedType = 'sentence';
-      } else if (analysisItem.analysis.paragraph) {
-        detectedType = 'paragraph';
-      }
+      console.log(`🔍 [DEBUG] handleAnalysisClick - Using detected type: ${legacyType} from legacy structure`);
       
       // Transform based on detected type
       let analysis;
-      switch (detectedType) {
+      switch (legacyType) {
         case 'word':
-          analysis = transformWordAnalysisDB(analysisItem.analysis);
+          console.log('🔍 [DEBUG] handleAnalysisClick - Transforming legacy word analysis data');
+          analysis = transformWordAnalysisDB(analysisItem.analysis as any);
           break;
         // Add other transformations as needed
         default:
-          console.warn('🔍 [DEBUG] handleAnalysisClick - No transformation for type:', detectedType);
+          console.warn('🔍 [DEBUG] handleAnalysisClick - No transformation available for type:', legacyType);
           return;
       }
       
@@ -342,10 +330,10 @@ const transformWordAnalysisDB = (dbData: WordAnalysisDB): WordAnalysis => {
       }
       
       setAnalysisResult(analysis);
-      setAnalysisType(detectedType as any);
+      setAnalysisType(legacyType as any);
       setIsDetailDialogOpen(true);
       
-      console.log('🔍 [DEBUG] handleAnalysisClick - Dialog state set to open');
+      console.log(`🔍 [DEBUG] handleAnalysisClick - Dialog state set to open for type: ${legacyType}`);
     } catch (error) {
       console.error('🔍 [DEBUG] handleAnalysisClick - Error during processing:', error);
       // Optional: Show error toast to user
@@ -484,6 +472,9 @@ const transformWordAnalysisDB = (dbData: WordAnalysisDB): WordAnalysis => {
         onViewDetails={handleDynamicIslandViewDetails}
         progress={dynamicIslandProgress}
       />
+      
+      {/* Dialog Root Renderer - Renders all dialogs using portal */}
+      <DialogRootRenderer />
     </div>
   );
 }

@@ -1,9 +1,22 @@
 // Type definitions for different analysis types
 // Based on database.types.ts schema
+//
+// IMPORTANT: Data Structure Clarification
+// =====================================
+// We have two data structures in the codebase:
+// 1. Direct Structure (Current): Data fields are directly on the analysis item
+//    - analysisItem.word, analysisItem.phrase, analysisItem.sentence, analysisItem.paragraph
+//    - This is the current expected structure
+// 2. Legacy Structure (Old): Data fields are nested under analysis property
+//    - analysisItem.analysis.word, analysisItem.analysis.phrase, etc.
+//    - This is kept for backward compatibility
+//
+// The logging and type checking should prioritize the direct structure
+// and treat the nested structure as legacy fallback.
 
 export type AnalysisType = 'word' | 'phrase' | 'sentence' | 'paragraph';
 
-// Base analysis interface
+// Base analysis interface - Direct Structure (Current)
 export interface BaseAnalysis {
   id: string;
   analysisId: string;
@@ -12,6 +25,18 @@ export interface BaseAnalysis {
   position?: number;
   createdAt?: string;
   updatedAt?: string;
+}
+
+// Legacy analysis interface for backward compatibility
+export interface LegacyAnalysisWrapper {
+  analysis: {
+    word?: string;
+    phrase?: string;
+    sentence?: string;
+    paragraph?: string;
+    // Other legacy fields...
+    [key: string]: any;
+  };
 }
 
 // Word analysis interface
@@ -101,10 +126,13 @@ export interface ParagraphAnalysis extends BaseAnalysis {
   transitionWords?: string[];
 }
 
-// Union type for all analysis types
+// Union type for all analysis types - Direct Structure (Current)
 export type AnalysisItem = WordAnalysis | PhraseAnalysis | SentenceAnalysis | ParagraphAnalysis;
 
-// Helper type guards
+// Union type that includes both direct and legacy structures
+export type AnalysisItemWithLegacy = AnalysisItem | LegacyAnalysisWrapper;
+
+// Helper type guards for Direct Structure (Current)
 export function isWordAnalysis(item: AnalysisItem): item is WordAnalysis {
   return item.analysisType === 'word';
 }
@@ -119,6 +147,34 @@ export function isSentenceAnalysis(item: AnalysisItem): item is SentenceAnalysis
 
 export function isParagraphAnalysis(item: AnalysisItem): item is ParagraphAnalysis {
   return item.analysisType === 'paragraph';
+}
+
+// Helper type guards for structure detection
+export function isDirectStructure(item: any): item is AnalysisItem {
+  return item && typeof item === 'object' && 'analysisType' in item &&
+    !!(item.word || item.phrase || item.sentence || item.paragraph);
+}
+
+export function isLegacyStructure(item: any): item is LegacyAnalysisWrapper {
+  return item && typeof item === 'object' && 'analysis' in item &&
+    typeof item.analysis === 'object' && item.analysis !== null &&
+    !!(item.analysis.word || item.analysis.phrase || item.analysis.sentence || item.analysis.paragraph);
+}
+
+// Helper function to get analysis type from any structure
+export function getAnalysisType(item: any): AnalysisType | null {
+  if (isDirectStructure(item)) {
+    return item.analysisType;
+  }
+  
+  if (isLegacyStructure(item)) {
+    if (item.analysis.word) return 'word';
+    if (item.analysis.phrase) return 'phrase';
+    if (item.analysis.sentence) return 'sentence';
+    if (item.analysis.paragraph) return 'paragraph';
+  }
+  
+  return null;
 }
 
 // Props for the SessionAnalysesList component

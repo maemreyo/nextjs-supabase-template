@@ -25,6 +25,7 @@ export const BaseAnalysisDialog = ({
   showCloseButton = true,
   resizable = true,
   fullscreen = false,
+  type = 'word',
 }: BaseDialogProps) => {
   const dialogRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(fullscreen);
@@ -32,8 +33,8 @@ export const BaseAnalysisDialog = ({
   const [dialogSize, setDialogSize] = useState<DialogSize>(size);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   
-  // Get dialog state and actions
-  const { state, actions } = useDialogState('word'); // Default type, will be overridden by specific dialogs
+  // Get dialog state and actions - use the provided type for proper state management
+  const { state, actions } = useDialogState(type); // Use dynamic type instead of hardcoded 'word'
   
   // Keyboard shortcuts
   const shortcuts = useDialogKeyboard({
