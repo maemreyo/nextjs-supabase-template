@@ -24,6 +24,7 @@ export {
 // Dialog hooks
 export { useDialogState } from './hooks/use-dialog-state';
 export { useDialogKeyboard } from './hooks/use-dialog-keyboard';
+export { useDialogLoading } from './hooks/use-dialog-loading';
 export { useDialogActions } from './hooks/use-dialog-actions';
 
 // Dialog types

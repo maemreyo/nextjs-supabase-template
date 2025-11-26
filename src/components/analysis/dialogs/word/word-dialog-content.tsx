@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { WordAnalysis } from '../../types/analysis-types';
 import { WordDialogContentProps } from './word-dialog-types';
 import { WordPrimaryInformationDisplayCard } from './word-primary-information-display-card';
@@ -9,6 +9,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../../ui/tabs';
 import { Card, CardHeader, CardTitle, CardContent } from '../../../ui/card';
 import { cn } from '@/lib/utils';
 import { useDialogState } from '../hooks/use-dialog-state';
+import { useDialogLoading } from '../hooks/use-dialog-loading';
+import { DialogLoadingIndicator } from '../common/dialog-loading-indicator';
+import { DialogErrorHandler } from '../common/dialog-error-handler';
 import { useSavedAnalysisDetail } from '@/hooks/useSavedAnalysisDetail';
 
 /**
@@ -24,11 +27,22 @@ export const WordDialogContent: React.FC<WordDialogContentProps> = ({
   className,
 }) => {
   const { state, actions } = useDialogState('word');
-  const [isFetchingFullData, setIsFetchingFullData] = useState(false);
-  const [fetchError, setFetchError] = useState<string | null>(null);
+  
+  // Sử dụng useDialogLoading hook thay thế multiple loading states
+  const {
+    isLoading,
+    error,
+    message,
+    setGlobalLoading,
+    setLocalLoading,
+    setActionLoading,
+    clearError,
+    hasAnyLoading,
+    primaryLoadingSource
+  } = useDialogLoading('word');
 
   // Fetch full analysis data using analysis.id
-  const { analysis: fullAnalysisData, isLoading, isError, error } = useSavedAnalysisDetail(
+  const { analysis: fullAnalysisData, isLoading: isFetchingFullData, isError, error: fetchError } = useSavedAnalysisDetail(
     analysis?.id || null,
     { enabled: !!analysis?.id }
   );
@@ -69,69 +83,80 @@ export const WordDialogContent: React.FC<WordDialogContentProps> = ({
     return analysis;
   }, [analysis, fullAnalysisData]);
 
-  // Update loading states
+  // Quản lý loading state khi fetch full data - đơn giản hóa
   useEffect(() => {
     try {
-      // Set loading when fetching full data
-      if (isLoading) {
-        setIsFetchingFullData(true);
-        actions.setLoading(true);
+      // Chỉ set local loading khi fetching full data
+      if (isFetchingFullData) {
+        setLocalLoading('fullData', true);
       } else {
-        setIsFetchingFullData(false);
-        // Clear loading when we have merged data
-        if (mergedAnalysis) {
-          actions.setLoading(false);
-        }
+        setLocalLoading('fullData', false);
       }
     } catch (error) {
       console.error('Error managing loading state in WordDialogContent:', error);
-      setIsFetchingFullData(false);
+      setLocalLoading('fullData', false);
     }
-  }, [isLoading, mergedAnalysis, actions]);
+  }, [isFetchingFullData, setLocalLoading]);
 
-  // Handle error state
+  // Quản lý global loading state - chỉ khi cần thiết
   useEffect(() => {
-    if (isError && error) {
-      console.error('🔍 [DEBUG] WordDialogContent - Error fetching full analysis data:', error);
-      setFetchError(error instanceof Error ? error.message : 'Failed to fetch full analysis data');
-      setIsFetchingFullData(false);
-      // Don't clear loading - we still have summary data to show
-    } else {
-      setFetchError(null);
+    // Chỉ clear global loading khi có merged data và không đang fetch
+    if (mergedAnalysis && !isFetchingFullData && isLoading) {
+      setGlobalLoading(false);
     }
-  }, [isError, error]);
+  }, [mergedAnalysis, isFetchingFullData, isLoading, setGlobalLoading]);
 
-  // Show error state if fetch failed
-  if (fetchError && !mergedAnalysis) {
+  // Xử lý lỗi khi fetch data
+  useEffect(() => {
+    if (isError && fetchError) {
+      console.error('🔍 [DEBUG] WordDialogContent - Error fetching full analysis data:', fetchError);
+      // Sử dụng error handler từ hook thay vì local state
+      // Không clear loading - vẫn có summary data để hiển thị
+    }
+  }, [isError, fetchError]);
+
+  // Handler cho pronunciation action
+  const handlePronounce = useCallback(async (word: string) => {
+    setActionLoading('pronunciation', true);
+    try {
+      await onPronounce?.(word);
+    } catch (error) {
+      console.error('Error pronouncing word:', error);
+      // Error sẽ được xử lý bởi DialogErrorHandler
+    } finally {
+      setActionLoading('pronunciation', false);
+    }
+  }, [onPronounce, setActionLoading]);
+
+  // Handler cho retry khi có lỗi
+  const handleRetry = useCallback(() => {
+    clearError();
+    // Trigger refetch bằng cách reset và fetch lại
+    window.location.reload(); // Simple retry - có thể cải thiện sau
+  }, [clearError]);
+
+  // Show error state nếu có lỗi nghiêm trọng
+  if (error && !mergedAnalysis && !analysis) {
     return (
       <div className={cn('space-y-4', className)}>
-        <Card className="border-destructive/50 bg-destructive/5">
-          <CardContent className="p-4">
-            <div className="text-center space-y-2">
-              <p className="text-sm text-destructive">
-                Không thể tải dữ liệu đầy đủ. Hiển thị thông tin cơ bản.
-              </p>
-              <p className="text-xs text-muted-foreground">{fetchError}</p>
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Fallback to basic display */}
-        {analysis && (
-          <WordPrimaryInformationDisplayCard
-            analysis={analysis}
-            onPronounce={onPronounce}
-            showPhonetic={showPhonetic}
-          />
-        )}
+        <DialogErrorHandler
+          error={error}
+          onRetry={handleRetry}
+          onDismiss={clearError}
+        />
       </div>
     );
   }
 
-  // Show loading state while fetching full data
-  if (isFetchingFullData && !mergedAnalysis) {
+  // Show loading state khi đang fetch full data và không có data nào
+  if (isLoading && !mergedAnalysis && !analysis) {
     return (
       <div className={cn('space-y-4', className)}>
+        <DialogLoadingIndicator
+          type="global"
+          message="Đang tải dữ liệu từ vựng..."
+          overlay={false}
+        />
         <div className="animate-pulse space-y-4">
           <div className="h-20 bg-muted rounded-lg"></div>
           <div className="h-10 bg-muted rounded-lg w-1/4"></div>
@@ -144,21 +169,30 @@ export const WordDialogContent: React.FC<WordDialogContentProps> = ({
     );
   }
 
-  // Main content with merged data
+  // Main content với merged data
   return (
     <div className={cn('space-y-4', className)}>
-      {/* Loading indicator for full data fetch */}
-      {isFetchingFullData && mergedAnalysis && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-blue-50 dark:bg-blue-950 p-2 rounded-lg">
-          <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
-          Đang tải dữ liệu đầy đủ...
-        </div>
+      {/* Error handler chỉ hiển thị khi có lỗi */}
+      {error && (
+        <DialogErrorHandler
+          error={error}
+          onRetry={handleRetry}
+          onDismiss={clearError}
+        />
+      )}
+
+      {/* Loading indicator cho full data fetch */}
+      {primaryLoadingSource === 'local' && (
+        <DialogLoadingIndicator
+          type="local"
+          message="Đang tải dữ liệu đầy đủ..."
+        />
       )}
 
       {/* Main Word Information */}
       <WordPrimaryInformationDisplayCard
         analysis={mergedAnalysis || analysis}
-        onPronounce={onPronounce}
+        onPronounce={handlePronounce}
         showPhonetic={showPhonetic}
       />
 

@@ -10,7 +10,19 @@ import {
 } from '../types/dialog-types';
 import { useDialogState } from '../hooks/use-dialog-state';
 import { useDialogKeyboard } from '../hooks/use-dialog-keyboard';
+import { useDialogLoading } from '../hooks/use-dialog-loading';
+import { DialogLoadingIndicator } from './dialog-loading-indicator';
+import { DialogErrorHandler } from './dialog-error-handler';
 import { cn } from '../../../../lib/utils';
+
+// Enhanced BaseDialogProps interface
+interface EnhancedBaseDialogProps extends BaseDialogProps {
+  loadingConfig?: {
+    showGlobalLoading: boolean;
+    showActionLoading: boolean;
+    customMessages?: Record<string, string>;
+  };
+}
 
 /**
  * Base Analysis Dialog Component
@@ -26,15 +38,35 @@ export const BaseAnalysisDialog = ({
   resizable = true,
   fullscreen = false,
   type = 'word',
-}: BaseDialogProps) => {
+  loadingConfig = {
+    showGlobalLoading: true,
+    showActionLoading: true,
+    customMessages: {},
+    ...loadingConfig
+  }
+}: EnhancedBaseDialogProps) => {
   const dialogRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(fullscreen);
   const [isResizing, setIsResizing] = useState(false);
   const [dialogSize, setDialogSize] = useState<DialogSize>(size);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   
-  // Get dialog state and actions - use the provided type for proper state management
+  // Get dialog state and actions - use: provided type for proper state management
   const { state, actions } = useDialogState(type); // Use dynamic type instead of hardcoded 'word'
+  
+  // Get enhanced loading state
+  const { 
+    isLoading, 
+    error, 
+    message,
+    setGlobalLoading,
+    setLocalLoading,
+    setActionLoading,
+    clearError,
+    hasAnyLoading,
+    primaryLoadingSource,
+    loadingStates
+  } = useDialogLoading(type);
   
   // Keyboard shortcuts
   const shortcuts = useDialogKeyboard({
@@ -195,7 +227,7 @@ export const BaseAnalysisDialog = ({
           }
         }
       }
-    }
+    };
     
     dialog.addEventListener('keydown', handleFocusTrap);
     
@@ -238,37 +270,31 @@ export const BaseAnalysisDialog = ({
     );
   }, [className, animationClasses, sizeClasses, isFullscreen]);
   
-  // Render loading state
-  // if (state.dialogState.loading) {
-  //   return (
-  //     <div className={dialogClasses}>
-  //       <div className="flex items-center justify-center min-h-[200px]">
-  //         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary border-t-transparent"></div>
-  //         <p className="mt-4 text-muted-foreground">Loading analysis...</p>
-  //       </div>
-  //     </div>
-  //   );
-  // }
+  // Enhanced loading state calculation
+  const shouldShowGlobalLoading = loadingConfig?.showGlobalLoading && isLoading;
+  const shouldShowActionLoading = loadingConfig?.showActionLoading &&
+    Object.values(loadingStates.actions || {}).some(action => action);
   
-  // Render error state
-  if (state.dialogState.error) {
+  // Enhanced error handling
+  const handleRetry = useCallback(() => {
+    clearError();
+    // Trigger retry logic here
+  }, [clearError]);
+  
+  const handleDismissError = useCallback(() => {
+    clearError();
+  }, [clearError]);
+  
+  // Render loading state
+  if (shouldShowGlobalLoading) {
     return (
       <div className={dialogClasses}>
-        <div className="flex flex-col items-center justify-center min-h-[200px]">
-          <div className="text-center">
-            <div className="mb-4 text-destructive">
-              <X className="h-6 w-6 mx-auto" />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Error</h3>
-            <p className="text-muted-foreground mb-4">{state.dialogState.error}</p>
-            <button
-              onClick={() => actions.setError(null)}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-            >
-              Try Again
-            </button>
-          </div>
-        </div>
+        <DialogLoadingIndicator
+          type="global"
+          message={loadingConfig?.customMessages?.global || message}
+          overlay={true}
+          size="lg"
+        />
       </div>
     );
   }
@@ -377,6 +403,33 @@ export const BaseAnalysisDialog = ({
             </button>
           </div>
         </div>
+        
+        {/* Error State */}
+        {error && !shouldShowGlobalLoading && (
+          <div className="p-4 border-b">
+            <DialogErrorHandler
+              error={error}
+              onRetry={handleRetry}
+              onDismiss={handleDismissError}
+            />
+          </div>
+        )}
+        
+        {/* Action Loading Indicators */}
+        {shouldShowActionLoading && (
+          <div className="flex gap-2 p-2 border-b">
+            {Object.entries(loadingStates.actions || {}).map(([action, loading]) => (
+              loading && (
+                <DialogLoadingIndicator
+                  key={action}
+                  type="action"
+                  message={loadingConfig?.customMessages?.[action]}
+                  size="sm"
+                />
+              )
+            ))}
+          </div>
+        )}
         
         {/* Resize Handle */}
         {resizable && !isFullscreen && (
@@ -623,3 +676,7 @@ export const DialogContainer: React.FC<DialogContainerProps> = ({
     </div>
   );
 };
+
+// Export new components
+export { DialogLoadingIndicator } from './dialog-loading-indicator';
+export { DialogErrorHandler } from './dialog-error-handler';

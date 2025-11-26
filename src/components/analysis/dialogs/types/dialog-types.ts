@@ -14,6 +14,14 @@ export interface DialogState {
   resizedWidth?: number;
   lastUpdated: number;
   position?: { x: number; y: number };
+  
+  // New loading states for enhanced architecture
+  fetching?: {
+    fullData: boolean;
+    relatedData: boolean;
+  };
+  
+  actions?: Record<string, boolean>;
 }
 
 // Dialog settings interface
@@ -61,6 +69,15 @@ export interface BaseDialogProps {
   resizable?: boolean;
   fullscreen?: boolean;
   type?: AnalysisType;
+}
+
+// Enhanced BaseDialogProps interface for loading configuration
+export interface EnhancedBaseDialogProps extends BaseDialogProps {
+  loadingConfig?: {
+    showGlobalLoading: boolean;
+    showActionLoading: boolean;
+    customMessages?: Record<string, string>;
+  };
 }
 
 // Word analysis dialog props

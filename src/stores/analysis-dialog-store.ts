@@ -16,24 +16,44 @@ const initialDialogStates: Record<AnalysisType, DialogState> = {
     error: null,
     fullscreen: false,
     lastUpdated: Date.now(),
+    fetching: {
+      fullData: false,
+      relatedData: false,
+    },
+    actions: {},
   },
   phrase: {
     loading: false,
     error: null,
     fullscreen: false,
     lastUpdated: Date.now(),
+    fetching: {
+      fullData: false,
+      relatedData: false,
+    },
+    actions: {},
   },
   sentence: {
     loading: false,
     error: null,
     fullscreen: false,
     lastUpdated: Date.now(),
+    fetching: {
+      fullData: false,
+      relatedData: false,
+    },
+    actions: {},
   },
   paragraph: {
     loading: false,
     error: null,
     fullscreen: false,
     lastUpdated: Date.now(),
+    fetching: {
+      fullData: false,
+      relatedData: false,
+    },
+    actions: {},
   },
 };
 
@@ -148,21 +168,37 @@ export const useDialogStore = create<DialogStore>()(
         }));
       },
       
-      setDialogLoading: (type: AnalysisType, loading: boolean) => {
+      setDialogLoading: (type: AnalysisType, loading: boolean | Partial<DialogState>) => {
         set((state) => {
           const currentDialogState = getDialogState(state.dialogStates, type);
           
-          return {
-            ...state,
-            dialogStates: {
-              ...state.dialogStates,
-              [type]: {
-                ...currentDialogState,
-                loading,
-                lastUpdated: Date.now()
-              }
-            },
-          };
+          if (typeof loading === 'boolean') {
+            // Backward compatibility
+            return {
+              ...state,
+              dialogStates: {
+                ...state.dialogStates,
+                [type]: {
+                  ...currentDialogState,
+                  loading,
+                  lastUpdated: Date.now()
+                }
+              },
+            };
+          } else {
+            // New partial state update
+            return {
+              ...state,
+              dialogStates: {
+                ...state.dialogStates,
+                [type]: {
+                  ...currentDialogState,
+                  ...loading,
+                  lastUpdated: Date.now()
+                }
+              },
+            };
+          }
         });
       },
       
