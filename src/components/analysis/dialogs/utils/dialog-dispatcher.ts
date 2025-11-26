@@ -127,7 +127,13 @@ export class DialogDispatcher {
   static isDialogSystemEnabled(): boolean {
     // Check for feature flag or environment variable
     if (typeof window !== 'undefined') {
-      return window.localStorage.getItem('dialog-system-enabled') !== 'false';
+      const isEnabled = window.localStorage.getItem('dialog-system-enabled');
+      // Set default to 'true' if not set
+      if (isEnabled === null) {
+        window.localStorage.setItem('dialog-system-enabled', 'true');
+        return true;
+      }
+      return isEnabled !== 'false';
     }
     return true; // Default to enabled on server-side
   }

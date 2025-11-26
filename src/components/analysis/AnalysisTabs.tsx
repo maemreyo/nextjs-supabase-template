@@ -81,6 +81,7 @@ interface AnalysisTabContentProps {
   onAnalysisAnalyze?: (analysis: AnalysisItem) => void;
   onAnalysisRemove?: (analysisId: string, analysisType: AnalysisType) => void;
   compact?: boolean;
+  enableDialogSystem?: boolean;
   // Query data passed from parent instead of calling hooks
   queryData: {
     data: {
@@ -103,6 +104,7 @@ const AnalysisTabContent = memo(function AnalysisTabContent({
   onAnalysisAnalyze,
   onAnalysisRemove,
   compact = false,
+  enableDialogSystem = true,
   queryData
 }: AnalysisTabContentProps) {
   const parentRef = useRef<HTMLDivElement>(null);
@@ -262,7 +264,7 @@ const AnalysisTabContent = memo(function AnalysisTabContent({
                 compact={compact}
                 showPhonetic={true}
                 truncateLength={layout.truncateLength}
-                enableDialogSystem={false} // Disable dialog system in tabs for now
+                enableDialogSystem={enableDialogSystem} // Pass through the enableDialogSystem prop
               />
             </div>
           );
@@ -291,7 +293,8 @@ export const AnalysisTabs = memo(function AnalysisTabs({
   onAnalysisClick,
   onAnalysisAnalyze,
   onAnalysisRemove,
-  compact = false
+  compact = false,
+  enableDialogSystem = true
 }: AnalysisTabsProps) {
   const [activeTab, setActiveTab] = React.useState<AnalysisType>('word');
 
@@ -409,6 +412,7 @@ export const AnalysisTabs = memo(function AnalysisTabs({
             onAnalysisAnalyze={onAnalysisAnalyze}
             onAnalysisRemove={onAnalysisRemove}
             compact={compact}
+            enableDialogSystem={enableDialogSystem}
             queryData={tabQueries[activeTab]}
           />
         </TabsContent>

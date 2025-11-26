@@ -19,7 +19,8 @@ export function SessionAnalysesList({
   className = "",
   emptyMessage = "Chưa có phân tích nào trong session này.",
   compact = false,
-  pageSize = 15
+  pageSize = 15,
+  enableDialogSystem = true
 }: SessionAnalysesListProps) {
   
   // If we have sessionId, use the new tabbed interface with infinite scroll
@@ -32,6 +33,7 @@ export function SessionAnalysesList({
           onAnalysisAnalyze={onAnalysisAnalyze}
           onAnalysisRemove={onAnalysisRemove}
           compact={compact}
+          enableDialogSystem={enableDialogSystem}
         />
       </div>
     );

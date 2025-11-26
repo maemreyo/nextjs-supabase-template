@@ -94,6 +94,7 @@ export function AnalysisSidebar({
           onAnalysisAnalyze={onAnalysisAnalyze || onWordAnalyze}
           onAnalysisRemove={onAnalysisRemove || onWordRemove}
           className="mb-4"
+          enableDialogSystem={true}
         />
       )}
     </div>

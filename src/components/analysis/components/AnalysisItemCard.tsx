@@ -166,6 +166,7 @@ export function AnalysisItemCard({
   };
 
   const handleCardClick = () => {
+    console.log(`[AnalysisItemCard] handleCardClick - enableDialogSystem: ${enableDialogSystem}, analysisType: ${analysis.analysisType}`);
     if (enableDialogSystem && onViewDetails) {
       dialogDispatcher.openViewDetails(analysis, dialogOptions, onClick);
     } else {

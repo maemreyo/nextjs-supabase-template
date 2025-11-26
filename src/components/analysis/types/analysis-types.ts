@@ -132,6 +132,7 @@ export interface SessionAnalysesListProps {
   emptyMessage?: string;
   compact?: boolean; // For compact view mode
   pageSize?: number;
+  enableDialogSystem?: boolean; // Enable dialog system for sidebar click functionality
 }
 
 // Props for individual analysis item components
