@@ -26,7 +26,6 @@ export interface UseAnalysisPageLogicReturn {
   analysisResult: WordAnalysis | PhraseAnalysis | SentenceAnalysis | ParagraphAnalysis | null;
   isAnalyzing: boolean;
   error: string | null;
-  isDetailDialogOpen: boolean;
   analysisPanelOpen: boolean;
   
   // Sidebar state
@@ -68,7 +67,6 @@ export interface UseAnalysisPageLogicReturn {
   setActiveTab: (tab: 'word' | 'phrase' | 'sentence' | 'paragraph') => void;
   setAnalysisType: (type: 'word' | 'phrase' | 'sentence' | 'paragraph') => void;
   setSelectedText: (text: string) => void;
-  setIsDetailDialogOpen: (open: boolean) => void;
   setAnalysisPanelOpen: (open: boolean) => void;
   setIsHistoryOpen: (open: boolean) => void;
   setIsAnalysisTypeOpen: (open: boolean) => void;
@@ -99,7 +97,6 @@ export function useAnalysisPageLogic({ sessionId, editor }: UseAnalysisPageLogic
   const [analysisResult, setAnalysisResult] = useState<WordAnalysis | PhraseAnalysis | SentenceAnalysis | ParagraphAnalysis | null>(null);
   const [isAnalyzing, setIsAnalyzingState] = useState(false);
   const [error, setErrorState] = useState<string | null>(null);
-  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [analysisPanelOpen, setAnalysisPanelOpen] = useState(false);
 
   // Ref to track the last analysis request at parent level
@@ -453,7 +450,6 @@ export function useAnalysisPageLogic({ sessionId, editor }: UseAnalysisPageLogic
           
           // Use saved analysis
           setAnalysisResult(wordAnalysis);
-          setIsDetailDialogOpen(true);
           setAnalysisPanelOpen(false);
 
           // Add to history
@@ -483,7 +479,6 @@ export function useAnalysisPageLogic({ sessionId, editor }: UseAnalysisPageLogic
     if (existingAnalysis) {
       // Use cached analysis
       setAnalysisResult(existingAnalysis.result as WordAnalysis);
-      setIsDetailDialogOpen(true);
       setAnalysisPanelOpen(false);
       return;
     }
@@ -505,7 +500,6 @@ export function useAnalysisPageLogic({ sessionId, editor }: UseAnalysisPageLogic
 
       // Set analysis result and open dialog
       setAnalysisResult(result);
-      setIsDetailDialogOpen(true);
       setAnalysisPanelOpen(false);
 
       // Add to history
@@ -546,7 +540,6 @@ export function useAnalysisPageLogic({ sessionId, editor }: UseAnalysisPageLogic
     analysisResult,
     isAnalyzing,
     error,
-    isDetailDialogOpen,
     analysisPanelOpen,
     
     // Sidebar state
@@ -576,7 +569,6 @@ export function useAnalysisPageLogic({ sessionId, editor }: UseAnalysisPageLogic
     setActiveTab: setActiveTabState,
     setAnalysisType: setAnalysisTypeState,
     setSelectedText: setSelectedTextState,
-    setIsDetailDialogOpen,
     setAnalysisPanelOpen,
     setIsHistoryOpen,
     setIsAnalysisTypeOpen,

@@ -27,17 +27,6 @@ export interface BaseAnalysis {
   updatedAt?: string;
 }
 
-// Legacy analysis interface for backward compatibility
-export interface LegacyAnalysisWrapper {
-  analysis: {
-    word?: string;
-    phrase?: string;
-    sentence?: string;
-    paragraph?: string;
-    // Other legacy fields...
-    [key: string]: any;
-  };
-}
 
 // Word analysis interface
 export interface WordAnalysis extends BaseAnalysis {
@@ -129,8 +118,6 @@ export interface ParagraphAnalysis extends BaseAnalysis {
 // Union type for all analysis types - Direct Structure (Current)
 export type AnalysisItem = WordAnalysis | PhraseAnalysis | SentenceAnalysis | ParagraphAnalysis;
 
-// Union type that includes both direct and legacy structures
-export type AnalysisItemWithLegacy = AnalysisItem | LegacyAnalysisWrapper;
 
 // Helper type guards for Direct Structure (Current)
 export function isWordAnalysis(item: AnalysisItem): item is WordAnalysis {
@@ -155,27 +142,8 @@ export function isDirectStructure(item: any): item is AnalysisItem {
     !!(item.word || item.phrase || item.sentence || item.paragraph);
 }
 
-export function isLegacyStructure(item: any): item is LegacyAnalysisWrapper {
-  return item && typeof item === 'object' && 'analysis' in item &&
-    typeof item.analysis === 'object' && item.analysis !== null &&
-    !!(item.analysis.word || item.analysis.phrase || item.analysis.sentence || item.analysis.paragraph);
-}
 
 // Helper function to get analysis type from any structure
-export function getAnalysisType(item: any): AnalysisType | null {
-  if (isDirectStructure(item)) {
-    return item.analysisType;
-  }
-  
-  if (isLegacyStructure(item)) {
-    if (item.analysis.word) return 'word';
-    if (item.analysis.phrase) return 'phrase';
-    if (item.analysis.sentence) return 'sentence';
-    if (item.analysis.paragraph) return 'paragraph';
-  }
-  
-  return null;
-}
 
 // Props for the SessionAnalysesList component
 export interface SessionAnalysesListProps {

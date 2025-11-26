@@ -8,7 +8,6 @@ import { Card } from '@/components/ui/card';
 import { AnalysisEditor } from '@/components/analysis/AnalysisEditor';
 import AnalysisErrorBoundary from '@/components/analysis/AnalysisErrorBoundary';
 import AuthGuard from '@/components/auth/auth-guard';
-import AnalysisResultDialog from '@/components/analysis/AnalysisResultDialog';
 import SavedAnalysesManager from '@/components/analysis/SavedAnalysesManager';
 import {
   AnalysisHeader,
@@ -31,8 +30,8 @@ import { DialogDispatcher } from '@/components/analysis/dialogs/utils/dialog-dis
 import { DialogRootRenderer } from '@/components/analysis/dialogs/common/dialog-root-renderer';
 
 // Types
-import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis, PhraseAnalysis, WordAnalysisDB } from '@/lib/ai/types';
-import { isDirectStructure, isLegacyStructure, getAnalysisType, AnalysisItemWithLegacy } from '@/components/analysis/types/analysis-types';
+import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis, PhraseAnalysis } from '@/lib/ai/types';
+import { isDirectStructure } from '@/components/analysis/types/analysis-types';
 import { createBreadcrumbItems } from '@/lib/navigation';
 import { Breadcrumb, ResponsiveBreadcrumb, MobileBreadcrumb } from '@/components/ui/breadcrumb';
 
@@ -75,7 +74,6 @@ function ImprovedAnalysisPageContent() {
     analysisResult,
     isAnalyzing,
     error,
-    isDetailDialogOpen,
     analysisPanelOpen,
     isHistoryOpen,
     storeSelectedText,
@@ -93,7 +91,6 @@ function ImprovedAnalysisPageContent() {
     setActiveTab,
     setAnalysisType,
     setSelectedText,
-    setIsDetailDialogOpen,
     setAnalysisPanelOpen,
     setIsHistoryOpen,
     setIsAnalysisTypeOpen,
@@ -147,81 +144,17 @@ function ImprovedAnalysisPageContent() {
     // Note: analysisResult will be set by the hook when needed
   };
 
-const transformWordAnalysisDB = (dbData: WordAnalysisDB): WordAnalysis => {
-  console.log('🔍 [DEBUG] transformWordAnalysisDB - Input:', dbData);
-  
-  const result: WordAnalysis = {
-    meta: {
-      word: dbData.word,
-      ipa: dbData.ipa ?? '',
-      pos: dbData.pos ?? '',
-      cefr: dbData.cefr ?? '',
-      tone: dbData.tone ?? '',
-    },
-    definitions: {
-      root_meaning: dbData.root_meaning ?? '',
-      context_meaning: dbData.context_meaning ?? '',
-      vietnamese_translation: dbData.vietnamese_translation ?? '',
-    },
-    inference_strategy: {
-      clues: dbData.inference_clues ?? '',
-      reasoning: dbData.inference_reasoning ?? '',
-    },
-    relations: {
-      // ✅ FIXED: Map synonyms from word_synonyms array
-      synonyms: (dbData as any).word_synonyms?.map((syn: any) => ({
-        word: syn.synonym_word,
-        ipa: syn.ipa || '',
-        meaning_en: syn.meaning_en || '',
-        meaning_vi: syn.meaning_vi || ''
-      })) || [],
-      // ✅ FIXED: Map antonyms from word_antonyms array
-      antonyms: (dbData as any).word_antonyms?.map((ant: any) => ({
-        word: ant.antonym_word,
-        ipa: ant.ipa || '',
-        meaning_en: ant.meaning_en || '',
-        meaning_vi: ant.meaning_vi || ''
-      })) || [],
-    },
-    usage: {
-      // ✅ FIXED: Map collocations from word_collocations array
-      collocations: (dbData as any).word_collocations?.map((col: any) => ({
-        phrase: col.phrase,
-        meaning: col.meaning || '',
-        usage_example: col.usage_example || '',
-        frequency_level: col.frequency_level || 'common'
-      })) || [],
-      example_sentence: dbData.example_sentence ?? '',
-      example_translation: dbData.example_translation ?? '',
-    },
-  };
-  
-  console.log('🔍 [DEBUG] transformWordAnalysisDB - Output:', result);
-  console.log('🔍 [DEBUG] transformWordAnalysisDB - Mapped fields:', {
-    synonymsCount: result.relations.synonyms.length,
-    antonymsCount: result.relations.antonyms.length,
-    collocationsCount: result.usage.collocations.length,
-    hasSynonyms: !!(dbData as any).word_synonyms,
-    hasAntonyms: !!(dbData as any).word_antonyms,
-    hasCollocations: !!(dbData as any).word_collocations,
-  });
-  
-  return result;
-};
   // Handle analysis click in session - unified handler for all analysis types
   const handleAnalysisClick = (analysisItem: any) => {
     // Use helper functions for structure detection
     const isDirect = isDirectStructure(analysisItem);
-    const isLegacy = isLegacyStructure(analysisItem);
-    const detectedType = getAnalysisType(analysisItem);
     
     console.log('🔍 [DEBUG] handleAnalysisClick - Called with:', {
       analysisItem,
-      structureType: isDirect ? 'direct' : (isLegacy ? 'legacy' : 'unknown'),
-      analysisType: analysisItem?.analysisType || detectedType,
-      detectedType,
+      structureType: isDirect ? 'direct' : 'unknown',
+      analysisType: analysisItem?.analysisType,
       // Log structure validation
-      hasValidStructure: isDirect || isLegacy,
+      hasValidStructure: isDirect,
       // Log available data fields for debugging
       availableFields: {
         // Direct structure fields
@@ -229,12 +162,6 @@ const transformWordAnalysisDB = (dbData: WordAnalysisDB): WordAnalysis => {
         phrase: !!analysisItem?.phrase,
         sentence: !!analysisItem?.sentence,
         paragraph: !!analysisItem?.paragraph,
-        // Legacy structure fields
-        hasNestedAnalysis: !!analysisItem?.analysis,
-        nestedWord: !!analysisItem?.analysis?.word,
-        nestedPhrase: !!analysisItem?.analysis?.phrase,
-        nestedSentence: !!analysisItem?.analysis?.sentence,
-        nestedParagraph: !!analysisItem?.analysis?.paragraph,
       }
     });
     
@@ -291,58 +218,15 @@ const transformWordAnalysisDB = (dbData: WordAnalysisDB): WordAnalysis => {
       return;
     }
     
-    // Fallback to original logic for legacy data structure
-    if (isLegacy) {
-      console.log(`🔍 [DEBUG] handleAnalysisClick - Processing legacy structure with type: ${detectedType}`);
-    } else {
-      console.warn('🔍 [DEBUG] handleAnalysisClick - Invalid data structure - neither direct nor legacy format:', analysisItem);
-      console.log('🔍 [DEBUG] handleAnalysisClick - Expected direct structure (word/phrase/sentence/paragraph) or legacy nested analysis object');
-      // Optional: Show toast notification to user
-      return;
-    }
-    
-    // Try to determine type from legacy analysis data and handle accordingly
-    try {
-      // Use the already detected type from helper function
-      const legacyType = detectedType || 'word'; // fallback to word
-      
-      console.log(`🔍 [DEBUG] handleAnalysisClick - Using detected type: ${legacyType} from legacy structure`);
-      
-      // Transform based on detected type
-      let analysis;
-      switch (legacyType) {
-        case 'word':
-          console.log('🔍 [DEBUG] handleAnalysisClick - Transforming legacy word analysis data');
-          analysis = transformWordAnalysisDB(analysisItem.analysis as any);
-          break;
-        // Add other transformations as needed
-        default:
-          console.warn('🔍 [DEBUG] handleAnalysisClick - No transformation available for type:', legacyType);
-          return;
-      }
-      
-      console.log('🔍 [DEBUG] handleAnalysisClick - Transformed analysis:', analysis);
-      
-      // ✅ FIXED: Validate transformed data before setting state
-      if (!analysis) {
-        console.error('🔍 [DEBUG] handleAnalysisClick - Transform failed or invalid result:', analysis);
-        return;
-      }
-      
-      setAnalysisResult(analysis);
-      setAnalysisType(legacyType as any);
-      setIsDetailDialogOpen(true);
-      
-      console.log(`🔍 [DEBUG] handleAnalysisClick - Dialog state set to open for type: ${legacyType}`);
-    } catch (error) {
-      console.error('🔍 [DEBUG] handleAnalysisClick - Error during processing:', error);
-      // Optional: Show error toast to user
-    }
+    // Invalid data structure - neither direct nor legacy format
+    console.warn('🔍 [DEBUG] handleAnalysisClick - Invalid data structure:', analysisItem);
+    console.log('🔍 [DEBUG] handleAnalysisClick - Expected direct structure (word/phrase/sentence/paragraph)');
+    // Optional: Show toast notification to user
+    return;
   };
 
   // Handle word click in session - backward compatibility
   const handleWordClick = (wordItem: any) => {
-    console.log('🔍 [DEBUG] handleWordClick - Delegating to handleAnalysisClick');
     handleAnalysisClick(wordItem);
   };
 
@@ -373,11 +257,16 @@ const transformWordAnalysisDB = (dbData: WordAnalysisDB): WordAnalysis => {
   const handleDynamicIslandViewDetails = useCallback(() => {
     // Open detail dialog when viewing from Dynamic Island
     if (dynamicIslandResult) {
-      setAnalysisResult(dynamicIslandResult.data);
-      setAnalysisType(dynamicIslandResult.type);
-      setIsDetailDialogOpen(true);
+      const dynamicAnalysisItem: any = {
+        id: `dynamic-${Date.now()}`,
+        analysisId: `dynamic-${Date.now()}`,
+        sessionId: sessionId || '',
+        analysisType: dynamicIslandResult.type,
+        [dynamicIslandResult.type]: dynamicIslandResult.data
+      };
+      DialogDispatcher.openViewDetails(dynamicAnalysisItem);
     }
-  }, [dynamicIslandResult, setAnalysisResult, setAnalysisType, setIsDetailDialogOpen]);
+  }, [dynamicIslandResult]);
 
   return (
     <div
@@ -429,7 +318,6 @@ const transformWordAnalysisDB = (dbData: WordAnalysisDB): WordAnalysis => {
             activeTab={activeTab}
             isLoading={currentLoading}
             error={error}
-            isDetailDialogOpen={isDetailDialogOpen}
             hideResultCard={overlayVisible}
             
             // History props
@@ -448,19 +336,23 @@ const transformWordAnalysisDB = (dbData: WordAnalysisDB): WordAnalysis => {
             onAnalysisAnalyze={handleWordAnalyze}
             onAnalysisRemove={handleWordRemove}
             
-            // Dialog actions
-            onViewDetails={() => setIsDetailDialogOpen(true)}
+            // Dialog actions - using new dialog system
+            onViewDetails={() => {
+              if (analysisResult) {
+                const analysisItem: any = {
+                  id: `sidebar-${Date.now()}`,
+                  analysisId: `sidebar-${Date.now()}`,
+                  sessionId: sessionId || '',
+                  analysisType,
+                  [analysisType]: analysisResult
+                };
+                DialogDispatcher.openViewDetails(analysisItem);
+              }
+            }}
           />
         </Suspense>
       </div>
 
-      {/* Analysis Result Dialog */}
-      <AnalysisResultDialog
-        isOpen={isDetailDialogOpen}
-        onClose={() => setIsDetailDialogOpen(false)}
-        analysis={analysisResult}
-        analysisType={analysisType}
-      />
 
       {/* Dynamic Island Status Bar */}
       <AnalysisDynamicIslandStatusBar

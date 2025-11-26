@@ -12,7 +12,6 @@ interface AnalysisSidebarProps {
   activeTab: 'word' | 'phrase' | 'sentence' | 'paragraph';
   isLoading: boolean;
   error: string | null;
-  isDetailDialogOpen: boolean;
   hideResultCard?: boolean; // New prop to hide CompactResultCard when overlay is active
 
   // History props
@@ -51,7 +50,6 @@ export function AnalysisSidebar({
   activeTab,
   isLoading,
   error,
-  isDetailDialogOpen,
   hideResultCard = false, // Default to false for backward compatibility
 
   // History props
