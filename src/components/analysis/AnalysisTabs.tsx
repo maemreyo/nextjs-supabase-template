@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useEffect, useMemo, memo } from 'react';
+import React, { useRef, useCallback, useMemo, memo, useState, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
@@ -8,8 +8,11 @@ import { BookOpen, Type, MessageSquare, FileText } from 'lucide-react';
 import { AnalysisType, AnalysisItem, SessionAnalysesListProps } from './types/analysis-types';
 import { AnalysisItemCard } from './components/AnalysisItemCard';
 import { DEFAULT_LAYOUTS, COMPACT_LAYOUTS } from './types/analysis-types';
-import { getAnalysisTypeDisplayName, getAnalysisTypeIcon } from './helpers/data-transformers';
-import useSessionAnalysesByType from '@/hooks/useSessionAnalysesByType';
+import { getAnalysisTypeDisplayName } from './helpers/data-transformers';
+import useWordAnalyses from '@/hooks/useWordAnalyses';
+import usePhraseAnalyses from '@/hooks/usePhraseAnalyses';
+import useSentenceAnalyses from '@/hooks/useSentenceAnalyses';
+import useParagraphAnalyses from '@/hooks/useParagraphAnalyses';
 
 // Height estimates for different analysis types (increased to prevent overlap)
 const ANALYSIS_HEIGHTS = {
@@ -19,6 +22,9 @@ const ANALYSIS_HEIGHTS = {
   paragraph: 230,
 };
 
+// Single column layout for all analysis types
+const GRID_COLUMNS = 1;
+
 interface AnalysisTabContentProps {
   sessionId: string;
   type: AnalysisType;
@@ -26,22 +32,36 @@ interface AnalysisTabContentProps {
   onAnalysisAnalyze?: (analysis: AnalysisItem) => void;
   onAnalysisRemove?: (analysisId: string, analysisType: AnalysisType) => void;
   compact?: boolean;
+  // Query data passed from parent instead of calling hooks
+  queryData: {
+    data: {
+      flatAnalyses?: AnalysisItem[];
+      totalCount?: number;
+    } | undefined;
+    fetchNextPage: () => void;
+    hasNextPage: boolean;
+    isFetchingNextPage: boolean;
+    isLoading: boolean;
+    isError: boolean;
+    error: unknown;
+  };
 }
 
 // Tab content component with infinite scroll and virtualization
 const AnalysisTabContent = memo(function AnalysisTabContent({
-  sessionId,
   type,
   onAnalysisClick,
   onAnalysisAnalyze,
   onAnalysisRemove,
   compact = false,
-  isActive = true
-}: AnalysisTabContentProps & { isActive?: boolean }) {
+  queryData
+}: AnalysisTabContentProps) {
   const parentRef = useRef<HTMLDivElement>(null);
+  const [isClient, setIsClient] = useState(false);
   
-  console.log(`[AnalysisTabContent] Rendering tab: ${type}, active: ${isActive}`);
+  console.log(`[AnalysisTabContent] Rendering tab: ${type}`);
   
+  // Use query data passed from parent instead of calling hooks
   const {
     data,
     fetchNextPage,
@@ -50,14 +70,12 @@ const AnalysisTabContent = memo(function AnalysisTabContent({
     isLoading,
     isError,
     error,
-  } = useSessionAnalysesByType({
-    sessionId,
-    type,
-    pageSize: 15, // Standardized limit for all tabs
-    enabled: isActive, // Only fetch when tab is active
-    invalidateOnMount: false, // Lazy loading
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
+  } = queryData;
+
+  // Set isClient on mount to handle SSR
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Track scroll position for infinite scroll trigger
   const scrollRangeRef = useRef({ start: 0, end: 0 });
@@ -78,11 +96,12 @@ const AnalysisTabContent = memo(function AnalysisTabContent({
     }
   }, [type, hasNextPage, isFetchingNextPage, fetchNextPage, data?.flatAnalyses?.length]);
 
-  // Create virtualizer with scroll range tracking
+  // Create virtualizer with item-based virtualization (single column)
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: data?.flatAnalyses?.length || 0,
     getScrollElement: () => parentRef.current,
-    estimateSize: (index) => {
+    estimateSize: () => {
       return ANALYSIS_HEIGHTS[type] || 160;
     },
     overscan: 5,
@@ -102,11 +121,6 @@ const AnalysisTabContent = memo(function AnalysisTabContent({
   const getLayoutConfig = () => {
     const layouts = compact ? COMPACT_LAYOUTS : DEFAULT_LAYOUTS;
     return layouts[type];
-  };
-
-  const getGridClassName = () => {
-    const layouts = compact ? COMPACT_LAYOUTS : DEFAULT_LAYOUTS;
-    return layouts[type].gridCols;
   };
 
   if (isLoading) {
@@ -143,8 +157,20 @@ const AnalysisTabContent = memo(function AnalysisTabContent({
     );
   }
 
-  const gridClassName = getGridClassName();
   const layout = getLayoutConfig();
+  
+  // If not client-side yet, show loading state
+  if (!isClient) {
+    return (
+      <div className="p-4">
+        <div className="space-y-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-32 w-full" />
+          ))}
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div
@@ -153,7 +179,7 @@ const AnalysisTabContent = memo(function AnalysisTabContent({
       style={{ height: '600px' }}
     >
       <div
-        className={`${gridClassName} grid gap-4 p-4`}
+        className="p-4"
         style={{
           height: `${virtualizer.getTotalSize()}px`,
           width: '100%',
@@ -161,7 +187,7 @@ const AnalysisTabContent = memo(function AnalysisTabContent({
         }}
       >
         {virtualizer.getVirtualItems().map((virtualItem) => {
-          const analysis = data.flatAnalyses[virtualItem.index];
+          const analysis = data?.flatAnalyses?.[virtualItem.index];
           if (!analysis) return null;
           
           return (
@@ -171,10 +197,10 @@ const AnalysisTabContent = memo(function AnalysisTabContent({
                 position: 'absolute',
                 top: 0,
                 left: 0,
-                width: '100%',
+                right: 0,
                 height: `${virtualItem.size}px`,
                 transform: `translateY(${virtualItem.start}px)`,
-                padding: '2px', // Add small padding to prevent edge overlap
+                padding: '8px 16px',
               }}
             >
               <AnalysisItemCard
@@ -190,7 +216,6 @@ const AnalysisTabContent = memo(function AnalysisTabContent({
           );
         })}
       </div>
-      
       
       {/* Loading indicator for infinite scroll */}
       {isFetchingNextPage && (
@@ -229,36 +254,32 @@ export const AnalysisTabs = memo(function AnalysisTabs({
   console.log('[AnalysisTabs] DEBUG: Gọi hooks ở top level - ĐÚNG QUY TẮC');
   console.log('[AnalysisTabs] DEBUG: activeTab hiện tại:', activeTab);
   
-  const wordQuery = useSessionAnalysesByType({
+  const wordQuery = useWordAnalyses({
     sessionId,
-    type: 'word',
     pageSize: 15,
     enabled: activeTab === 'word', // Only fetch when active
     invalidateOnMount: false,
     staleTime: 5 * 60 * 1000,
   });
   
-  const phraseQuery = useSessionAnalysesByType({
+  const phraseQuery = usePhraseAnalyses({
     sessionId,
-    type: 'phrase',
     pageSize: 15,
     enabled: activeTab === 'phrase', // Only fetch when active
     invalidateOnMount: false,
     staleTime: 5 * 60 * 1000,
   });
   
-  const sentenceQuery = useSessionAnalysesByType({
+  const sentenceQuery = useSentenceAnalyses({
     sessionId,
-    type: 'sentence',
     pageSize: 15,
     enabled: activeTab === 'sentence', // Only fetch when active
     invalidateOnMount: false,
     staleTime: 5 * 60 * 1000,
   });
   
-  const paragraphQuery = useSessionAnalysesByType({
+  const paragraphQuery = useParagraphAnalyses({
     sessionId,
-    type: 'paragraph',
     pageSize: 15,
     enabled: activeTab === 'paragraph', // Only fetch when active
     invalidateOnMount: false,
@@ -274,7 +295,7 @@ export const AnalysisTabs = memo(function AnalysisTabs({
       sentence: sentenceQuery,
       paragraph: paragraphQuery,
     };
-  }, [sessionId, wordQuery, phraseQuery, sentenceQuery, paragraphQuery]);
+  }, [wordQuery, phraseQuery, sentenceQuery, paragraphQuery]);
 
   const tabConfig = [
     { value: 'word' as AnalysisType, label: 'Từ', icon: Type },
@@ -286,13 +307,13 @@ export const AnalysisTabs = memo(function AnalysisTabs({
   const getTabCount = useCallback((type: AnalysisType) => {
     switch (type) {
       case 'word':
-        return (tabQueries.word.data as any)?.totalCount || 0;
+        return (tabQueries.word.data as { totalCount?: number })?.totalCount || 0;
       case 'phrase':
-        return (tabQueries.phrase.data as any)?.totalCount || 0;
+        return (tabQueries.phrase.data as { totalCount?: number })?.totalCount || 0;
       case 'sentence':
-        return (tabQueries.sentence.data as any)?.totalCount || 0;
+        return (tabQueries.sentence.data as { totalCount?: number })?.totalCount || 0;
       case 'paragraph':
-        return (tabQueries.paragraph.data as any)?.totalCount || 0;
+        return (tabQueries.paragraph.data as { totalCount?: number })?.totalCount || 0;
       default:
         return 0;
     }
@@ -336,7 +357,7 @@ export const AnalysisTabs = memo(function AnalysisTabs({
             onAnalysisAnalyze={onAnalysisAnalyze}
             onAnalysisRemove={onAnalysisRemove}
             compact={compact}
-            isActive={true} // Always active since we're in the active tab content
+            queryData={tabQueries[activeTab]}
           />
         </TabsContent>
       </Tabs>
