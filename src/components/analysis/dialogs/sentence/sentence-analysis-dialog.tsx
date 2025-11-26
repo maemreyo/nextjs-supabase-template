@@ -1,11 +1,12 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { FileText, Volume2, Brain, GitBranch } from 'lucide-react';
+import { FileText, Brain, GitBranch } from 'lucide-react';
 import { SentenceAnalysis } from '../../types/analysis-types';
 import { ExportFormat } from '../types/dialog-types';
 import { SentenceAnalysisDialogProps } from './sentence-dialog-types';
 import { BaseAnalysisDialog, DialogHeader } from '../common/base-analysis-dialog';
 import { SentenceDialogContent } from './sentence-dialog-content';
 import { SentenceDialogActions } from './sentence-dialog-actions';
+import { SentencePronunciationAudioPlayer } from './sentence-pronunciation-audio-player';
 import { useDialogState } from '../hooks/use-dialog-state';
 import { useDialogKeyboard } from '../hooks/use-dialog-keyboard';
 import { cn } from '@/lib/utils';
@@ -175,13 +176,11 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
       <div className="flex items-center gap-2">
         <span>Phân tích câu: {analysis.sentence.substring(0, 30)}{analysis.sentence.length > 30 ? '...' : ''}</span>
         {onPronounce && (
-          <button
-            onClick={() => handlePronounce(analysis.sentence)}
-            className="p-1 hover:bg-accent rounded-md transition-colors"
-            aria-label={`Phát âm ${analysis.sentence}`}
-          >
-            <Volume2 className="h-4 w-4" />
-          </button>
+          <SentencePronunciationAudioPlayer
+            sentence={analysis.sentence}
+            onPronounce={handlePronounce}
+            className="scale-75"
+          />
         )}
       </div>
     );
@@ -303,7 +302,6 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
       {pronunciationError && (
         <div className="mx-6 mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
           <div className="flex items-center gap-2">
-            <Volume2 className="h-4 w-4 text-yellow-600" />
             <p className="text-sm text-yellow-800">{pronunciationError}</p>
             <button
               onClick={() => setPronunciationError(null)}

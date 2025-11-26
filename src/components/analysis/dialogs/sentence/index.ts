@@ -4,6 +4,12 @@
 export { SentenceAnalysisDialog } from './sentence-analysis-dialog';
 export { SentenceDialogContent } from './sentence-dialog-content';
 export { SentenceDialogActions } from './sentence-dialog-actions';
+export { SentencePrimaryInformationDisplayCard } from './sentence-primary-information-display-card';
+export { SentencePronunciationAudioPlayer } from './sentence-pronunciation-audio-player';
+export { SentenceGrammarAnalysisSection } from './sentence-grammar-analysis-section';
+export { SentenceMainIdeaBreakdownSection } from './sentence-main-idea-breakdown-section';
+export { SentenceUsageExamplesSection } from './sentence-usage-examples-section';
+export { SentenceRelatedSentencesSection } from './sentence-related-sentences-section';
 export type {
   SentenceAnalysisDialogProps,
   SentenceDialogContentProps,
