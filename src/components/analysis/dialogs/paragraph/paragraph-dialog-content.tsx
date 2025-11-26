@@ -45,6 +45,7 @@ import { Separator } from '../../../ui/separator';
 import { Progress } from '../../../ui/progress';
 import { cn } from '@/lib/utils';
 import { useDialogState } from '../hooks/use-dialog-state';
+import { useSavedAnalysisDetail } from '@/hooks/useSavedAnalysisDetail';
 
 // Import new modular components
 import { ParagraphPrimaryInformationDisplayCard } from './paragraph-primary-information-display-card';
@@ -53,6 +54,7 @@ import { ParagraphSentimentAnalysisSection } from './paragraph-sentiment-analysi
 import { ParagraphSummarySection } from './paragraph-summary-section';
 import { ParagraphKeyPointsExtractionSection } from './paragraph-key-points-extraction-section';
 import { ParagraphContextSection } from './paragraph-context-section';
+import { Card, CardContent } from '@/components/ui/card';
 
 /**
  * Main Paragraph Dialog Content Component
@@ -69,26 +71,76 @@ export const ParagraphDialogContent: React.FC<ParagraphDialogContentProps> = ({
   className,
 }) => {
   const { state, actions } = useDialogState('paragraph');
-  const loading = state.dialogState.loading;
+  const [isFetchingFullData, setIsFetchingFullData] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
-  // Clear loading state when data is available
+  // Fetch full analysis data using analysis.id
+  const { analysis: fullAnalysisData, isLoading, isError, error } = useSavedAnalysisDetail(
+    analysis?.id || null,
+    { enabled: !!analysis?.id }
+  );
+
+  // Merge summary data with full data, prioritizing full data
+  const mergedAnalysis = React.useMemo(() => {
+    if (!analysis) return null;
+    
+    // If we have full data, merge it with summary data
+    if (fullAnalysisData && fullAnalysisData.analysis_type === 'paragraph') {
+      // Transform full data to match ParagraphAnalysis interface
+      const fullParagraphAnalysis = {
+        ...analysis,
+        // Override with full data fields
+        ...fullAnalysisData,
+        // Map related data from nested structure
+        structureBreakdown: fullAnalysisData.paragraph_structure_breakdown || [],
+        constructiveFeedback: fullAnalysisData.paragraph_constructive_feedback || [],
+      };
+      
+      console.log('🔍 [DEBUG] ParagraphDialogContent - Merged analysis data', {
+        hasSummaryData: !!analysis,
+        hasFullData: !!fullAnalysisData,
+        hasStructureBreakdown: fullParagraphAnalysis.structureBreakdown.length > 0,
+        hasConstructiveFeedback: fullParagraphAnalysis.constructiveFeedback.length > 0,
+      });
+      
+      return fullParagraphAnalysis;
+    }
+    
+    // Fallback to summary data if full data is not available
+    return analysis;
+  }, [analysis, fullAnalysisData]);
+
+  // Update loading states
   useEffect(() => {
     try {
-      if (analysis && loading) {
-        actions.setLoading(false);
+      // Set loading when fetching full data
+      if (isLoading) {
+        setIsFetchingFullData(true);
+        actions.setLoading(true);
+      } else {
+        setIsFetchingFullData(false);
+        // Clear loading when we have merged data
+        if (mergedAnalysis) {
+          actions.setLoading(false);
+        }
       }
     } catch (error) {
-      console.error('Error clearing loading state in ParagraphDialogContent:', error);
-      // Fallback: try to clear loading state after a short delay
-      setTimeout(() => {
-        try {
-          actions.setLoading(false);
-        } catch (fallbackError) {
-          console.error('Fallback error clearing loading state:', fallbackError);
-        }
-      }, 100);
+      console.error('Error managing loading state in ParagraphDialogContent:', error);
+      setIsFetchingFullData(false);
     }
-  }, [analysis, loading, actions]);
+  }, [isLoading, mergedAnalysis, actions]);
+
+  // Handle error state
+  useEffect(() => {
+    if (isError && error) {
+      console.error('🔍 [DEBUG] ParagraphDialogContent - Error fetching full analysis data:', error);
+      setFetchError(error instanceof Error ? error.message : 'Failed to fetch full analysis data');
+      setIsFetchingFullData(false);
+      // Don't clear loading - we still have summary data to show
+    } else {
+      setFetchError(null);
+    }
+  }, [isError, error]);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     context: false,
     structure: true,
@@ -133,6 +185,49 @@ export const ParagraphDialogContent: React.FC<ParagraphDialogContentProps> = ({
     hasSummary: !!(analysis.betterVersion || analysis.gapAnalysis),
     hasSentiment: !!(analysis.sentimentLabel || analysis.sentimentIntensity),
   }), [analysis]);
+
+  // Show error state if fetch failed
+  if (fetchError && !mergedAnalysis) {
+    return (
+      <div className={cn('space-y-4', className)}>
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="p-4">
+            <div className="text-center space-y-2">
+              <p className="text-sm text-destructive">
+                Không thể tải dữ liệu đầy đủ. Hiển thị thông tin cơ bản.
+              </p>
+              <p className="text-xs text-muted-foreground">{fetchError}</p>
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* Fallback to basic display */}
+        {analysis && (
+          <ParagraphPrimaryInformationDisplayCard
+            analysis={analysis}
+            onPronounce={onPronounce}
+            showPronunciation={showPronunciation}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // Show loading state while fetching full data
+  if (isFetchingFullData && !mergedAnalysis) {
+    return (
+      <div className={cn('space-y-4', className)}>
+        <div className="animate-pulse space-y-4">
+          <div className="h-20 bg-muted rounded-lg"></div>
+          <div className="h-10 bg-muted rounded-lg w-1/4"></div>
+          <div className="space-y-2">
+            <div className="h-4 bg-muted rounded"></div>
+            <div className="h-4 bg-muted rounded w-3/4"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cn('space-y-4', className)}>
@@ -194,9 +289,17 @@ export const ParagraphDialogContent: React.FC<ParagraphDialogContentProps> = ({
         }
       `}</style>
 
+      {/* Loading indicator for full data fetch */}
+      {isFetchingFullData && mergedAnalysis && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-blue-50 dark:bg-blue-950 p-2 rounded-lg">
+          <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+          Đang tải dữ liệu đầy đủ...
+        </div>
+      )}
+
       {/* Main Paragraph Information - Using new modular component */}
       <ParagraphPrimaryInformationDisplayCard
-        analysis={analysis}
+        analysis={mergedAnalysis || analysis}
         onPronounce={onPronounce}
         showPronunciation={showPronunciation}
       />
@@ -214,8 +317,8 @@ export const ParagraphDialogContent: React.FC<ParagraphDialogContentProps> = ({
 
         <TabsContent value="topic" className="space-y-4 mt-4 animate-fadeIn">
           <MainTopicSection
-            mainTopic={analysis.mainTopic}
-            keywords={analysis.keywords}
+            mainTopic={mergedAnalysis?.mainTopic || analysis?.mainTopic}
+            keywords={mergedAnalysis?.keywords || analysis?.keywords}
             onAnalyzeKeywords={onAnalyzeKeywords}
             onCopy={(text) => handleCopy(text, 'topic')}
             copied={copiedSection === 'topic'}
@@ -224,22 +327,22 @@ export const ParagraphDialogContent: React.FC<ParagraphDialogContentProps> = ({
 
         <TabsContent value="structure" className="mt-4 animate-fadeIn">
           <ParagraphStructureAnalysisSection
-            tone={analysis.tone}
-            targetAudience={analysis.targetAudience}
-            type={analysis.type}
-            vocabularyLevel={analysis.vocabularyLevel}
-            flowScore={analysis.flowScore}
-            logicScore={analysis.logicScore}
-            sentenceVariety={analysis.sentenceVariety}
-            onAnalyzeStructure={() => onAnalyzeRelatedParagraph?.(analysis.paragraph)}
-            paragraph={analysis.paragraph}
+            tone={mergedAnalysis?.tone || analysis?.tone}
+            targetAudience={mergedAnalysis?.targetAudience || analysis?.targetAudience}
+            type={mergedAnalysis?.type || analysis?.type}
+            vocabularyLevel={mergedAnalysis?.vocabularyLevel || analysis?.vocabularyLevel}
+            flowScore={mergedAnalysis?.flowScore || analysis?.flowScore}
+            logicScore={mergedAnalysis?.logicScore || analysis?.logicScore}
+            sentenceVariety={mergedAnalysis?.sentenceVariety || analysis?.sentenceVariety}
+            onAnalyzeStructure={() => onAnalyzeRelatedParagraph?.(mergedAnalysis?.paragraph || analysis?.paragraph)}
+            paragraph={mergedAnalysis?.paragraph || analysis?.paragraph}
           />
         </TabsContent>
 
         <TabsContent value="keypoints" className="mt-4 animate-fadeIn">
           <ParagraphKeyPointsExtractionSection
-            keywords={analysis.keywords}
-            transitionWords={analysis.transitionWords}
+            keywords={mergedAnalysis?.keywords || analysis?.keywords}
+            transitionWords={mergedAnalysis?.transitionWords || analysis?.transitionWords}
             onAnalyzeKeywords={onAnalyzeKeywords}
             onCopy={(text) => handleCopy(text, 'keypoints')}
           />
@@ -247,17 +350,17 @@ export const ParagraphDialogContent: React.FC<ParagraphDialogContentProps> = ({
 
         <TabsContent value="summary" className="mt-4 animate-fadeIn">
           <ParagraphSummarySection
-            betterVersion={analysis.betterVersion}
-            gapAnalysis={analysis.gapAnalysis}
-            onSummarize={() => onAnalyzeRelatedParagraph?.(analysis.paragraph)}
+            betterVersion={mergedAnalysis?.betterVersion || analysis?.betterVersion}
+            gapAnalysis={mergedAnalysis?.gapAnalysis || analysis?.gapAnalysis}
+            onSummarize={() => onAnalyzeRelatedParagraph?.(mergedAnalysis?.paragraph || analysis?.paragraph)}
             onCopy={(text) => handleCopy(text, 'summary')}
-            paragraph={analysis.paragraph}
+            paragraph={mergedAnalysis?.paragraph || analysis?.paragraph}
           />
         </TabsContent>
 
         <TabsContent value="context" className="mt-4 animate-fadeIn">
           <ParagraphContextSection
-            paragraphContext={analysis.paragraph}
+            paragraphContext={mergedAnalysis?.paragraph || analysis?.paragraph}
             onAnalyzeRelatedParagraph={onAnalyzeRelatedParagraph}
             onCopy={(text) => handleCopy(text, 'context')}
           />
@@ -265,11 +368,11 @@ export const ParagraphDialogContent: React.FC<ParagraphDialogContentProps> = ({
 
         <TabsContent value="sentiment" className="mt-4 animate-fadeIn">
           <ParagraphSentimentAnalysisSection
-            sentimentLabel={analysis.sentimentLabel}
-            sentimentIntensity={analysis.sentimentIntensity}
-            sentimentJustification={analysis.sentimentJustification}
-            onAnalyzeSentiment={() => onAnalyzeRelatedParagraph?.(analysis.paragraph)}
-            paragraph={analysis.paragraph}
+            sentimentLabel={mergedAnalysis?.sentimentLabel || analysis?.sentimentLabel}
+            sentimentIntensity={mergedAnalysis?.sentimentIntensity || analysis?.sentimentIntensity}
+            sentimentJustification={mergedAnalysis?.sentimentJustification || analysis?.sentimentJustification}
+            onAnalyzeSentiment={() => onAnalyzeRelatedParagraph?.(mergedAnalysis?.paragraph || analysis?.paragraph)}
+            paragraph={mergedAnalysis?.paragraph || analysis?.paragraph}
           />
         </TabsContent>
       </Tabs>

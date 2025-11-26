@@ -20,6 +20,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../../ui/tabs';
 import { Button } from '../../../ui/button';
 import { cn } from '@/lib/utils';
 import { useDialogState } from '../hooks/use-dialog-state';
+import { useSavedAnalysisDetail } from '@/hooks/useSavedAnalysisDetail';
 
 /**
  * Main Sentence Dialog Content Component
@@ -35,26 +36,76 @@ export const SentenceDialogContent: React.FC<SentenceDialogContentProps> = ({
   className,
 }) => {
   const { state, actions } = useDialogState('sentence');
-  const loading = state.dialogState.loading;
+  const [isFetchingFullData, setIsFetchingFullData] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
-  // Clear loading state when data is available
+  // Fetch full analysis data using analysis.id
+  const { analysis: fullAnalysisData, isLoading, isError, error } = useSavedAnalysisDetail(
+    analysis?.id || null,
+    { enabled: !!analysis?.id }
+  );
+
+  // Merge summary data with full data, prioritizing full data
+  const mergedAnalysis = React.useMemo(() => {
+    if (!analysis) return null;
+    
+    // If we have full data, merge it with summary data
+    if (fullAnalysisData && fullAnalysisData.analysis_type === 'sentence') {
+      // Transform full data to match SentenceAnalysis interface
+      const fullSentenceAnalysis = {
+        ...analysis,
+        // Override with full data fields
+        ...fullAnalysisData,
+        // Map related data from nested structure
+        keyComponents: fullAnalysisData.sentence_key_components || [],
+        rewriteSuggestions: fullAnalysisData.sentence_rewrite_suggestions || [],
+      };
+      
+      console.log('🔍 [DEBUG] SentenceDialogContent - Merged analysis data', {
+        hasSummaryData: !!analysis,
+        hasFullData: !!fullAnalysisData,
+        hasKeyComponents: fullSentenceAnalysis.keyComponents.length > 0,
+        hasRewriteSuggestions: fullSentenceAnalysis.rewriteSuggestions.length > 0,
+      });
+      
+      return fullSentenceAnalysis;
+    }
+    
+    // Fallback to summary data if full data is not available
+    return analysis;
+  }, [analysis, fullAnalysisData]);
+
+  // Update loading states
   useEffect(() => {
     try {
-      if (analysis && loading) {
-        actions.setLoading(false);
+      // Set loading when fetching full data
+      if (isLoading) {
+        setIsFetchingFullData(true);
+        actions.setLoading(true);
+      } else {
+        setIsFetchingFullData(false);
+        // Clear loading when we have merged data
+        if (mergedAnalysis) {
+          actions.setLoading(false);
+        }
       }
     } catch (error) {
-      console.error('Error clearing loading state in SentenceDialogContent:', error);
-      // Fallback: try to clear loading state after a short delay
-      setTimeout(() => {
-        try {
-          actions.setLoading(false);
-        } catch (fallbackError) {
-          console.error('Fallback error clearing loading state:', fallbackError);
-        }
-      }, 100);
+      console.error('Error managing loading state in SentenceDialogContent:', error);
+      setIsFetchingFullData(false);
     }
-  }, [analysis, loading, actions]);
+  }, [isLoading, mergedAnalysis, actions]);
+
+  // Handle error state
+  useEffect(() => {
+    if (isError && error) {
+      console.error('🔍 [DEBUG] SentenceDialogContent - Error fetching full analysis data:', error);
+      setFetchError(error instanceof Error ? error.message : 'Failed to fetch full analysis data');
+      setIsFetchingFullData(false);
+      // Don't clear loading - we still have summary data to show
+    } else {
+      setFetchError(null);
+    }
+  }, [isError, error]);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     context: false,
     structure: true,
@@ -87,6 +138,58 @@ export const SentenceDialogContent: React.FC<SentenceDialogContentProps> = ({
     hasGrammar: !!(analysis.function || analysis.complexityLevel || analysis.sentiment || analysis.subtext),
     hasExamples: !!(analysis.clauses && Object.keys(analysis.clauses).length > 0),
   }), [analysis]);
+
+  // Show error state if fetch failed
+  if (fetchError && !mergedAnalysis) {
+    return (
+      <div className={cn('space-y-4', className)}>
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="p-4">
+            <div className="text-center space-y-2">
+              <p className="text-sm text-destructive">
+                Không thể tải dữ liệu đầy đủ. Hiển thị thông tin cơ bản.
+              </p>
+              <p className="text-xs text-muted-foreground">{fetchError}</p>
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* Fallback to basic display */}
+        {analysis && (
+          <div className="space-y-3">
+            <SentencePrimaryInformationDisplayCard
+              analysis={analysis}
+              className="w-full"
+            />
+            {showPronunciation && (
+              <div className="flex justify-end">
+                <SentencePronunciationAudioPlayer
+                  sentence={analysis.sentence}
+                  onPronounce={onPronounce}
+                />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Show loading state while fetching full data
+  if (isFetchingFullData && !mergedAnalysis) {
+    return (
+      <div className={cn('space-y-4', className)}>
+        <div className="animate-pulse space-y-4">
+          <div className="h-20 bg-muted rounded-lg"></div>
+          <div className="h-10 bg-muted rounded-lg w-1/4"></div>
+          <div className="space-y-2">
+            <div className="h-4 bg-muted rounded"></div>
+            <div className="h-4 bg-muted rounded w-3/4"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cn('space-y-4', className)}>
@@ -131,16 +234,24 @@ export const SentenceDialogContent: React.FC<SentenceDialogContentProps> = ({
         }
       `}</style>
 
+      {/* Loading indicator for full data fetch */}
+      {isFetchingFullData && mergedAnalysis && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-blue-50 dark:bg-blue-950 p-2 rounded-lg">
+          <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+          Đang tải dữ liệu đầy đủ...
+        </div>
+      )}
+
       {/* Main Sentence Information */}
       <div className="space-y-3">
         <SentencePrimaryInformationDisplayCard
-          analysis={analysis}
+          analysis={mergedAnalysis || analysis}
           className="w-full"
         />
         {showPronunciation && (
           <div className="flex justify-end">
             <SentencePronunciationAudioPlayer
-              sentence={analysis.sentence}
+              sentence={mergedAnalysis?.sentence || analysis?.sentence}
               onPronounce={onPronounce}
             />
           </div>
@@ -159,9 +270,9 @@ export const SentenceDialogContent: React.FC<SentenceDialogContentProps> = ({
 
         <TabsContent value="translation" className="space-y-4 mt-4 animate-fadeIn">
           <SentenceMainIdeaBreakdownSection
-            naturalTranslation={analysis.naturalTranslation}
-            literalTranslation={analysis.literalTranslation}
-            mainIdea={analysis.mainIdea}
+            naturalTranslation={mergedAnalysis?.naturalTranslation || analysis?.naturalTranslation}
+            literalTranslation={mergedAnalysis?.literalTranslation || analysis?.literalTranslation}
+            mainIdea={mergedAnalysis?.mainIdea || analysis?.mainIdea}
             onCopy={(text) => handleCopy(text, 'translation')}
             copied={copiedSection === 'translation'}
           />
@@ -169,30 +280,30 @@ export const SentenceDialogContent: React.FC<SentenceDialogContentProps> = ({
 
         <TabsContent value="structure" className="mt-4 animate-fadeIn">
           <SentenceRelatedSentencesSection
-            subject={analysis.subject}
-            mainVerb={analysis.mainVerb}
-            object={analysis.object}
-            clauses={analysis.clauses}
-            sentenceType={analysis.sentenceType}
+            subject={mergedAnalysis?.subject || analysis?.subject}
+            mainVerb={mergedAnalysis?.mainVerb || analysis?.mainVerb}
+            object={mergedAnalysis?.object || analysis?.object}
+            clauses={mergedAnalysis?.clauses || analysis?.clauses}
+            sentenceType={mergedAnalysis?.sentenceType || analysis?.sentenceType}
             onClauseClick={onBreakdownClause}
           />
         </TabsContent>
 
         <TabsContent value="grammar" className="mt-4 animate-fadeIn">
           <SentenceGrammarAnalysisSection
-            function={analysis.function}
-            complexityLevel={analysis.complexityLevel}
-            sentiment={analysis.sentiment}
-            subtext={analysis.subtext}
-            sentence={analysis.sentence}
-            onAnalyzeGrammar={() => onAnalyzeRelatedSentence?.(analysis.sentence)}
+            function={mergedAnalysis?.function || analysis?.function}
+            complexityLevel={mergedAnalysis?.complexityLevel || analysis?.complexityLevel}
+            sentiment={mergedAnalysis?.sentiment || analysis?.sentiment}
+            subtext={mergedAnalysis?.subtext || analysis?.subtext}
+            sentence={mergedAnalysis?.sentence || analysis?.sentence}
+            onAnalyzeGrammar={() => onAnalyzeRelatedSentence?.(mergedAnalysis?.sentence || analysis?.sentence)}
           />
         </TabsContent>
 
         <TabsContent value="context" className="mt-4 animate-fadeIn">
           <SentenceContextSection
-            paragraphContext={analysis.paragraphContext}
-            relationToPrevious={analysis.relationToPrevious}
+            paragraphContext={mergedAnalysis?.paragraphContext || analysis?.paragraphContext}
+            relationToPrevious={mergedAnalysis?.relationToPrevious || analysis?.relationToPrevious}
             onCopy={(text) => handleCopy(text, 'context')}
             copied={copiedSection === 'context'}
           />
@@ -200,7 +311,7 @@ export const SentenceDialogContent: React.FC<SentenceDialogContentProps> = ({
 
         <TabsContent value="examples" className="mt-4 animate-fadeIn">
           <SentenceUsageExamplesSection
-            examples={analysis.clauses ? Object.values(analysis.clauses) : []}
+            examples={mergedAnalysis?.keyComponents?.length > 0 ? mergedAnalysis.keyComponents : (analysis?.clauses ? Object.values(analysis.clauses) : [])}
             onAnalyzeExample={onAnalyzeRelatedSentence}
           />
         </TabsContent>

@@ -239,16 +239,16 @@ export const BaseAnalysisDialog = ({
   }, [className, animationClasses, sizeClasses, isFullscreen]);
   
   // Render loading state
-  if (state.dialogState.loading) {
-    return (
-      <div className={dialogClasses}>
-        <div className="flex items-center justify-center min-h-[200px]">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary border-t-transparent"></div>
-          <p className="mt-4 text-muted-foreground">Loading analysis...</p>
-        </div>
-      </div>
-    );
-  }
+  // if (state.dialogState.loading) {
+  //   return (
+  //     <div className={dialogClasses}>
+  //       <div className="flex items-center justify-center min-h-[200px]">
+  //         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary border-t-transparent"></div>
+  //         <p className="mt-4 text-muted-foreground">Loading analysis...</p>
+  //       </div>
+  //     </div>
+  //   );
+  // }
   
   // Render error state
   if (state.dialogState.error) {

@@ -18,6 +18,7 @@ import { Badge } from '../../../ui/badge';
 import { Separator } from '../../../ui/separator';
 import { cn } from '@/lib/utils';
 import { useDialogState } from '../hooks/use-dialog-state';
+import { useSavedAnalysisDetail } from '@/hooks/useSavedAnalysisDetail';
 
 // Import new modular components
 import { PhrasePrimaryInformationDisplayCard } from './phrase-primary-information-display-card';
@@ -39,26 +40,76 @@ export const PhraseDialogContent: React.FC<PhraseDialogContentProps> = ({
   className,
 }) => {
   const { state, actions } = useDialogState('phrase');
-  const loading = state.dialogState.loading;
+  const [isFetchingFullData, setIsFetchingFullData] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
-  // Clear loading state when data is available
+  // Fetch full analysis data using analysis.id
+  const { analysis: fullAnalysisData, isLoading, isError, error } = useSavedAnalysisDetail(
+    analysis?.id || null,
+    { enabled: !!analysis?.id }
+  );
+
+  // Merge summary data with full data, prioritizing full data
+  const mergedAnalysis = React.useMemo(() => {
+    if (!analysis) return null;
+    
+    // If we have full data, merge it with summary data
+    if (fullAnalysisData && fullAnalysisData.analysis_type === 'phrase') {
+      // Transform full data to match PhraseAnalysis interface
+      const fullPhraseAnalysis = {
+        ...analysis,
+        // Override with full data fields
+        ...fullAnalysisData,
+        // Note: Phrase analysis doesn't have complex nested structures like word/sentence
+        // So we can use the full data directly
+      };
+      
+      console.log('🔍 [DEBUG] PhraseDialogContent - Merged analysis data', {
+        hasSummaryData: !!analysis,
+        hasFullData: !!fullAnalysisData,
+        phrase: fullPhraseAnalysis.phrase,
+        hasNaturalTranslation: !!fullPhraseAnalysis.naturalTranslation,
+        hasContextualMeaning: !!fullPhraseAnalysis.contextualMeaning,
+      });
+      
+      return fullPhraseAnalysis;
+    }
+    
+    // Fallback to summary data if full data is not available
+    return analysis;
+  }, [analysis, fullAnalysisData]);
+
+  // Update loading states
   useEffect(() => {
     try {
-      if (analysis && loading) {
-        actions.setLoading(false);
+      // Set loading when fetching full data
+      if (isLoading) {
+        setIsFetchingFullData(true);
+        actions.setLoading(true);
+      } else {
+        setIsFetchingFullData(false);
+        // Clear loading when we have merged data
+        if (mergedAnalysis) {
+          actions.setLoading(false);
+        }
       }
     } catch (error) {
-      console.error('Error clearing loading state in PhraseDialogContent:', error);
-      // Fallback: try to clear loading state after a short delay
-      setTimeout(() => {
-        try {
-          actions.setLoading(false);
-        } catch (fallbackError) {
-          console.error('Fallback error clearing loading state:', fallbackError);
-        }
-      }, 100);
+      console.error('Error managing loading state in PhraseDialogContent:', error);
+      setIsFetchingFullData(false);
     }
-  }, [analysis, loading, actions]);
+  }, [isLoading, mergedAnalysis, actions]);
+
+  // Handle error state
+  useEffect(() => {
+    if (isError && error) {
+      console.error('🔍 [DEBUG] PhraseDialogContent - Error fetching full analysis data:', error);
+      setFetchError(error instanceof Error ? error.message : 'Failed to fetch full analysis data');
+      setIsFetchingFullData(false);
+      // Don't clear loading - we still have summary data to show
+    } else {
+      setFetchError(null);
+    }
+  }, [isError, error]);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     context: false,
     examples: true,
@@ -89,6 +140,49 @@ export const PhraseDialogContent: React.FC<PhraseDialogContentProps> = ({
     hasExamples: !!(analysis.usageExamples && analysis.usageExamples.length > 0),
     hasRelated: !!(analysis.synonyms || analysis.antonyms || analysis.variations),
   }), [analysis]);
+
+  // Show error state if fetch failed
+  if (fetchError && !mergedAnalysis) {
+    return (
+      <div className={cn('space-y-4', className)}>
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="p-4">
+            <div className="text-center space-y-2">
+              <p className="text-sm text-destructive">
+                Không thể tải dữ liệu đầy đủ. Hiển thị thông tin cơ bản.
+              </p>
+              <p className="text-xs text-muted-foreground">{fetchError}</p>
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* Fallback to basic display */}
+        {analysis && (
+          <PhrasePrimaryInformationDisplayCard
+            analysis={analysis}
+            onPronounce={onPronounce}
+            showPronunciation={showPronunciation}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // Show loading state while fetching full data
+  if (isFetchingFullData && !mergedAnalysis) {
+    return (
+      <div className={cn('space-y-4', className)}>
+        <div className="animate-pulse space-y-4">
+          <div className="h-20 bg-muted rounded-lg"></div>
+          <div className="h-10 bg-muted rounded-lg w-1/4"></div>
+          <div className="space-y-2">
+            <div className="h-4 bg-muted rounded"></div>
+            <div className="h-4 bg-muted rounded w-3/4"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cn('space-y-4', className)}>
@@ -131,9 +225,18 @@ export const PhraseDialogContent: React.FC<PhraseDialogContentProps> = ({
           animation: pulse 2s infinite;
         }
       `}</style>
+
+      {/* Loading indicator for full data fetch */}
+      {isFetchingFullData && mergedAnalysis && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-blue-50 dark:bg-blue-950 p-2 rounded-lg">
+          <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+          Đang tải dữ liệu đầy đủ...
+        </div>
+      )}
+
       {/* Main Phrase Information */}
       <PhrasePrimaryInformationDisplayCard
-        analysis={analysis}
+        analysis={mergedAnalysis || analysis}
         onPronounce={onPronounce}
         showPronunciation={showPronunciation}
       />
@@ -149,21 +252,21 @@ export const PhraseDialogContent: React.FC<PhraseDialogContentProps> = ({
 
         <TabsContent value="meaning" className="space-y-4 mt-4 animate-fadeIn">
           <PhraseContextualMeaningAnalysisSection
-            naturalTranslation={analysis.naturalTranslation}
-            literalMeaning={analysis.literalMeaning}
-            contextualMeaning={analysis.contextualMeaning}
-            vietnameseTranslation={analysis.vietnameseTranslation}
-            culturalNotes={analysis.culturalNotes}
-            stylisticNotes={analysis.stylisticNotes}
-            memoryAid={analysis.memoryAid}
+            naturalTranslation={mergedAnalysis?.naturalTranslation || analysis?.naturalTranslation}
+            literalMeaning={mergedAnalysis?.literalMeaning || analysis?.literalMeaning}
+            contextualMeaning={mergedAnalysis?.contextualMeaning || analysis?.contextualMeaning}
+            vietnameseTranslation={mergedAnalysis?.vietnameseTranslation || analysis?.vietnameseTranslation}
+            culturalNotes={mergedAnalysis?.culturalNotes || analysis?.culturalNotes}
+            stylisticNotes={mergedAnalysis?.stylisticNotes || analysis?.stylisticNotes}
+            memoryAid={mergedAnalysis?.memoryAid || analysis?.memoryAid}
             onCopy={(text: string, type: string) => handleCopy(text, type)}
           />
         </TabsContent>
 
         <TabsContent value="examples" className="mt-4 animate-fadeIn">
           <PhraseUsageExamplesSection
-            usageExamples={analysis.usageExamples}
-            usageTips={analysis.usageTips}
+            usageExamples={mergedAnalysis?.usageExamples || analysis?.usageExamples}
+            usageTips={mergedAnalysis?.usageTips || analysis?.usageTips}
             onAnalyzeExample={(example: string | any) => onAnalyzeRelatedPhrase?.(typeof example === 'string' ? example : example.text)}
             onCopy={(text: string, type: string) => handleCopy(text, type)}
           />
@@ -175,20 +278,22 @@ export const PhraseDialogContent: React.FC<PhraseDialogContentProps> = ({
               <CardTitle className="text-lg">Ngữ cảnh</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {analysis.sentenceContext && (
+              {(mergedAnalysis?.sentenceContext || analysis?.sentenceContext) && (
                 <div>
                   <h4 className="font-medium text-sm mb-2">Ngữ cảnh câu:</h4>
                   <div className="p-3 bg-muted/30 rounded-lg">
-                    <p className="text-sm leading-relaxed">{analysis.sentenceContext}</p>
+                    <p className="text-sm leading-relaxed">
+                      {mergedAnalysis?.sentenceContext || analysis?.sentenceContext}
+                    </p>
                   </div>
                 </div>
               )}
-              {analysis.paragraphContext && (
+              {(mergedAnalysis?.paragraphContext || analysis?.paragraphContext) && (
                 <div>
                   <h4 className="font-medium text-sm mb-2">Ngữ cảnh đoạn văn:</h4>
                   <div className="p-3 bg-muted/30 rounded-lg">
                     <p className="text-sm leading-relaxed">
-                      {analysis.paragraphContext}
+                      {mergedAnalysis?.paragraphContext || analysis?.paragraphContext}
                     </p>
                   </div>
                 </div>
@@ -200,19 +305,19 @@ export const PhraseDialogContent: React.FC<PhraseDialogContentProps> = ({
         <TabsContent value="related" className="mt-4 animate-fadeIn">
           <div className="space-y-4">
             <PhraseRelatedPhrasesSection
-              synonyms={analysis.synonyms}
-              antonyms={analysis.antonyms}
-              variations={analysis.variations}
+              synonyms={mergedAnalysis?.synonyms || analysis?.synonyms}
+              antonyms={mergedAnalysis?.antonyms || analysis?.antonyms}
+              variations={mergedAnalysis?.variations || analysis?.variations}
               onPhraseClick={(phrase: string | any) => onAnalyzeRelatedPhrase?.(typeof phrase === 'string' ? phrase : phrase.text)}
               onCopy={(text: string, type: string) => handleCopy(text, type)}
             />
             
             <PhraseGrammarPatternsSection
-              grammaticalPattern={analysis.grammaticalPattern}
-              partOfSpeech={analysis.partOfSpeech}
-              phraseType={analysis.phraseType}
-              complexityLevel={analysis.complexityLevel}
-              frequencyLevel={analysis.frequencyLevel}
+              grammaticalPattern={mergedAnalysis?.grammaticalPattern || analysis?.grammaticalPattern}
+              partOfSpeech={mergedAnalysis?.partOfSpeech || analysis?.partOfSpeech}
+              phraseType={mergedAnalysis?.phraseType || analysis?.phraseType}
+              complexityLevel={mergedAnalysis?.complexityLevel || analysis?.complexityLevel}
+              frequencyLevel={mergedAnalysis?.frequencyLevel || analysis?.frequencyLevel}
               onCopy={(text: string, type: string) => handleCopy(text, type)}
             />
           </div>
