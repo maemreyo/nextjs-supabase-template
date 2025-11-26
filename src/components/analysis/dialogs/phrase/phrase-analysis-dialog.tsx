@@ -6,6 +6,7 @@ import { PhraseAnalysisDialogProps } from './phrase-dialog-types';
 import { BaseAnalysisDialog, DialogHeader } from '../common/base-analysis-dialog';
 import { PhraseDialogContent } from './phrase-dialog-content';
 import { PhraseDialogActions } from './phrase-dialog-actions';
+import { PhrasePronunciationAudioPlayer } from './phrase-pronunciation-audio-player';
 import { useDialogState } from '../hooks/use-dialog-state';
 import { useDialogKeyboard } from '../hooks/use-dialog-keyboard';
 import { cn } from '@/lib/utils';
@@ -163,13 +164,12 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
       <div className="flex items-center gap-2">
         <span>Phân tích cụm từ: {analysis.phrase}</span>
         {onPronounce && (
-          <button
-            onClick={() => handlePronounce(analysis.phrase)}
+          <PhrasePronunciationAudioPlayer
+            phrase={analysis.phrase}
+            onPronounce={handlePronounce}
+            compact={true}
             className="p-1 hover:bg-accent rounded-md transition-colors"
-            aria-label={`Phát âm ${analysis.phrase}`}
-          >
-            <Volume2 className="h-4 w-4" />
-          </button>
+          />
         )}
       </div>
     );

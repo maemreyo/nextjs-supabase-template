@@ -4,6 +4,15 @@
 export { PhraseAnalysisDialog } from './phrase-analysis-dialog';
 export { PhraseDialogContent } from './phrase-dialog-content';
 export { PhraseDialogActions } from './phrase-dialog-actions';
+
+// Export new modular components
+export { PhrasePrimaryInformationDisplayCard } from './phrase-primary-information-display-card';
+export { PhrasePronunciationAudioPlayer } from './phrase-pronunciation-audio-player';
+export { PhraseContextualMeaningAnalysisSection } from './phrase-contextual-meaning-analysis-section';
+export { PhraseUsageExamplesSection } from './phrase-usage-examples-section';
+export { PhraseRelatedPhrasesSection } from './phrase-related-phrases-section';
+export { PhraseGrammarPatternsSection } from './phrase-grammar-patterns-section';
+
 export type {
   PhraseAnalysisDialogProps,
   PhraseDialogContentProps,
