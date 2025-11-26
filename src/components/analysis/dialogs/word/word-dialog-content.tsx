@@ -68,13 +68,6 @@ export const WordDialogContent: React.FC<WordDialogContentProps> = ({
         })) || [],
       };
       
-      console.log('🔍 [DEBUG] WordDialogContent - Merged analysis data', {
-        hasSummaryData: !!analysis,
-        hasFullData: !!fullAnalysisData,
-        hasSynonyms: fullWordAnalysis.synonyms.length > 0,
-        hasAntonyms: fullWordAnalysis.antonyms.length > 0,
-        hasCollocations: fullWordAnalysis.collocations.length > 0,
-      });
       
       return fullWordAnalysis;
     }
@@ -133,7 +126,7 @@ export const WordDialogContent: React.FC<WordDialogContentProps> = ({
     clearError();
     // Trigger refetch bằng cách reset và fetch lại
     window.location.reload(); // Simple retry - có thể cải thiện sau
-  }, [clearError]);
+  }, []);
 
   // Show error state nếu có lỗi nghiêm trọng
   if (error && !mergedAnalysis && !analysis) {
