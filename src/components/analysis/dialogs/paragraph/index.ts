@@ -4,6 +4,15 @@
 export { ParagraphAnalysisDialog } from './paragraph-analysis-dialog';
 export { ParagraphDialogContent } from './paragraph-dialog-content';
 export { ParagraphDialogActions } from './paragraph-dialog-actions';
+
+// Export new modular components
+export { ParagraphPrimaryInformationDisplayCard } from './paragraph-primary-information-display-card';
+export { ParagraphStructureAnalysisSection } from './paragraph-structure-analysis-section';
+export { ParagraphSentimentAnalysisSection } from './paragraph-sentiment-analysis-section';
+export { ParagraphSummarySection } from './paragraph-summary-section';
+export { ParagraphKeyPointsExtractionSection } from './paragraph-key-points-extraction-section';
+export { ParagraphContextSection } from './paragraph-context-section';
+
 export type {
   ParagraphAnalysisDialogProps,
   ParagraphDialogContentProps,

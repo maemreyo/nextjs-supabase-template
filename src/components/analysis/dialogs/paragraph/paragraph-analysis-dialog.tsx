@@ -54,10 +54,10 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
   }, [onPronounce]);
 
   // Handle export with loading state
-  const handleExport = useCallback(async (analysis: ParagraphAnalysis, format: ExportFormat) => {
+  const handleExport = useCallback(async (analysisData: ParagraphAnalysis, format: ExportFormat) => {
     try {
       actions.setLoading(true);
-      await onExport?.(analysis, format);
+      await onExport?.(analysisData, format);
     } catch (error) {
       console.error('Export error:', error);
       actions.setError('Không thể xuất dữ liệu. Vui lòng thử lại.');
@@ -67,10 +67,10 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
   }, [onExport, actions]);
 
   // Handle share with loading state
-  const handleShare = useCallback(async (analysis: ParagraphAnalysis) => {
+  const handleShare = useCallback(async (analysisData: ParagraphAnalysis) => {
     try {
       actions.setLoading(true);
-      await onShare?.(analysis);
+      await onShare?.(analysisData);
     } catch (error) {
       console.error('Share error:', error);
       actions.setError('Không thể chia sẻ. Vui lòng thử lại.');
@@ -80,10 +80,10 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
   }, [onShare, actions]);
 
   // Handle print with loading state
-  const handlePrint = useCallback(async (analysis: ParagraphAnalysis) => {
+  const handlePrint = useCallback(async (analysisData: ParagraphAnalysis) => {
     try {
       actions.setLoading(true);
-      await onPrint?.(analysis);
+      await onPrint?.(analysisData);
     } catch (error) {
       console.error('Print error:', error);
       actions.setError('Không thể in. Vui lòng thử lại.');
@@ -93,10 +93,10 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
   }, [onPrint, actions]);
 
   // Handle add to vocabulary with loading state
-  const handleAddToVocabulary = useCallback(async (analysis: ParagraphAnalysis) => {
+  const handleAddToVocabulary = useCallback(async (analysisData: ParagraphAnalysis) => {
     try {
       actions.setLoading(true);
-      await onAddToVocabulary?.(analysis);
+      await onAddToVocabulary?.(analysisData);
       // Show success animation
       setIsAnimating(true);
       setTimeout(() => setIsAnimating(false), 1000);
@@ -109,8 +109,8 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
   }, [onAddToVocabulary, actions]);
 
   // Handle edit
-  const handleEdit = useCallback((analysis: ParagraphAnalysis) => {
-    onEdit?.(analysis);
+  const handleEdit = useCallback((analysisData: ParagraphAnalysis) => {
+    onEdit?.(analysisData);
   }, [onEdit]);
 
   // Handle delete with confirmation
@@ -324,7 +324,7 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
         </div>
       )}
 
-      {/* Dialog Content */}
+      {/* Dialog Content - Using modular components */}
       <div
         ref={dialogRef}
         className={cn(
