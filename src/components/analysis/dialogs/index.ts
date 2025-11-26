@@ -2,15 +2,24 @@
 // Export all dialog related components for easy importing
 
 // Base dialog components
-export { 
-  BaseAnalysisDialog, 
-  DialogHeader, 
-  DialogFooter, 
-  DialogActions, 
-  DialogErrorBoundary, 
-  DialogLoadingSkeleton, 
-  DialogContainer 
+export {
+  BaseAnalysisDialog,
+  DialogHeader,
+  DialogFooter,
+  DialogActions,
+  DialogErrorBoundary,
+  DialogLoadingSkeleton,
+  DialogContainer
 } from './common/base-analysis-dialog';
+
+// Dialog renderer components
+export {
+  DialogRootRenderer
+} from './common/dialog-root-renderer';
+
+export {
+  DynamicAnalysisDialog
+} from './common/dynamic-analysis-dialog-renderer';
 
 // Dialog hooks
 export { useDialogState } from './hooks/use-dialog-state';

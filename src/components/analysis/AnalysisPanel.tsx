@@ -18,6 +18,7 @@ import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis } from './types'
 import { useState } from 'react';
 import { useSessionStore } from '@/stores/session-store';
 import { useVocabularyStore } from '@/stores/vocabulary-store';
+import { DialogRootRenderer } from './dialogs';
 
 interface AnalysisPanelProps {
   analysisPanelOpen: boolean;
@@ -291,6 +292,9 @@ export function AnalysisPanel({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog Root Renderer - Renders all analysis dialogs */}
+      <DialogRootRenderer />
     </>
   );
   

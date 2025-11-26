@@ -90,7 +90,7 @@ export function AnalysisSidebar({
       {sessionId && (
         <SessionAnalysesList
           sessionId={sessionId}
-          onAnalysisClick={onAnalysisClick || onWordClick}
+          onAnalysisClick={onAnalysisClick}
           onAnalysisAnalyze={onAnalysisAnalyze || onWordAnalyze}
           onAnalysisRemove={onAnalysisRemove || onWordRemove}
           className="mb-4"

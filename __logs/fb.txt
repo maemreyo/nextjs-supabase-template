@@ -1,0 +1,54 @@
+🔍 [DEBUG] getSessionHTML - Session data: 
+Object { hasContent: true, hasContentHTML: true, hasContentData: true, contentFormat: "tiptap" }
+🔍 [DEBUG] getSessionHTML - Using content_html: <p xmlns="http://www.w3.org/1999/xhtml">For my presentation today I want to tell you about how group...
+🔍 [DEBUG] getSessionHTML - Session data:  
+Object { hasContent: true, hasContentHTML: true, hasContentData: true, contentFormat: "tiptap" }
+🔍 [DEBUG] getSessionHTML - Using content_html: <p xmlns="http://www.w3.org/1999/xhtml">For my presentation today I want to tell you about how group...
+🔍 [DEBUG] getSessionHTML - Session data:  
+Object { hasContent: true, hasContentHTML: true, hasContentData: true, contentFormat: "tiptap" }
+🔍 [DEBUG] getSessionHTML - Using content_html: <p xmlns="http://www.w3.org/1999/xhtml">For my presentation today I want to tell you about how group...
+[AnalysisTabs] DEBUG: Gọi hooks ở top level - ĐÚNG QUY TẮC
+[AnalysisTabs] DEBUG: activeTab hiện tại: word
+[useWordAnalyses] Initializing hook, enabled: true, pageSize: 15, queryKey: 
+Array [ "word-analyses", "bfd6ec15-e9ca-46e9-8995-ebec4072c0fe" ]
+[select] word: total analyses: 34, totalCount: 22
+[getNextPageParam] word: hasMore=true, nextPageOffset=15, currentTotalItems=34
+[fetchNextPage] Will fetch next page for word at offset 15
+[usePhraseAnalyses] Initializing hook, enabled: false, pageSize: 15, queryKey: 
+Array [ "phrase-analyses", "bfd6ec15-e9ca-46e9-8995-ebec4072c0fe" ]
+[useSentenceAnalyses] Initializing hook, enabled: false, pageSize: 15, queryKey: 
+Array [ "sentence-analyses", "bfd6ec15-e9ca-46e9-8995-ebec4072c0fe" ]
+[useParagraphAnalyses] Initializing hook, enabled: false, pageSize: 15, queryKey: 
+Array [ "paragraph-analyses", "bfd6ec15-e9ca-46e9-8995-ebec4072c0fe" ]
+[AnalysisTabs] DEBUG: Tạo tabQueries object - ĐÚNG QUY TẮC
+[AnalysisTabs] DEBUG: Tạo tabQueries object - ĐÚNG QUY TẮC
+[AnalysisTabs] DEBUG: Gọi hooks ở top level - ĐÚNG QUY TẮC
+[AnalysisTabs] DEBUG: activeTab hiện tại: word
+[useWordAnalyses] Initializing hook, enabled: true, pageSize: 15, queryKey:  
+Array [ "word-analyses", "bfd6ec15-e9ca-46e9-8995-ebec4072c0fe" ]
+[select] word: total analyses: 34, totalCount: 22
+[getNextPageParam] word: hasMore=true, nextPageOffset=15, currentTotalItems=34
+[fetchNextPage] Will fetch next page for word at offset 15
+[usePhraseAnalyses] Initializing hook, enabled: false, pageSize: 15, queryKey:  
+Array [ "phrase-analyses", "bfd6ec15-e9ca-46e9-8995-ebec4072c0fe" ]
+[useSentenceAnalyses] Initializing hook, enabled: false, pageSize: 15, queryKey:  
+Array [ "sentence-analyses", "bfd6ec15-e9ca-46e9-8995-ebec4072c0fe" ]
+[useParagraphAnalyses] Initializing hook, enabled: false, pageSize: 15, queryKey:  
+Array [ "paragraph-analyses", "bfd6ec15-e9ca-46e9-8995-ebec4072c0fe" ]
+[AnalysisTabs] DEBUG: Tạo tabQueries object - ĐÚNG QUY TẮC
+[AnalysisTabContent] Rendering tab: word
+[AnalysisTabContent] Rendering tab: word
+🔍 [DEBUG] AnalysisResultDialog - Props: 
+Object { isOpen: false, analysisType: "word", hasAnalysis: false, analysisKeys: null }
+🔍 [DEBUG] AnalysisResultDialog - No analysis, returning null
+🔍 [DEBUG] AnalysisResultDialog - Props:  
+Object { isOpen: false, analysisType: "word", hasAnalysis: false, analysisKeys: null }
+🔍 [DEBUG] AnalysisResultDialog - No analysis, returning null
+[getNextPageParam] word: hasMore=true, nextPageOffset=15, currentTotalItems=34
+[fetchNextPage] Will fetch next page for word at offset 15
+[AnalysisItemCard] handleCardClick - enableDialogSystem: true, analysisType: word
+🔍 [DEBUG] handleAnalysisClick - Called with: 
+Object { analysisItem: {…}, hasAnalysis: false, analysisType: "word" }
+🔍 [DEBUG] handleAnalysisClick - Using dialogDispatcher for word type
+Dialog size set to: default
+Dialog fullscreen enabled: true

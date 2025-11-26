@@ -26,6 +26,9 @@ import { useSessionPageHandling } from '@/hooks/useSessionPageHandling';
 import { useState, useRef } from 'react';
 import { Editor } from '@tiptap/react';
 
+// Dialog system
+import { DialogDispatcher } from '@/components/analysis/dialogs/utils/dialog-dispatcher';
+
 // Types
 import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis, PhraseAnalysis, WordAnalysisDB } from '@/lib/ai/types';
 import { createBreadcrumbItems } from '@/lib/navigation';
@@ -203,53 +206,156 @@ const transformWordAnalysisDB = (dbData: WordAnalysisDB): WordAnalysis => {
   
   return result;
 };
-  // Handle word click in session
-  const handleWordClick = (wordItem: any) => {
-    console.log('🔍 [DEBUG] handleWordClick - Called with:', {
-      wordItem,
-      hasAnalysis: !!wordItem?.analysis,
-      analysisType: typeof wordItem?.analysis
+  // Handle analysis click in session - unified handler for all analysis types
+  const handleAnalysisClick = (analysisItem: any) => {
+    console.log('🔍 [DEBUG] handleAnalysisClick - Called with:', {
+      analysisItem,
+      hasAnalysis: !!analysisItem?.analysis,
+      analysisType: analysisItem?.analysisType || typeof analysisItem?.analysis
     });
     
     // ✅ FIXED: Added comprehensive null/undefined checks
-    if (!wordItem) {
-      console.error('🔍 [DEBUG] handleWordClick - wordItem is null or undefined');
+    if (!analysisItem) {
+      console.error('🔍 [DEBUG] handleAnalysisClick - analysisItem is null or undefined');
       return;
     }
     
-    if (!wordItem.analysis) {
-      console.warn('🔍 [DEBUG] handleWordClick - No analysis data found in wordItem:', wordItem);
+    // ✅ FIXED: Ignore hasAnalysis check and use analysisType from analysisItem
+    if (analysisItem.analysisType) {
+      console.log(`🔍 [DEBUG] handleAnalysisClick - Using dialogDispatcher for ${analysisItem.analysisType} type`);
+      
+      // Create proper analysis item for dialog dispatcher based on type
+      let dialogItem;
+      
+      switch (analysisItem.analysisType) {
+        case 'word':
+          dialogItem = {
+            analysisType: 'word',
+            id: analysisItem.id || analysisItem.word,
+            analysisId: analysisItem.analysisId || analysisItem.id,
+            sessionId: analysisItem.sessionId || sessionId,
+            word: analysisItem.word,
+            translation: analysisItem.translation,
+            definition: analysisItem.definition,
+            contextMeaning: analysisItem.contextMeaning,
+            pos: analysisItem.pos,
+            ipa: analysisItem.ipa,
+            cefr: analysisItem.cefr,
+            // Include any other relevant fields
+            ...analysisItem
+          };
+          break;
+          
+        case 'phrase':
+          dialogItem = {
+            analysisType: 'phrase',
+            id: analysisItem.id || analysisItem.phrase,
+            analysisId: analysisItem.analysisId || analysisItem.id,
+            sessionId: analysisItem.sessionId || sessionId,
+            phrase: analysisItem.phrase,
+            naturalTranslation: analysisItem.naturalTranslation,
+            contextualMeaning: analysisItem.contextualMeaning,
+            partOfSpeech: analysisItem.partOfSpeech,
+            // Include any other relevant fields
+            ...analysisItem
+          };
+          break;
+          
+        case 'sentence':
+          dialogItem = {
+            analysisType: 'sentence',
+            id: analysisItem.id || analysisItem.sentence,
+            analysisId: analysisItem.analysisId || analysisItem.id,
+            sessionId: analysisItem.sessionId || sessionId,
+            sentence: analysisItem.sentence,
+            naturalTranslation: analysisItem.naturalTranslation,
+            mainIdea: analysisItem.mainIdea,
+            // Include any other relevant fields
+            ...analysisItem
+          };
+          break;
+          
+        case 'paragraph':
+          dialogItem = {
+            analysisType: 'paragraph',
+            id: analysisItem.id || analysisItem.paragraph,
+            analysisId: analysisItem.analysisId || analysisItem.id,
+            sessionId: analysisItem.sessionId || sessionId,
+            paragraph: analysisItem.paragraph,
+            mainTopic: analysisItem.mainTopic,
+            // Include any other relevant fields
+            ...analysisItem
+          };
+          break;
+          
+        default:
+          console.warn('🔍 [DEBUG] handleAnalysisClick - Unknown analysis type:', analysisItem.analysisType);
+          return;
+      }
+      
+      // Use dialogDispatcher to open view details dialog
+      DialogDispatcher.openViewDetails(dialogItem);
+      return;
+    }
+    
+    // Fallback to original logic for other cases
+    if (!analysisItem.analysis) {
+      console.warn('🔍 [DEBUG] handleAnalysisClick - No analysis data found in analysisItem:', analysisItem);
       // Optional: Show toast notification to user
       return;
     }
     
-    // ✅ FIXED: Validate required fields before processing
-    if (!wordItem.analysis.word) {
-      console.error('🔍 [DEBUG] handleWordClick - Analysis missing required word field:', wordItem.analysis);
-      return;
-    }
-    
+    // Try to determine type from analysis data and handle accordingly
     try {
-      console.log('🔍 [DEBUG] handleWordClick - Raw analysis data:', wordItem.analysis);
+      console.log('🔍 [DEBUG] handleAnalysisClick - Raw analysis data:', analysisItem.analysis);
       
-      const analysis = transformWordAnalysisDB(wordItem.analysis);
-      console.log('🔍 [DEBUG] handleWordClick - Transformed analysis:', analysis);
+      // Determine type from analysis data structure
+      let detectedType = 'word'; // default
+      if (analysisItem.analysis.word) {
+        detectedType = 'word';
+      } else if (analysisItem.analysis.phrase) {
+        detectedType = 'phrase';
+      } else if (analysisItem.analysis.sentence) {
+        detectedType = 'sentence';
+      } else if (analysisItem.analysis.paragraph) {
+        detectedType = 'paragraph';
+      }
+      
+      // Transform based on detected type
+      let analysis;
+      switch (detectedType) {
+        case 'word':
+          analysis = transformWordAnalysisDB(analysisItem.analysis);
+          break;
+        // Add other transformations as needed
+        default:
+          console.warn('🔍 [DEBUG] handleAnalysisClick - No transformation for type:', detectedType);
+          return;
+      }
+      
+      console.log('🔍 [DEBUG] handleAnalysisClick - Transformed analysis:', analysis);
       
       // ✅ FIXED: Validate transformed data before setting state
-      if (!analysis || !analysis.meta?.word) {
-        console.error('🔍 [DEBUG] handleWordClick - Transform failed or invalid result:', analysis);
+      if (!analysis) {
+        console.error('🔍 [DEBUG] handleAnalysisClick - Transform failed or invalid result:', analysis);
         return;
       }
       
       setAnalysisResult(analysis);
-      setAnalysisType('word');
+      setAnalysisType(detectedType as any);
       setIsDetailDialogOpen(true);
       
-      console.log('🔍 [DEBUG] handleWordClick - Dialog state set to open');
+      console.log('🔍 [DEBUG] handleAnalysisClick - Dialog state set to open');
     } catch (error) {
-      console.error('🔍 [DEBUG] handleWordClick - Error during processing:', error);
+      console.error('🔍 [DEBUG] handleAnalysisClick - Error during processing:', error);
       // Optional: Show error toast to user
     }
+  };
+
+  // Handle word click in session - backward compatibility
+  const handleWordClick = (wordItem: any) => {
+    console.log('🔍 [DEBUG] handleWordClick - Delegating to handleAnalysisClick');
+    handleAnalysisClick(wordItem);
   };
 
   // Handle word analyze from session
@@ -350,6 +456,9 @@ const transformWordAnalysisDB = (dbData: WordAnalysisDB): WordAnalysis => {
             onWordClick={handleWordClick}
             onWordAnalyze={handleWordAnalyze}
             onWordRemove={handleWordRemove}
+            onAnalysisClick={handleAnalysisClick}
+            onAnalysisAnalyze={handleWordAnalyze}
+            onAnalysisRemove={handleWordRemove}
             
             // Dialog actions
             onViewDetails={() => setIsDetailDialogOpen(true)}
