@@ -262,7 +262,7 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
       )}
     >
       {/* Custom Dialog Header */}
-      <DialogHeader
+      {/* <DialogHeader
         title={typeof dialogTitle === 'string' ? dialogTitle : 'Phân tích câu'}
         subtitle={dialogSubtitle}
         icon={
@@ -272,7 +272,6 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
         }
         actions={
           <div className="flex items-center gap-2">
-            {/* Success Animation Indicator */}
             {isAnimating && (
               <div className="animate-bounce">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -280,7 +279,7 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
             )}
           </div>
         }
-      />
+      /> */}
 
       {/* Error Display */}
       {state.dialogState.error && (
@@ -363,7 +362,7 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
       </div>
 
       {/* Keyboard Shortcuts Help */}
-      <div className="px-6 pb-4 border-t">
+      {/* <div className="px-6 pb-4 border-t">
         <div className="mt-4 text-xs text-muted-foreground">
           <div className="flex flex-wrap gap-4">
             <span>Phím tắt:</span>
@@ -379,7 +378,7 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
             <span>Ctrl+B: Phân tích cấu trúc</span>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Loading Overlay */}
       {state.dialogState.loading && (

@@ -43,7 +43,7 @@ export const BaseAnalysisDialog = ({
   onOpenChange,
   children,
   className,
-  size = 'large',
+  size = 'xxlarge',
   showCloseButton = true,
   resizable = true,
   fullscreen = false,
@@ -132,7 +132,7 @@ export const BaseAnalysisDialog = ({
       case 'xlarge':
         return 'max-w-4xl max-h-[90vh]';
       case 'xxlarge':
-        return 'max-w-6xl max-h-[95vh]';
+        return 'max-w-8xl max-h-[95vh]';
       case 'fullscreen':
         return 'w-full h-full';
       default:
