@@ -247,7 +247,7 @@ export const WordAnalysisDialog: React.FC<WordAnalysisDialogProps> = ({
       resizable={resizable}
       fullscreen={fullscreen}
       type="word"
-      title="Word Analysis"
+      title="Word"
       subtitle={analysis ? `Analyzing: ${analysis.word}` : "Loading..."}
       icon={
         <div className="flex items-center justify-center w-full h-full">
@@ -367,7 +367,6 @@ export const WordAnalysisDialog: React.FC<WordAnalysisDialogProps> = ({
           loading={loadingStates}
           disabled={state.dialogState.loading}
           compact={false}
-          className="mt-4"
         />
       </div>
 

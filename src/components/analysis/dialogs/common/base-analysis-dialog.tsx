@@ -434,16 +434,16 @@ export const BaseAnalysisDialog = ({
           }}
         >
           {/* Custom Dialog Header with Action Buttons */}
-          <div className="flex items-center justify-between p-4 border-b">
+          <div className="flex items-center justify-between p-2 border-b">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-primary/10 rounded-md flex items-center justify-center">
                 {icon || <div className="text-primary font-bold">A</div>}
               </div>
               <div>
                 <h2 className="text-lg font-semibold">{title || "Analysis"}</h2>
-                {subtitle && (
+                {/* {subtitle && (
                   <p className="text-sm text-muted-foreground">{subtitle}</p>
-                )}
+                )} */}
               </div>
             </div>
             
@@ -604,14 +604,14 @@ export const BaseAnalysisDialog = ({
           )}
           
           {/* Resize Handle */}
-          {resizable && !isFullscreen && (
+          {/* {resizable && !isFullscreen && (
             <div
               className="absolute right-2 top-2 w-4 h-4 bg-accent cursor-ew-resize hover:bg-accent/80 rounded-sm flex items-center justify-center"
               onMouseDown={handleResizeStart}
             >
               <div className="w-1 h-4 bg-border"></div>
             </div>
-          )}
+          )} */}
           
           {/* Dialog Content */}
           <div className="pt-4 overflow-y-auto max-h-[calc(100vh-6rem)]">

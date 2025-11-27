@@ -143,6 +143,7 @@ export const WordDialogActions: React.FC<WordDialogActionsProps> = ({
         onClick: handlePronounce,
         disabled: disabled,
         loading: false,
+        hidden: true,
       },
       {
         label: 'Chia sẻ',
@@ -150,6 +151,7 @@ export const WordDialogActions: React.FC<WordDialogActionsProps> = ({
         onClick: handleShare,
         disabled: loading['share'] || disabled,
         loading: loading['share'] || false,
+        hidden: true,
       },
     ],
     dropdown: [
@@ -339,7 +341,7 @@ export const WordDialogActions: React.FC<WordDialogActionsProps> = ({
   }
 
   return (
-    <div className={cn('flex flex-col gap-4', className)}>
+    <div className={cn('flex flex-col', className)}>
       {/* Primary Actions */}
       <div className="flex flex-wrap gap-2">
         {actionConfig.primary.filter(action => !action.hidden).map((action, index) => (
@@ -362,7 +364,7 @@ export const WordDialogActions: React.FC<WordDialogActionsProps> = ({
 
       {/* Secondary Actions */}
       <div className="flex flex-wrap gap-2">
-        {actionConfig.secondary.map((action, index) => (
+        {actionConfig.secondary.filter(action => !action.hidden).map((action, index) => (
           <Button
             key={index}
             variant="outline"
@@ -380,7 +382,7 @@ export const WordDialogActions: React.FC<WordDialogActionsProps> = ({
       </div>
 
       {/* Export Actions */}
-      <div className="flex items-center gap-2">
+      {/* <div className="flex items-center gap-2">
         <span className="text-sm text-muted-foreground">Xuất:</span>
         <div className="flex flex-wrap gap-2">
           {exportOptions.slice(0, 3).map((option, index) => (
@@ -424,10 +426,10 @@ export const WordDialogActions: React.FC<WordDialogActionsProps> = ({
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </div>
+      </div> */}
 
       {/* Copy Actions */}
-      <div className="flex items-center gap-2">
+      {/* <div className="flex items-center gap-2">
         <span className="text-sm text-muted-foreground">Sao chép:</span>
         <div className="flex flex-wrap gap-2">
           {actionConfig.dropdown.slice(0, 2).map((action, index) => (
@@ -450,10 +452,10 @@ export const WordDialogActions: React.FC<WordDialogActionsProps> = ({
             </Button>
           ))}
         </div>
-      </div>
+      </div> */}
 
       {/* Edit and Delete Actions */}
-      <div className="flex gap-2 pt-2 border-t">
+      {/* <div className="flex gap-2 pt-2 border-t">
         <Button
           variant="outline"
           onClick={handleEdit}
@@ -494,7 +496,7 @@ export const WordDialogActions: React.FC<WordDialogActionsProps> = ({
           )}
           Xóa
         </Button>
-      </div>
+      </div> */}
     </div>
   );
 };
