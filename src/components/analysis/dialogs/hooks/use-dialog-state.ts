@@ -15,14 +15,6 @@ export const useDialogState = (type: AnalysisType): UseDialogStateReturn => {
   const store = useDialogStore();
   
   const state = useMemo(() => {
-    console.log('🐛 DEBUG: useDialogState useMemo recalculating', {
-      type,
-      isOpen: store.openDialogs[type],
-      hasData: !!store.dialogData[type],
-      dialogState: store.dialogStates[type],
-      timestamp: new Date().toISOString()
-    });
-    
     return {
       isOpen: store.openDialogs[type],
       data: store.dialogData[type],
@@ -35,11 +27,6 @@ export const useDialogState = (type: AnalysisType): UseDialogStateReturn => {
   ]);
   
   const actions = useMemo(() => {
-    console.log('🐛 DEBUG: useDialogState actions useMemo recalculating', {
-      type,
-      timestamp: new Date().toISOString()
-    });
-    
     return {
       open: (data: AnalysisItem) => store.openDialog(type, data),
       close: () => store.closeDialog(type),

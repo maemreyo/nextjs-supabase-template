@@ -194,13 +194,7 @@ export const useDialogStore = create<DialogStore>()(
       },
       
       setDialogLoading: (type: AnalysisType, loading: boolean | Partial<DialogState>) => {
-        console.log('🐛 DEBUG: Store setDialogLoading called', {
-          type,
-          loading,
-          isBoolean: typeof loading === 'boolean',
-          timestamp: new Date().toISOString()
-        });
-        
+       
         set((state) => {
           const currentDialogState = getDialogState(state.dialogStates, type);
           

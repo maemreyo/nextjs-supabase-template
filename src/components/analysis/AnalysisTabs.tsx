@@ -110,8 +110,6 @@ const AnalysisTabContent = memo(function AnalysisTabContent({
   const parentRef = useRef<HTMLDivElement>(null);
   const [isClient, setIsClient] = useState(false);
   
-  console.log(`[AnalysisTabContent] Rendering tab: ${type}`);
-  
   // Use query data passed from parent instead of calling hooks
   const {
     data,
@@ -139,10 +137,8 @@ const AnalysisTabContent = memo(function AnalysisTabContent({
     const visibleEnd = scrollRangeRef.current.end;
     const threshold = 5; // Load more when 5 items from end are visible
     
-    console.log(`[ScrollRange] ${type}: visibleEnd=${visibleEnd}, totalItems=${totalItems}, threshold=${threshold}, hasNextPage=${hasNextPage}`);
     
     if (visibleEnd >= totalItems - threshold) {
-      console.log(`[InfiniteScroll] Triggering fetchNextPage for ${type}, visibleEnd=${visibleEnd}, totalItems=${totalItems}`);
       fetchNextPage();
     }
   }, [type, hasNextPage, isFetchingNextPage, fetchNextPage, data?.flatAnalyses?.length]);
@@ -301,13 +297,8 @@ export const AnalysisTabs = memo(function AnalysisTabs({
   // Handle tab change with debug logging
   const handleTabChange = React.useCallback((value: string) => {
     const newTab = value as AnalysisType;
-    console.log(`[TabChange] Switching from ${activeTab} to ${newTab}`);
     setActiveTab(newTab);
   }, [activeTab]);
-  
-  // Call hooks at top level - KHÔNG VI PHẠM QUY TẮC HOOKS
-  console.log('[AnalysisTabs] DEBUG: Gọi hooks ở top level - ĐÚNG QUY TẮC');
-  console.log('[AnalysisTabs] DEBUG: activeTab hiện tại:', activeTab);
   
   const wordQuery = useWordAnalyses({
     sessionId,
@@ -343,7 +334,6 @@ export const AnalysisTabs = memo(function AnalysisTabs({
   
   // Memoize tab queries object to prevent re-renders
   const tabQueries = useMemo(() => {
-    console.log('[AnalysisTabs] DEBUG: Tạo tabQueries object - ĐÚNG QUY TẮC');
     return {
       word: wordQuery,
       phrase: phraseQuery,

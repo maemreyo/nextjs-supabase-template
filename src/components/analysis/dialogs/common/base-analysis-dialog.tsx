@@ -187,13 +187,7 @@ export const BaseAnalysisDialog = ({
   // Convert dialogSize to Dialog component size prop
   const getDialogSize = (): "default" | "large" | "xlarge" | "xxlarge" | "xxxlarge" | "ultra" | "mega" | "ultra-wide" | "fullscreen" => {
     const size = isFullscreen ? 'fullscreen' : dialogSize;
-    console.log('🐛 DEBUG: getDialogSize called', {
-      dialogSize,
-      isFullscreen,
-      finalSize: size,
-      timestamp: new Date().toISOString()
-    });
-    
+
     switch (size) {
       case 'default': return 'default';
       case 'large': return 'large';
@@ -208,23 +202,10 @@ export const BaseAnalysisDialog = ({
     }
   };
 
-  // Debug: Log dialog render
-  console.log('🐛 DEBUG: BaseAnalysisDialog render', {
-    open,
-    type,
-    hasChildren: !!children,
-    timestamp: new Date().toISOString()
-  });
 
   // Render dialog content using Dialog component from UI library
   // Memoize the onOpenChange handler to prevent unnecessary re-renders
   const handleOpenChange = useCallback((newOpen: boolean) => {
-    console.log('🐛 DEBUG: Dialog onOpenChange triggered', {
-      fromOpen: open,
-      toOpen: newOpen,
-      trigger: 'UI Dialog component',
-      timestamp: new Date().toISOString()
-    });
     onOpenChange(newOpen);
   }, [open, onOpenChange]);
   

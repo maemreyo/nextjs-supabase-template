@@ -21,16 +21,8 @@ export const DialogRootRenderer: React.FC = () => {
   // Lấy dialogData từ store để truyền vào DynamicDialog
   const dialogData = store.dialogData;
 
-  console.log('🐛 DEBUG: DialogRootRenderer render', {
-    openDialogs,
-    dialogDataKeys: Object.keys(dialogData),
-    totalOpenDialogs: openDialogs.length,
-    timestamp: new Date().toISOString()
-  });
-
   // Nếu không có dialog nào mở, không render gì
   if (openDialogs.length === 0) {
-    console.log('🐛 DEBUG: No dialogs open, returning null');
     return null;
   }
 
@@ -42,27 +34,11 @@ export const DialogRootRenderer: React.FC = () => {
       onMouseDown={(e) => {
         // Only handle clicks on the actual container, not on child elements
         if (e.target === e.currentTarget) {
-          console.log('🐛 DEBUG: DialogRoot container clicked', {
-            target: e.target,
-            isRootContainer: e.target === e.currentTarget,
-            targetElement: (e.target as HTMLElement).tagName,
-            targetClass: (e.target as HTMLElement).className,
-            timestamp: new Date().toISOString(),
-            eventPhase: e.eventPhase,
-            bubbles: e.bubbles,
-            cancelable: e.cancelable
-          });
+         
         }
       }}
     >
       {openDialogs.map((type, index) => {
-        console.log('🐛 DEBUG: Rendering dialog', {
-          type,
-          index,
-          zIndex: 1000 + (index * 10),
-          data: dialogData[type]
-        });
-        
         return (
           <DynamicAnalysisDialog
             key={type}

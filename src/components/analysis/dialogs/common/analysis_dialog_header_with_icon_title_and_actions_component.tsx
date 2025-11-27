@@ -49,15 +49,6 @@ export const AnalysisDialogHeaderWithIconTitleAndActionsComponent: React.FC<Anal
           variant="ghost"
           size="icon"
           onClick={(e) => {
-            console.log('🐛 DEBUG: Fullscreen button clicked', {
-              hasHandler: !!onFullscreenToggle,
-              timestamp: new Date().toISOString(),
-              eventPhase: e.eventPhase,
-              bubbles: e.bubbles,
-              cancelable: e.cancelable,
-              currentTarget: e.currentTarget.tagName,
-              target: (e.target as HTMLElement).tagName
-            });
             e.stopPropagation();
             e.preventDefault();
             onFullscreenToggle();
@@ -76,21 +67,12 @@ export const AnalysisDialogHeaderWithIconTitleAndActionsComponent: React.FC<Anal
           variant="ghost"
           size="icon"
           onClick={(e) => {
-            console.log('🐛 DEBUG: Export button clicked', {
-              hasHandler: !!onExport,
-              hasAnalysis: !!analysis,
-              analysisType: analysis?.word ? 'word' : analysis?.sentence ? 'sentence' : analysis?.phrase ? 'phrase' : analysis?.paragraph ? 'paragraph' : 'unknown',
-              timestamp: new Date().toISOString(),
-              eventPhase: e.eventPhase,
-              bubbles: e.bubbles,
-              cancelable: e.cancelable
-            });
             e.stopPropagation();
             
             if (onExport && analysis) {
               onExport(analysis, 'json' as ExportFormat); // Default format to JSON
             } else {
-              console.log('Export action triggered - no handler or analysis data');
+             
             }
           }}
           aria-label="Export"
@@ -103,14 +85,7 @@ export const AnalysisDialogHeaderWithIconTitleAndActionsComponent: React.FC<Anal
           variant="ghost"
           size="icon"
           onClick={(e) => {
-            console.log('🐛 DEBUG: Share button clicked', {
-              hasHandler: !!onShare,
-              hasAnalysis: !!analysis,
-              timestamp: new Date().toISOString(),
-              eventPhase: e.eventPhase,
-              bubbles: e.bubbles,
-              cancelable: e.cancelable
-            });
+            
             e.stopPropagation();
             
             if (onShare && analysis) {
@@ -129,14 +104,6 @@ export const AnalysisDialogHeaderWithIconTitleAndActionsComponent: React.FC<Anal
           variant="ghost"
           size="icon"
           onClick={(e) => {
-            console.log('🐛 DEBUG: Print button clicked', {
-              hasHandler: !!onPrint,
-              hasAnalysis: !!analysis,
-              timestamp: new Date().toISOString(),
-              eventPhase: e.eventPhase,
-              bubbles: e.bubbles,
-              cancelable: e.cancelable
-            });
             e.stopPropagation();
             
             if (onPrint && analysis) {
@@ -156,14 +123,6 @@ export const AnalysisDialogHeaderWithIconTitleAndActionsComponent: React.FC<Anal
           variant="ghost"
           size="icon"
           onClick={async (e) => {
-            console.log('🐛 DEBUG: Copy button clicked', {
-              hasHandler: !!onCopy,
-              hasAnalysis: !!analysis,
-              timestamp: new Date().toISOString(),
-              eventPhase: e.eventPhase,
-              bubbles: e.bubbles,
-              cancelable: e.cancelable
-            });
             e.stopPropagation();
             
             if (onCopy && analysis) {
@@ -182,9 +141,7 @@ export const AnalysisDialogHeaderWithIconTitleAndActionsComponent: React.FC<Anal
               }
               
               try {
-                console.log('🐛 DEBUG: Copying text to clipboard', { textLength: textToCopy.length });
                 await navigator.clipboard.writeText(textToCopy);
-                console.log('🐛 DEBUG: Calling onCopy callback');
                 onCopy(textToCopy);
               } catch (error) {
                 console.error('Failed to copy text:', error);

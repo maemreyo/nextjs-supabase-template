@@ -27,26 +27,12 @@ export const DynamicAnalysisDialog: React.FC<DynamicAnalysisDialogProps> = ({
   data,
   zIndex = 1000
 }) => {
-  console.log('🐛 DEBUG: DynamicAnalysisDialog render', {
-    type,
-    hasData: !!data,
-    dataKeys: data ? Object.keys(data) : null,
-    zIndex,
-    timestamp: new Date().toISOString()
-  });
   
   // Lấy state và actions cho dialog type hiện tại
   const { state, actions } = useDialogState(type);
 
   // Memoize the onOpenChange handler to prevent unnecessary re-renders
   const handleOpenChange = useCallback((open: boolean) => {
-    console.log('🐛 DEBUG: DynamicAnalysisDialog onOpenChange', {
-      type,
-      fromOpen: state.isOpen,
-      toOpen: open,
-      timestamp: new Date().toISOString()
-    });
-    
     if (!open) {
       actions.close();
     }
@@ -54,14 +40,6 @@ export const DynamicAnalysisDialog: React.FC<DynamicAnalysisDialogProps> = ({
 
   // Common props cho tất cả dialog types
   const commonDialogProps = useMemo(() => {
-    console.log('🐛 DEBUG: DynamicAnalysisDialog commonDialogProps recalculating', {
-      type,
-      isOpen: state.isOpen,
-      hasData: !!data,
-      zIndex,
-      timestamp: new Date().toISOString()
-    });
-    
     return {
       open: state.isOpen,
       onOpenChange: handleOpenChange,
