@@ -151,6 +151,12 @@ export const BaseAnalysisDialog = ({
         return 'max-w-12xl max-h-[95vh]';
       case 'xxxlarge':
         return 'max-w-screen-xl max-h-[98vh]';
+      case 'ultra':
+        return 'max-w-[95vw] sm:max-w-screen-xl md:max-w-screen-2xl lg:max-w-screen-2xl xl:max-w-[1920px] 2xl:max-w-[2240px] max-h-[98vh]';
+      case 'mega':
+        return 'max-w-[95vw] sm:max-w-screen-2xl md:max-w-[90vw] lg:max-w-[95vw] xl:max-w-[2560px] 2xl:max-w-[3200px] max-h-[98vh]';
+      case 'ultra-wide':
+        return 'max-w-[95vw] sm:max-w-screen-2xl md:max-w-[90vw] lg:max-w-[95vw] xl:max-w-[3200px] 2xl:max-w-[3840px] max-h-[98vh]';
       case 'fullscreen':
         return 'w-full h-full';
       default:
@@ -356,13 +362,16 @@ export const BaseAnalysisDialog = ({
   }
   
   // Convert dialogSize to Dialog component size prop
-  const getDialogSize = (): "default" | "large" | "xlarge" | "xxlarge" | "xxxlarge" | "fullscreen" => {
+  const getDialogSize = (): "default" | "large" | "xlarge" | "xxlarge" | "xxxlarge" | "ultra" | "mega" | "ultra-wide" | "fullscreen" => {
     switch (dialogSize) {
       case 'default': return 'default';
       case 'large': return 'large';
       case 'xlarge': return 'xlarge';
       case 'xxlarge': return 'xxlarge';
       case 'xxxlarge': return 'xxxlarge';
+      case 'ultra': return 'ultra';
+      case 'mega': return 'mega';
+      case 'ultra-wide': return 'ultra-wide';
       case 'fullscreen': return 'fullscreen';
       default: return 'large';
     }

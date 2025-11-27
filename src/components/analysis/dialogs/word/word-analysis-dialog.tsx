@@ -29,7 +29,7 @@ export const WordAnalysisDialog: React.FC<WordAnalysisDialogProps> = ({
   onDelete,
   onPractice,
   className,
-  size = 'xxlarge',
+  size = 'ultra',
   showCloseButton = true,
   resizable = true,
   fullscreen = false,

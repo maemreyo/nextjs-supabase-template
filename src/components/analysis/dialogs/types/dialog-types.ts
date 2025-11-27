@@ -1,7 +1,7 @@
 import { AnalysisItem, AnalysisType } from '../../types/analysis-types';
 
 // Dialog size options
-export type DialogSize = 'default' | 'large' | 'xlarge' | 'xxlarge' | 'xxxlarge' | 'fullscreen';
+export type DialogSize = 'default' | 'large' | 'xlarge' | 'xxlarge' | 'xxxlarge' | 'ultra' | 'mega' | 'ultra-wide' | 'fullscreen';
 
 // Export format options
 export type ExportFormat = 'pdf' | 'json' | 'csv' | 'txt' | 'html';

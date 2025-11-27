@@ -14,7 +14,7 @@ export interface PhraseAnalysisDialogProps {
   onDelete?: (analysisId: string) => void;
   onPractice?: (phrase: string) => void;
   className?: string;
-  size?: 'default' | 'large' | 'xlarge' | 'xxlarge' | 'fullscreen';
+  size?: 'default' | 'large' | 'xlarge' | 'xxlarge' | 'xxxlarge' | 'ultra' | 'mega' | 'ultra-wide' | 'fullscreen';
   showCloseButton?: boolean;
   resizable?: boolean;
   fullscreen?: boolean;

@@ -18,7 +18,7 @@ export interface ParagraphAnalysisDialogProps {
   onAnalyzeStructure?: (paragraph: string) => void;
   onAnalyzeKeywords?: (keywords: string[]) => void;
   className?: string;
-  size?: 'default' | 'large' | 'xlarge' | 'xxlarge' | 'fullscreen';
+  size?: 'default' | 'large' | 'xlarge' | 'xxlarge' | 'xxxlarge' | 'ultra' | 'mega' | 'ultra-wide' | 'fullscreen';
   showCloseButton?: boolean;
   resizable?: boolean;
   fullscreen?: boolean;

@@ -54,7 +54,7 @@ function DialogContent({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
-  size?: "default" | "large" | "xlarge" | "xxlarge" | "xxxlarge" | "fullscreen"
+  size?: "default" | "large" | "xlarge" | "xxlarge" | "xxxlarge" | "ultra" | "mega" | "ultra-wide" | "fullscreen"
 }) {
   const getSizeClasses = () => {
     switch (size) {
@@ -66,6 +66,12 @@ function DialogContent({
         return "max-w-[95vw] sm:max-w-7xl md:max-w-[90vw] lg:max-w-[90vw] xl:max-w-[95vw] max-h-[98vh]";
       case "xxxlarge":
         return "max-w-[95vw] sm:max-w-screen-xl md:max-w-[90vw] lg:max-w-[95vw] xl:max-w-[98vw] max-h-[98vh]";
+      case "ultra":
+        return "max-w-[95vw] sm:max-w-screen-xl md:max-w-screen-2xl lg:max-w-screen-2xl xl:max-w-[1920px] 2xl:max-w-[2240px] max-h-[98vh]";
+      case "mega":
+        return "max-w-[95vw] sm:max-w-screen-2xl md:max-w-[90vw] lg:max-w-[95vw] xl:max-w-[2560px] 2xl:max-w-[3200px] max-h-[98vh]";
+      case "ultra-wide":
+        return "max-w-[95vw] sm:max-w-screen-2xl md:max-w-[90vw] lg:max-w-[95vw] xl:max-w-[3200px] 2xl:max-w-[3840px] max-h-[98vh]";
       case "fullscreen":
         return "w-full h-full max-w-[100vw] max-h-[100vh] rounded-none m-0 top-0 left-0 translate-x-0 translate-y-0";
       default:
