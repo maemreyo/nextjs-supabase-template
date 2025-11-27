@@ -143,7 +143,7 @@ export const api = {
     },
     
     // New endpoint for session analyses with pagination
-    getAnalyses: (id: string, params?: { limit?: number; offset?: number; type?: string }) => {
+    getAnalyses: (id: string, params?: { limit?: number; offset?: number; type?: string; sort?: string; order?: 'asc' | 'desc' }) => {
       const queryParams: Record<string, string> = {};
       
       if (params?.limit !== undefined) {
@@ -156,6 +156,14 @@ export const api = {
       
       if (params?.type !== undefined) {
         queryParams.type = params.type;
+      }
+      
+      if (params?.sort !== undefined) {
+        queryParams.sort = params.sort;
+      }
+      
+      if (params?.order !== undefined) {
+        queryParams.order = params.order;
       }
       
       const queryString = Object.keys(queryParams).length > 0

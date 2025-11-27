@@ -80,6 +80,8 @@ export function useWordAnalyses({
         limit: pageSize,
         offset: pageParam,
         type: 'word',
+        sort: 'created_at', // Sort by created_at
+        order: 'desc', // Order descending (newest first)
       });
       
       console.log(`[API] Response for word analyses, analyses count: ${response.data?.analyses?.length || 0}, hasMore: ${response.data?.pagination?.word?.hasMore}`);

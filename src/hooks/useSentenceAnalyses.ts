@@ -80,6 +80,8 @@ export function useSentenceAnalyses({
         limit: pageSize,
         offset: pageParam,
         type: 'sentence',
+        sort: 'created_at', // Sort by created_at
+        order: 'desc', // Order descending (newest first)
       });
       
       console.log(`[API] Response for sentence analyses, analyses count: ${response.data?.analyses?.length || 0}, hasMore: ${response.data?.pagination?.sentence?.hasMore}`);

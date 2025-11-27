@@ -21,6 +21,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import SessionQuickActions from './SessionQuickActions';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/query-keys';
 
 // Security imports
 import { validateInput, validateAnalysisText, securityCheck } from '@/lib/security/input-validator';
@@ -216,8 +218,31 @@ export function AnalysisEditor({
     onAnalysisComplete: (result) => {
       setAnalysisProgress(100);
       onAnalysisComplete?.(result);
+      
+      // Refetch session analyses after successful analysis if autoSave is enabled
+      if (sessionId && autoSaveEnabled) {
+        console.log('🔄 [AnalysisEditor] Refetching session analyses after analysis (auto-save enabled)');
+        queryClient.invalidateQueries({
+          queryKey: ['word-analyses', sessionId],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ['phrase-analyses', sessionId],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ['sentence-analyses', sessionId],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ['paragraph-analyses', sessionId],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ['session-analyses', sessionId],
+        });
+      }
     },
   });
+
+  // Query client for invalidating queries
+  const queryClient = useQueryClient();
 
   // Hook for saving analysis (fallback when no session)
   const { saveAnalysis, isLoading: isSaving } = useAnalysisSave({
@@ -225,6 +250,26 @@ export function AnalysisEditor({
       toast.success('Đã lưu phân tích thành công', {
         duration: 2000,
       });
+      
+      // Refetch session analyses after successful save
+      if (sessionId) {
+        console.log('🔄 [AnalysisEditor] Refetching session analyses after save');
+        queryClient.invalidateQueries({
+          queryKey: ['word-analyses', sessionId],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ['phrase-analyses', sessionId],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ['sentence-analyses', sessionId],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ['paragraph-analyses', sessionId],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ['session-analyses', sessionId],
+        });
+      }
     },
     onError: (error) => {
       console.error('AnalysisEditor - Failed to save analysis', error);

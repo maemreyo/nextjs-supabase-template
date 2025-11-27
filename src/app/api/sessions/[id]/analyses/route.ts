@@ -38,12 +38,16 @@ export const GET = withAuth(
       const limit = parseInt(searchParams.get('limit') || '20');
       const offset = parseInt(searchParams.get('offset') || '0');
       const analysisType = searchParams.get('type') || 'all'; // Filter by type: word, sentence, paragraph, phrase, or all
+      const sortField = searchParams.get('sort') || 'created_at'; // Default sort by created_at
+      const sortOrder = searchParams.get('order') as 'asc' | 'desc' || 'desc'; // Default order is DESC (newest first)
       
       console.log('🔍 [DEBUG] API analyses route - Params:', {
         sessionId,
         limit,
         offset,
-        analysisType
+        analysisType,
+        sortField,
+        sortOrder
       });
 
       console.log('🔍 [DEBUG] API analyses route - Processing session ID:', sessionId);
@@ -55,7 +59,8 @@ export const GET = withAuth(
         .select('*')
         .eq('session_id', sessionId)
         .eq('user_id', user.id)
-        .order('position', { ascending: true });
+        .order(sortField, { ascending: sortOrder === 'asc' }) // Use dynamic sort field and order
+        .order('position', { ascending: true }); // Position as secondary sort
 
       // Apply type filter if specified
       if (analysisType !== 'all') {
@@ -99,7 +104,7 @@ export const GET = withAuth(
           .select('*')
           .eq('document_id', sessionId)
           .eq('user_id', user.id)
-          .order('created_at', { ascending: true })
+          .order(sortField, { ascending: sortOrder === 'asc' }) // Use dynamic sort field and order
           .range(offset, offset + limit - 1);
 
         // Get total count of word analyses for pagination info
@@ -257,9 +262,37 @@ export const GET = withAuth(
 
       // Combine both types of analyses
       const allAnalyses = [
-        ...sessionAnalysesWithDetails,
         ...wordAnalysesAsSessionAnalyses
-      ].sort((a, b) => (a.position || 0) - (b.position || 0));
+      ].sort((a, b) => {
+        // First sort by created_at DESC (newest first), then by position ASC
+        // Handle different types of objects with type assertions
+        const aAny = a as any;
+        const bAny = b as any;
+        
+        const aDate = new Date(
+          aAny.created_at ||
+          (aAny.word_analysis && aAny.word_analysis.created_at) ||
+          (aAny.sentence_analysis && aAny.sentence_analysis.created_at) ||
+          (aAny.paragraph_analysis && aAny.paragraph_analysis.created_at) ||
+          (aAny.phrase_analysis && aAny.phrase_analysis.created_at) ||
+          0
+        );
+        
+        const bDate = new Date(
+          bAny.created_at ||
+          (bAny.word_analysis && bAny.word_analysis.created_at) ||
+          (bAny.sentence_analysis && bAny.sentence_analysis.created_at) ||
+          (bAny.paragraph_analysis && bAny.paragraph_analysis.created_at) ||
+          (bAny.phrase_analysis && bAny.phrase_analysis.created_at) ||
+          0
+        );
+        
+        if (aDate.getTime() !== bDate.getTime()) {
+          return bDate.getTime() - aDate.getTime(); // DESC by created_at
+        }
+        
+        return (aAny.position || 0) - (bAny.position || 0); // ASC by position as tiebreaker
+      });
 
       if (analysesError) {
         console.error('Error fetching session analyses:', analysesError);

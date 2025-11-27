@@ -81,6 +81,8 @@ export function useParagraphAnalyses({
         limit: pageSize,
         offset: pageParam,
         type: 'paragraph',
+        sort: 'created_at', // Sort by created_at
+        order: 'desc', // Order descending (newest first)
       });
       
       console.log(`[API] Response for paragraph analyses, analyses count: ${response.data?.analyses?.length || 0}, hasMore: ${response.data?.pagination?.paragraph?.hasMore}`);
