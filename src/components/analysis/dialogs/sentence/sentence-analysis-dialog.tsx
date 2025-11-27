@@ -32,7 +32,7 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
   onAnalyzeGrammar,
   onBreakdown,
   className,
-  size = 'large',
+  size = 'ultra',
   showCloseButton = true,
   resizable = true,
   fullscreen = false,

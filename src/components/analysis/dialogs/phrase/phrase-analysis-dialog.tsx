@@ -30,7 +30,7 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
   onDelete,
   onPractice,
   className,
-  size = 'large' as 'default' | 'large' | 'xlarge' | 'xxlarge' | 'fullscreen',
+  size = 'ultra' as 'default' | 'large' | 'xlarge' | 'xxlarge' | 'ultra' | 'mega' | 'ultra-wide' | 'fullscreen',
   showCloseButton = true,
   resizable = true,
   fullscreen = false,

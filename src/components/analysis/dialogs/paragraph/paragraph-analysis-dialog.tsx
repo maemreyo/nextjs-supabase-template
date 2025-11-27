@@ -32,7 +32,7 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
   onAnalyzeStructure,
   onAnalyzeKeywords,
   className,
-  size = 'large',
+  size = 'mega',
   showCloseButton = true,
   resizable = true,
   fullscreen = false,

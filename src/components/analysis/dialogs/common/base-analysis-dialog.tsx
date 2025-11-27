@@ -142,13 +142,13 @@ export const BaseAnalysisDialog = ({
   const sizeClasses = useMemo(() => {
     switch (dialogSize) {
       case 'default':
-        return 'max-w-md max-h-[80vh]';
+        return 'max-w-5xl max-h-[80vh]';
       case 'large':
-        return 'max-w-5xl max-h-[85vh]';
+        return 'max-w-7xl max-h-[85vh]';
       case 'xlarge':
-        return 'max-w-7xl max-h-[90vh]';
+        return 'max-w-9xl max-h-[90vh]';
       case 'xxlarge':
-        return 'max-w-12xl max-h-[95vh]';
+        return 'max-w-14xl max-h-[95vh]';
       case 'xxxlarge':
         return 'max-w-screen-xl max-h-[98vh]';
       case 'ultra':
@@ -614,7 +614,7 @@ export const BaseAnalysisDialog = ({
           )}
           
           {/* Dialog Content */}
-          <div className="p-6 overflow-y-auto max-h-[calc(100vh-6rem)]">
+          <div className="pt-4 overflow-y-auto max-h-[calc(100vh-6rem)]">
             {children}
           </div>
         </DialogContent>
