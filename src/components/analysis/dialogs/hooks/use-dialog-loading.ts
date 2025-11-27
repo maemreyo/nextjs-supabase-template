@@ -223,7 +223,7 @@ export const useDialogLoading = (type: AnalysisType): UseDialogLoadingReturn => 
       console.log('🐛 DEBUG: useDialogLoading auto-clearing loading state', { type });
       storeRef.current.setDialogLoading(type, false);
     }
-  }, [type]); // Only depend on type to avoid infinite loops
+  }, [type, storeRef.current.dialogStates[type]?.loading, storeRef.current.dialogData[type]]); // Fixed dependencies
   
   // Auto-clear loading on error
   useEffect(() => {
@@ -247,7 +247,7 @@ export const useDialogLoading = (type: AnalysisType): UseDialogLoadingReturn => 
         actions: {}
       } as any);
     }
-  }, [type]); // Only depend on type to avoid infinite loops, but check current state
+  }, [type, store.dialogStates[type]?.error]); // Fixed dependencies
   
   return {
     isLoading,

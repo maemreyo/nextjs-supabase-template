@@ -51,7 +51,7 @@ export const BaseAnalysisDialog = ({
   onOpenChange,
   children,
   className,
-  size = 'xxlarge',
+  size = 'xxxlarge',
   showCloseButton = true,
   resizable = true,
   fullscreen = false,
@@ -144,15 +144,17 @@ export const BaseAnalysisDialog = ({
       case 'default':
         return 'max-w-md max-h-[80vh]';
       case 'large':
-        return 'max-w-2xl max-h-[85vh]';
+        return 'max-w-5xl max-h-[85vh]';
       case 'xlarge':
-        return 'max-w-4xl max-h-[90vh]';
+        return 'max-w-7xl max-h-[90vh]';
       case 'xxlarge':
-        return 'max-w-8xl max-h-[95vh]';
+        return 'max-w-12xl max-h-[95vh]';
+      case 'xxxlarge':
+        return 'max-w-screen-xl max-h-[98vh]';
       case 'fullscreen':
         return 'w-full h-full';
       default:
-        return 'max-w-2xl max-h-[85vh]';
+        return 'max-w-3xl max-h-[85vh]';
     }
   }, [dialogSize]);
   
@@ -354,12 +356,13 @@ export const BaseAnalysisDialog = ({
   }
   
   // Convert dialogSize to Dialog component size prop
-  const getDialogSize = (): "default" | "large" | "xlarge" | "xxlarge" | "fullscreen" => {
+  const getDialogSize = (): "default" | "large" | "xlarge" | "xxlarge" | "xxxlarge" | "fullscreen" => {
     switch (dialogSize) {
       case 'default': return 'default';
       case 'large': return 'large';
       case 'xlarge': return 'xlarge';
       case 'xxlarge': return 'xxlarge';
+      case 'xxxlarge': return 'xxxlarge';
       case 'fullscreen': return 'fullscreen';
       default: return 'large';
     }
@@ -374,18 +377,21 @@ export const BaseAnalysisDialog = ({
   });
 
   // Render dialog content using Dialog component from UI library
+  // Memoize the onOpenChange handler to prevent unnecessary re-renders
+  const handleOpenChange = (newOpen: boolean) => {
+    console.log('🐛 DEBUG: Dialog onOpenChange triggered', {
+      fromOpen: open,
+      toOpen: newOpen,
+      trigger: 'UI Dialog component',
+      timestamp: new Date().toISOString()
+    });
+    onOpenChange(newOpen);
+  }
+
   return (
     <Dialog
       open={open}
-      onOpenChange={(newOpen) => {
-        console.log('🐛 DEBUG: Dialog onOpenChange triggered', {
-          fromOpen: open,
-          toOpen: newOpen,
-          trigger: 'UI Dialog component',
-          timestamp: new Date().toISOString()
-        });
-        onOpenChange(newOpen);
-      }}
+      onOpenChange={handleOpenChange}
     >
       <DialogPortal>
         <DialogOverlay
@@ -599,7 +605,7 @@ export const BaseAnalysisDialog = ({
           )}
           
           {/* Dialog Content */}
-          <div className="p-6 overflow-y-auto max-h-[calc(100vh-8rem)]">
+          <div className="p-6 overflow-y-auto max-h-[calc(100vh-6rem)]">
             {children}
           </div>
         </DialogContent>

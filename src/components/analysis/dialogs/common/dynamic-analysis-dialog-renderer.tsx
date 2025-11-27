@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { AnalysisType, AnalysisItem, ExportFormat } from '../types/dialog-types';
 import { WordAnalysis, PhraseAnalysis, SentenceAnalysis, ParagraphAnalysis } from '../../types/analysis-types';
 import { WordAnalysisDialog } from '../word/word-analysis-dialog';
@@ -38,6 +38,20 @@ export const DynamicAnalysisDialog: React.FC<DynamicAnalysisDialogProps> = ({
   // Lấy state và actions cho dialog type hiện tại
   const { state, actions } = useDialogState(type);
 
+  // Memoize the onOpenChange handler to prevent unnecessary re-renders
+  const handleOpenChange = useCallback((open: boolean) => {
+    console.log('🐛 DEBUG: DynamicAnalysisDialog onOpenChange', {
+      type,
+      fromOpen: state.isOpen,
+      toOpen: open,
+      timestamp: new Date().toISOString()
+    });
+    
+    if (!open) {
+      actions.close();
+    }
+  }, [state.isOpen, actions.close]);
+
   // Common props cho tất cả dialog types
   const commonDialogProps = useMemo(() => {
     console.log('🐛 DEBUG: DynamicAnalysisDialog commonDialogProps recalculating', {
@@ -50,23 +64,12 @@ export const DynamicAnalysisDialog: React.FC<DynamicAnalysisDialogProps> = ({
     
     return {
       open: state.isOpen,
-      onOpenChange: (open: boolean) => {
-        console.log('🐛 DEBUG: DynamicAnalysisDialog onOpenChange', {
-          type,
-          fromOpen: state.isOpen,
-          toOpen: open,
-          timestamp: new Date().toISOString()
-        });
-        
-        if (!open) {
-          actions.close();
-        }
-      },
+      onOpenChange: handleOpenChange,
       analysis: data,
       className: 'pointer-events-auto', // Enable pointer events cho dialog content
       style: { zIndex } // Set z-index cho dialog
     };
-  }, [state.isOpen, actions, data, zIndex]);
+  }, [state.isOpen, handleOpenChange, data, zIndex]);
 
   // Switch trên type để render corresponding dialog
   switch (type) {

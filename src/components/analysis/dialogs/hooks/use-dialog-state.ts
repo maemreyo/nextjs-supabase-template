@@ -49,7 +49,7 @@ export const useDialogState = (type: AnalysisType): UseDialogStateReturn => {
       toggleFullscreen: () => store.toggleFullscreen(type),
       setWidth: (width: number) => store.setDialogWidth(type, width),
     };
-  }, [store]);
+  }, [type, store.openDialog, store.closeDialog, store.updateDialogData, store.setDialogLoading, store.setDialogError, store.toggleFullscreen, store.setDialogWidth]);
   
   return { state, actions };
 };
