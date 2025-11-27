@@ -10,6 +10,7 @@ export {
   DialogErrorBoundary,
   DialogLoadingSkeleton,
   DialogContainer,
+  AnalysisDialogActionLoadingIndicatorsComponent,
   // Re-export Dialog components from UI library
   Dialog,
   DialogContent,

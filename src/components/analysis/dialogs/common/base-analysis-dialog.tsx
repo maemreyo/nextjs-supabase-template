@@ -1,12 +1,13 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { X, Maximize2, Minimize2, Download, Share2, Printer, Copy, Volume2 } from 'lucide-react';
+import { X } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogHeader as UIDialogHeader,
   DialogFooter as UIDialogFooter,
   DialogPortal,
-  DialogOverlay
+  DialogOverlay,
+  DialogTitle
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
@@ -14,16 +15,21 @@ import {
   BaseDialogProps,
   DialogSize,
   AnalysisType,
-  AnalysisItem,
-  DialogError,
-  DialogErrorType,
   ExportFormat
 } from '../types/dialog-types';
 import { useDialogState } from '../hooks/use-dialog-state';
 import { useDialogKeyboard } from '../hooks/use-dialog-keyboard';
 import { useDialogLoading } from '../hooks/use-dialog-loading';
 import { DialogLoadingIndicator } from './dialog-loading-indicator';
-import { DialogErrorHandler } from './dialog-error-handler';
+import { AnalysisDialogErrorDisplaySectionComponent } from './analysis_dialog_error_display_section_component';
+import { AnalysisDialogActionLoadingIndicatorsComponent } from './analysis_dialog_action_loading_indicators_component';
+import { AnalysisDialogHeaderWithIconTitleAndActionsComponent } from './analysis_dialog_header_with_icon_title_and_actions_component';
+import { AnalysisDialogContentOverflowWrapperComponent } from './analysis_dialog_content_overflow_wrapper_component';
+import { useAnalysisDialogSizeClasses } from './use_analysis_dialog_size_classes_hook';
+import { useAnalysisDialogAnimationClasses } from './use_analysis_dialog_animation_classes_hook';
+import { useAnalysisDialogFullscreenToggle } from './use_analysis_dialog_fullscreen_toggle_hook';
+import { useAnalysisDialogFocusTrap } from './use_analysis_dialog_focus_trap_hook';
+import { useAnalysisDialogResizing } from './use_analysis_dialog_resizing_hook';
 import { cn } from '../../../../lib/utils';
 
 // Enhanced BaseDialogProps interface
@@ -71,33 +77,36 @@ export const BaseAnalysisDialog = ({
   analysis
 }: EnhancedBaseDialogProps) => {
   const dialogRef = useRef<HTMLDivElement>(null);
-  const [isFullscreen, setIsFullscreen] = useState(fullscreen);
-  const [isResizing, setIsResizing] = useState(false);
+  const { isFullscreen, toggleFullscreen } = useAnalysisDialogFullscreenToggle(fullscreen);
+  
+  // Focus trap hook
+  useAnalysisDialogFocusTrap(open, dialogRef);
   const [dialogSize, setDialogSize] = useState<DialogSize>(size);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
+  
+  // Resizing hook
+  const { resizeHandle } = useAnalysisDialogResizing({
+    resizable,
+    dialogRef,
+    isFullscreen
+  });
   
   // Get dialog state and actions - use: provided type for proper state management
   const { state, actions } = useDialogState(type); // Use dynamic type instead of hardcoded 'word'
   
   // Get enhanced loading state
-  const { 
-    isLoading, 
-    error, 
+  const {
+    isLoading,
+    error,
     message,
-    setGlobalLoading,
-    setLocalLoading,
-    setActionLoading,
     clearError,
-    hasAnyLoading,
-    primaryLoadingSource,
     loadingStates
   } = useDialogLoading(type);
   
   // Keyboard shortcuts
-  const shortcuts = useDialogKeyboard({
+  useDialogKeyboard({
     isOpen: open,
     onClose: () => onOpenChange(false),
-    onFullscreen: () => setIsFullscreen(prev => !prev),
+    onFullscreen: toggleFullscreen,
     onPrint: () => window.print(),
     onShare: () => {
       // Share functionality would be implemented by specific dialogs
@@ -105,26 +114,19 @@ export const BaseAnalysisDialog = ({
     },
   });
   
-  // Handle fullscreen state changes
-  useEffect(() => {
-    if (isFullscreen !== fullscreen) {
-      setIsFullscreen(fullscreen);
-    }
-  }, [isFullscreen, fullscreen]);
-  
   // Handle dialog size changes
   useEffect(() => {
     if (dialogSize !== size) {
       setDialogSize(size);
     }
-  }, [dialogSize, size]);
+  }, [size, dialogSize]);
   
   // Handle escape key to close dialog
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         if (isFullscreen) {
-          setIsFullscreen(false);
+          toggleFullscreen(); // Exit fullscreen
         } else {
           onOpenChange(false);
         }
@@ -136,187 +138,24 @@ export const BaseAnalysisDialog = ({
     return () => {
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [isFullscreen, onOpenChange]);
+  }, [isFullscreen, onOpenChange, toggleFullscreen]);
   
-  // Dialog size classes
-  const sizeClasses = useMemo(() => {
-    switch (dialogSize) {
-      case 'default':
-        return 'w-5xl h-[80vh]';
-      case 'large':
-        return 'w-7xl h-[85vh]';
-      case 'xlarge':
-        return 'w-9xl h-[90vh]';
-      case 'xxlarge':
-        return 'w-14xl h-[95vh]';
-      case 'xxxlarge':
-        return 'w-screen-xl h-[98vh]';
-      case 'ultra':
-        return 'w-[95vw] sm:w-screen-xl md:w-screen-2xl lg:w-screen-2xl xl:w-[1920px] 2xl:w-[2240px] h-[98vh]';
-      case 'mega':
-        return 'w-[95vw] sm:w-screen-2xl md:w-[90vw] lg:w-[95vw] xl:w-[2560px] 2xl:w-[3200px] h-[98vh]';
-      case 'ultra-wide':
-        return 'w-[95vw] sm:w-screen-2xl md:w-[90vw] lg:w-[95vw] xl:w-[3200px] 2xl:w-[3840px] h-[98vh]';
-      case 'fullscreen':
-        return 'w-full h-full';
-      default:
-        return 'w-3xl h-[85vh]';
-    }
-  }, [dialogSize]);
+  // Dialog size classes using custom hook
+  const sizeClasses = useAnalysisDialogSizeClasses(dialogSize);
   
-  // Animation classes
-  const animationClasses = useMemo(() => {
-    if (state.dialogState.loading) {
-      return 'animate-pulse';
-    }
-    if (state.dialogState.error) {
-      return 'animate-shake';
-    }
-    return '';
-  }, [state.dialogState.loading, state.dialogState.error]);
+  // Animation classes using custom hook
+  const animationClasses = useAnalysisDialogAnimationClasses(
+    state.dialogState.loading,
+    state.dialogState.error
+  );
   
-  // Handle resize functionality
-  const handleResizeStart = useCallback(() => {
-    setIsResizing(true);
-  }, []);
   
-  const handleResizeEnd = useCallback(() => {
-    setIsResizing(false);
-  }, []);
-  
-  const handleMouseMove = useCallback((event: MouseEvent) => {
-    if (!isResizing || !resizable) return;
-    
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    
-    const rect = dialog.getBoundingClientRect();
-    const newWidth = event.clientX - rect.left;
-    
-    // Update width in state (would be handled by parent component)
-    console.log('Dialog resized to:', newWidth);
-  }, [isResizing, resizable]);
-  
-  // Handle mouse events for resizing
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog || !resizable) return;
-    
-    const handleMouseDown = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (target.classList.contains('resize-handle')) {
-        handleResizeStart();
-      }
-    };
-    
-    const handleMouseUp = () => {
-      handleResizeEnd();
-    };
-    
-    dialog.addEventListener('mousedown', handleMouseDown);
-    document.addEventListener('mouseup', handleMouseUp);
-    document.addEventListener('mousemove', handleMouseMove);
-    
-    return () => {
-      dialog.removeEventListener('mousedown', handleMouseDown);
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.removeEventListener('mousemove', handleMouseMove);
-    };
-  }, [dialogRef, resizable, isResizing, handleResizeStart, handleResizeEnd, handleMouseMove]);
-  
-  // Handle focus management
-  useEffect(() => {
-    if (!open) return;
-    
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    
-    // Focus first focusable element
-    const focusableElements = dialog.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-    
-    if (focusableElements.length > 0) {
-      (focusableElements[0] as HTMLElement).focus();
-    }
-    
-    // Trap focus within dialog
-    const handleFocusTrap = (event: KeyboardEvent) => {
-      if (event.key === 'Tab') {
-        event.preventDefault();
-        
-        const focusableElements = dialog.querySelectorAll(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        );
-        
-        if (focusableElements.length > 0) {
-          const firstElement = focusableElements[0] as HTMLElement;
-          const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
-          
-          if (document.activeElement === lastElement && event.shiftKey) {
-            firstElement.focus();
-          } else if (document.activeElement === firstElement && !event.shiftKey) {
-            lastElement.focus();
-          }
-        }
-      }
-    };
-    
-    dialog.addEventListener('keydown', handleFocusTrap);
-    
-    return () => {
-      dialog.removeEventListener('keydown', handleFocusTrap);
-    };
-  }, [open]);
   
   // ⚠️ LƯU Ý: Radix UI Dialog đã có sẵn click outside detection
   // Custom logic này có thể gây conflict với built-in behavior
   // Nếu muốn giữ custom logic, uncomment code bên dưới
   
-  /*
-  // Handle click outside to close (CUSTOM - có thể conflict với Radix UI)
-  useEffect(() => {
-    if (!open) return;
-    
-    const handleClickOutside = (event: MouseEvent) => {
-      const dialog = dialogRef.current;
-      const target = event.target as Node;
-      
-      console.log('🐛 DEBUG: Click detected', {
-        target: target,
-        targetElement: target?.toString?.(),
-        dialogExists: !!dialog,
-        isInsideDialog: dialog?.contains(target),
-        eventType: event.type,
-        timestamp: new Date().toISOString()
-      });
-      
-      // ✅ SỬA: Chỉ đóng dialog khi click BÊN NGOÀI!
-      if (!dialog || !dialog.contains(target)) {
-        console.log('🐛 DEBUG: Dialog closing due to OUTSIDE click', {
-          reason: !dialog ? 'Dialog not found' : 'Click outside dialog',
-          shouldClose: true,
-          target: target?.toString?.()
-        });
-        onOpenChange(false);
-      } else {
-        console.log('🐛 DEBUG: Click inside dialog - dialog should stay open', {
-          target: target?.toString?.()
-        });
-      }
-    };
-    
-    console.log('🐛 DEBUG: Setting up click outside listener for dialog');
-    document.addEventListener('mousedown', handleClickOutside);
-    
-    return () => {
-      console.log('🐛 DEBUG: Cleaning up click outside listener');
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [open, onOpenChange]);
-  */
-  
-  // Combine all classes
+  // Combine all classes (not used in current implementation, keeping for potential future use)
   const dialogClasses = useMemo(() => {
     return cn(
       'fixed inset-0 z-50 flex items-center justify-center',
@@ -334,8 +173,6 @@ export const BaseAnalysisDialog = ({
   
   // Enhanced loading state calculation
   const shouldShowGlobalLoading = loadingConfig?.showGlobalLoading && isLoading;
-  const shouldShowActionLoading = loadingConfig?.showActionLoading &&
-    Object.values(loadingStates.actions || {}).some(action => action);
   
   // Enhanced error handling
   const handleRetry = useCallback(() => {
@@ -346,20 +183,6 @@ export const BaseAnalysisDialog = ({
   const handleDismissError = useCallback(() => {
     clearError();
   }, [clearError]);
-  
-  // Render loading state
-  if (shouldShowGlobalLoading) {
-    return (
-      <div className={dialogClasses}>
-        <DialogLoadingIndicator
-          type="global"
-          message={loadingConfig?.customMessages?.global || message || undefined}
-          overlay={true}
-          size="lg"
-        />
-      </div>
-    );
-  }
   
   // Convert dialogSize to Dialog component size prop
   const getDialogSize = (): "default" | "large" | "xlarge" | "xxlarge" | "xxxlarge" | "ultra" | "mega" | "ultra-wide" | "fullscreen" => {
@@ -387,7 +210,7 @@ export const BaseAnalysisDialog = ({
 
   // Render dialog content using Dialog component from UI library
   // Memoize the onOpenChange handler to prevent unnecessary re-renders
-  const handleOpenChange = (newOpen: boolean) => {
+  const handleOpenChange = useCallback((newOpen: boolean) => {
     console.log('🐛 DEBUG: Dialog onOpenChange triggered', {
       fromOpen: open,
       toOpen: newOpen,
@@ -395,6 +218,20 @@ export const BaseAnalysisDialog = ({
       timestamp: new Date().toISOString()
     });
     onOpenChange(newOpen);
+  }, [open, onOpenChange]);
+  
+  // Render loading state - moved after all hooks to maintain Rules of Hooks
+  if (shouldShowGlobalLoading) {
+    return (
+      <div className={dialogClasses}>
+        <DialogLoadingIndicator
+          type="global"
+          message={loadingConfig?.customMessages?.global || message || undefined}
+          overlay={true}
+          size="lg"
+        />
+      </div>
+    );
   }
 
   return (
@@ -405,12 +242,6 @@ export const BaseAnalysisDialog = ({
       <DialogPortal>
         <DialogOverlay
           className={animationClasses}
-          onMouseDown={(e) => {
-            console.log('🐛 DEBUG: DialogOverlay clicked', {
-              target: e.target,
-              timestamp: new Date().toISOString()
-            });
-          }}
         />
         <DialogContent
           ref={dialogRef}
@@ -425,198 +256,46 @@ export const BaseAnalysisDialog = ({
           style={{
             zIndex: 1000,
           }}
-          onMouseDown={(e) => {
-            console.log('🐛 DEBUG: DialogContent clicked', {
-              target: e.target,
-              isInsideContent: true,
-              timestamp: new Date().toISOString()
-            });
-          }}
         >
+          {/* Screen reader only title for accessibility */}
+          <DialogTitle className="sr-only">{title || 'Analysis'}</DialogTitle>
+          
           {/* Custom Dialog Header with Action Buttons */}
-          <div className="flex items-center justify-between p-2 border-b">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary/10 rounded-md flex items-center justify-center">
-                {icon || <div className="text-primary font-bold">A</div>}
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold">{title || "Analysis"}</h2>
-                {/* {subtitle && (
-                  <p className="text-sm text-muted-foreground">{subtitle}</p>
-                )} */}
-              </div>
-            </div>
-            
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2">
-              {/* Fullscreen Toggle */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsFullscreen(!isFullscreen)}
-                aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-              >
-                {isFullscreen ? (
-                  <Minimize2 className="h-5 w-5" />
-                ) : (
-                  <Maximize2 className="h-5 w-5" />
-                )}
-              </Button>
-              
-              {/* Export Button */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => {
-                  console.log('🐛 DEBUG: Export button clicked', {
-                    hasHandler: !!onExport,
-                    hasAnalysis: !!analysis,
-                    analysisType: analysis?.word ? 'word' : analysis?.sentence ? 'sentence' : analysis?.phrase ? 'phrase' : analysis?.paragraph ? 'paragraph' : 'unknown',
-                    timestamp: new Date().toISOString()
-                  });
-                  
-                  if (onExport && analysis) {
-                    onExport(analysis, 'json' as ExportFormat); // Default format to JSON
-                  } else {
-                    console.log('Export action triggered - no handler or analysis data');
-                  }
-                }}
-                aria-label="Export"
-              >
-                <Download className="h-5 w-5" />
-              </Button>
-              
-              {/* Share Button */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => {
-                  console.log('🐛 DEBUG: Share button clicked', {
-                    hasHandler: !!onShare,
-                    hasAnalysis: !!analysis,
-                    timestamp: new Date().toISOString()
-                  });
-                  
-                  if (onShare && analysis) {
-                    onShare(analysis);
-                  } else {
-                    console.log('Share action triggered - no handler or analysis data');
-                  }
-                }}
-                aria-label="Share"
-              >
-                <Share2 className="h-5 w-5" />
-              </Button>
-              
-              {/* Print Button */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => {
-                  console.log('🐛 DEBUG: Print button clicked', {
-                    hasHandler: !!onPrint,
-                    hasAnalysis: !!analysis,
-                    timestamp: new Date().toISOString()
-                  });
-                  
-                  if (onPrint && analysis) {
-                    onPrint(analysis);
-                  } else {
-                    console.log('Print action triggered - using fallback');
-                    window.print(); // Fallback to default print
-                  }
-                }}
-                aria-label="Print"
-              >
-                <Printer className="h-5 w-5" />
-              </Button>
-              
-              {/* Copy Button */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={async () => {
-                  console.log('🐛 DEBUG: Copy button clicked', {
-                    hasHandler: !!onCopy,
-                    hasAnalysis: !!analysis,
-                    timestamp: new Date().toISOString()
-                  });
-                  
-                  if (onCopy && analysis) {
-                    // Extract text content based on analysis type
-                    let textToCopy = '';
-                    if (analysis.word) {
-                      textToCopy = analysis.word;
-                    } else if (analysis.sentence) {
-                      textToCopy = analysis.sentence;
-                    } else if (analysis.phrase) {
-                      textToCopy = analysis.phrase;
-                    } else if (analysis.paragraph) {
-                      textToCopy = analysis.paragraph;
-                    } else {
-                      textToCopy = JSON.stringify(analysis, null, 2);
-                    }
-                    
-                    try {
-                      console.log('🐛 DEBUG: Copying text to clipboard', { textLength: textToCopy.length });
-                      await navigator.clipboard.writeText(textToCopy);
-                      console.log('🐛 DEBUG: Calling onCopy callback');
-                      onCopy(textToCopy);
-                    } catch (error) {
-                      console.error('Failed to copy text:', error);
-                    }
-                  } else {
-                    console.log('Copy action triggered - no handler or analysis data');
-                  }
-                }}
-                aria-label="Copy"
-              >
-                <Copy className="h-5 w-5" />
-              </Button>
-            </div>
-          </div>
+          <AnalysisDialogHeaderWithIconTitleAndActionsComponent
+            title={title || "Analysis"}
+            subtitle={subtitle}
+            icon={icon}
+            isFullscreen={isFullscreen}
+            onFullscreenToggle={toggleFullscreen}
+            onExport={onExport}
+            onShare={onShare}
+            onPrint={onPrint}
+            onCopy={onCopy}
+            analysis={analysis}
+          />
           
           {/* Error State */}
-          {error && !shouldShowGlobalLoading && (
-            <div className="p-4 border-b">
-              <DialogErrorHandler
-                error={error}
-                onRetry={handleRetry}
-                onDismiss={handleDismissError}
-              />
-            </div>
-          )}
+          <AnalysisDialogErrorDisplaySectionComponent
+            error={error}
+            shouldShowGlobalLoading={shouldShowGlobalLoading}
+            onRetry={handleRetry}
+            onDismiss={handleDismissError}
+          />
           
           {/* Action Loading Indicators */}
-          {shouldShowActionLoading && (
-            <div className="flex gap-2 p-2 border-b">
-              {Object.entries(loadingStates.actions || {}).map(([action, loading]) => (
-                loading && (
-                  <DialogLoadingIndicator
-                    key={action}
-                    type="action"
-                    message={loadingConfig?.customMessages?.[action]}
-                    size="sm"
-                  />
-                )
-              ))}
-            </div>
-          )}
+          <AnalysisDialogActionLoadingIndicatorsComponent
+            loadingStatesActions={loadingStates.actions}
+            customMessages={loadingConfig?.customMessages}
+            showActionLoading={loadingConfig?.showActionLoading}
+          />
           
           {/* Resize Handle */}
-          {/* {resizable && !isFullscreen && (
-            <div
-              className="absolute right-2 top-2 w-4 h-4 bg-accent cursor-ew-resize hover:bg-accent/80 rounded-sm flex items-center justify-center"
-              onMouseDown={handleResizeStart}
-            >
-              <div className="w-1 h-4 bg-border"></div>
-            </div>
-          )} */}
+          {resizeHandle}
           
           {/* Dialog Content */}
-          <div className="pt-4 overflow-y-auto max-h-[calc(100vh-6rem)]">
+          <AnalysisDialogContentOverflowWrapperComponent>
             {children}
-          </div>
+          </AnalysisDialogContentOverflowWrapperComponent>
         </DialogContent>
       </DialogPortal>
     </Dialog>
@@ -852,7 +531,7 @@ export const DialogContainer: React.FC<DialogContainerProps> = ({
 
 // Export new components
 export { DialogLoadingIndicator } from './dialog-loading-indicator';
-export { DialogErrorHandler } from './dialog-error-handler';
+export { AnalysisDialogActionLoadingIndicatorsComponent } from './analysis_dialog_action_loading_indicators_component';
 
 // Re-export Dialog components from UI library for convenience
 export {
