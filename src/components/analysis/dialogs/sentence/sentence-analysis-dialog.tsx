@@ -267,6 +267,15 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
         isAnimating && 'animate-pulse',
         className
       )}
+      onExport={(analysisData, format) => {
+        if (analysisData && format) {
+          handleExport(analysisData, format);
+        }
+      }}
+      onShare={handleShare}
+      onPrint={handlePrint}
+      onCopy={handleCopy}
+      analysis={analysis}
     >
       {/* Custom Dialog Header */}
       {/* <DialogHeader

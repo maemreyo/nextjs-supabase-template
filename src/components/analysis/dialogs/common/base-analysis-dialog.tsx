@@ -16,7 +16,8 @@ import {
   AnalysisType,
   AnalysisItem,
   DialogError,
-  DialogErrorType
+  DialogErrorType,
+  ExportFormat
 } from '../types/dialog-types';
 import { useDialogState } from '../hooks/use-dialog-state';
 import { useDialogKeyboard } from '../hooks/use-dialog-keyboard';
@@ -32,6 +33,13 @@ interface EnhancedBaseDialogProps extends BaseDialogProps {
     showActionLoading: boolean;
     customMessages?: Record<string, string>;
   };
+  // Action handlers for header buttons
+  onExport?: (analysis: any, format?: ExportFormat) => void;
+  onShare?: (analysis: any) => void;
+  onPrint?: (analysis: any) => void;
+  onCopy?: (text: string) => void;
+  // Analysis data to pass to action handlers
+  analysis?: any;
 }
 
 /**
@@ -55,7 +63,12 @@ export const BaseAnalysisDialog = ({
     showGlobalLoading: true,
     showActionLoading: true,
     customMessages: {}
-  }
+  },
+  onExport,
+  onShare,
+  onPrint,
+  onCopy,
+  analysis
 }: EnhancedBaseDialogProps) => {
   const dialogRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(fullscreen);
@@ -440,8 +453,11 @@ export const BaseAnalysisDialog = ({
                 variant="ghost"
                 size="icon"
                 onClick={() => {
-                  // Export functionality would be implemented by specific dialogs
-                  console.log('Export action triggered');
+                  if (onExport && analysis) {
+                    onExport(analysis, 'json' as ExportFormat); // Default format to JSON
+                  } else {
+                    console.log('Export action triggered - no handler or analysis data');
+                  }
                 }}
                 aria-label="Export"
               >
@@ -453,8 +469,11 @@ export const BaseAnalysisDialog = ({
                 variant="ghost"
                 size="icon"
                 onClick={() => {
-                  // Share functionality would be implemented by specific dialogs
-                  console.log('Share action triggered');
+                  if (onShare && analysis) {
+                    onShare(analysis);
+                  } else {
+                    console.log('Share action triggered - no handler or analysis data');
+                  }
                 }}
                 aria-label="Share"
               >
@@ -465,7 +484,13 @@ export const BaseAnalysisDialog = ({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => window.print()}
+                onClick={() => {
+                  if (onPrint && analysis) {
+                    onPrint(analysis);
+                  } else {
+                    window.print(); // Fallback to default print
+                  }
+                }}
                 aria-label="Print"
               >
                 <Printer className="h-5 w-5" />
@@ -475,9 +500,31 @@ export const BaseAnalysisDialog = ({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => {
-                  // Copy functionality would be implemented by specific dialogs
-                  console.log('Copy action triggered');
+                onClick={async () => {
+                  if (onCopy && analysis) {
+                    // Extract text content based on analysis type
+                    let textToCopy = '';
+                    if (analysis.word) {
+                      textToCopy = analysis.word;
+                    } else if (analysis.sentence) {
+                      textToCopy = analysis.sentence;
+                    } else if (analysis.phrase) {
+                      textToCopy = analysis.phrase;
+                    } else if (analysis.paragraph) {
+                      textToCopy = analysis.paragraph;
+                    } else {
+                      textToCopy = JSON.stringify(analysis, null, 2);
+                    }
+                    
+                    try {
+                      await navigator.clipboard.writeText(textToCopy);
+                      onCopy(textToCopy);
+                    } catch (error) {
+                      console.error('Failed to copy text:', error);
+                    }
+                  } else {
+                    console.log('Copy action triggered - no handler or analysis data');
+                  }
                 }}
                 aria-label="Copy"
               >
