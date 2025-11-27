@@ -14,25 +14,42 @@ import {
 export const useDialogState = (type: AnalysisType): UseDialogStateReturn => {
   const store = useDialogStore();
   
-  const state = useMemo(() => ({
-    isOpen: store.openDialogs[type],
-    data: store.dialogData[type],
-    dialogState: store.dialogStates[type],
-  }), [
-    store.openDialogs[type], 
-    store.dialogData[type], 
+  const state = useMemo(() => {
+    console.log('🐛 DEBUG: useDialogState useMemo recalculating', {
+      type,
+      isOpen: store.openDialogs[type],
+      hasData: !!store.dialogData[type],
+      dialogState: store.dialogStates[type],
+      timestamp: new Date().toISOString()
+    });
+    
+    return {
+      isOpen: store.openDialogs[type],
+      data: store.dialogData[type],
+      dialogState: store.dialogStates[type],
+    };
+  }, [
+    store.openDialogs[type],
+    store.dialogData[type],
     store.dialogStates[type]
   ]);
   
-  const actions = useMemo(() => ({
-    open: (data: AnalysisItem) => store.openDialog(type, data),
-    close: () => store.closeDialog(type),
-    updateData: (data: AnalysisItem) => store.updateDialogData(type, data),
-    setLoading: (loading: boolean) => store.setDialogLoading(type, loading),
-    setError: (error: string | null) => store.setDialogError(type, error),
-    toggleFullscreen: () => store.toggleFullscreen(type),
-    setWidth: (width: number) => store.setDialogWidth(type, width),
-  }), [store]);
+  const actions = useMemo(() => {
+    console.log('🐛 DEBUG: useDialogState actions useMemo recalculating', {
+      type,
+      timestamp: new Date().toISOString()
+    });
+    
+    return {
+      open: (data: AnalysisItem) => store.openDialog(type, data),
+      close: () => store.closeDialog(type),
+      updateData: (data: AnalysisItem) => store.updateDialogData(type, data),
+      setLoading: (loading: boolean) => store.setDialogLoading(type, loading),
+      setError: (error: string | null) => store.setDialogError(type, error),
+      toggleFullscreen: () => store.toggleFullscreen(type),
+      setWidth: (width: number) => store.setDialogWidth(type, width),
+    };
+  }, [store]);
   
   return { state, actions };
 };

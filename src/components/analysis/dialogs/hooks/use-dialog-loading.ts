@@ -197,6 +197,13 @@ export const useDialogLoading = (type: AnalysisType): UseDialogLoadingReturn => 
   
   // Auto-clear loading when data is available
   useEffect(() => {
+    console.log('🐛 DEBUG: useDialogLoading useEffect [type] triggered', {
+      type,
+      timestamp: new Date().toISOString(),
+      state: storeRef.current.dialogStates[type],
+      data: storeRef.current.dialogData[type]
+    });
+    
     const state = storeRef.current.dialogStates[type];
     if (!state) return;
     
@@ -204,15 +211,31 @@ export const useDialogLoading = (type: AnalysisType): UseDialogLoadingReturn => 
     const hasData = !!storeRef.current.dialogData[type];
     const hasActiveActions = Object.values(state.actions || {}).some(loading => loading);
     
+    console.log('🐛 DEBUG: useDialogLoading auto-clear check', {
+      type,
+      hasData,
+      hasActiveActions,
+      isLoading: state.loading,
+      shouldClear: hasData && !hasActiveActions && state.loading
+    });
+    
     if (hasData && !hasActiveActions && state.loading) {
+      console.log('🐛 DEBUG: useDialogLoading auto-clearing loading state', { type });
       storeRef.current.setDialogLoading(type, false);
     }
   }, [type]); // Only depend on type to avoid infinite loops
   
   // Auto-clear loading on error
   useEffect(() => {
+    console.log('🐛 DEBUG: useDialogLoading error useEffect [type] triggered', {
+      type,
+      timestamp: new Date().toISOString(),
+      state: store.dialogStates[type]
+    });
+    
     const state = store.dialogStates[type];
     if (state?.error) {
+      console.log('🐛 DEBUG: useDialogLoading auto-clearing on error', { type, error: state.error });
       // Clear all loading states when there's an error
       storeRef.current.setDialogLoading(type, {
         ...state,

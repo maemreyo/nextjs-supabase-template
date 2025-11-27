@@ -1,54 +1,66 @@
-🔍 [DEBUG] getSessionHTML - Session data: 
-Object { hasContent: true, hasContentHTML: true, hasContentData: true, contentFormat: "tiptap" }
-🔍 [DEBUG] getSessionHTML - Using content_html: <p xmlns="http://www.w3.org/1999/xhtml">For my presentation today I want to tell you about how group...
-🔍 [DEBUG] getSessionHTML - Session data:  
-Object { hasContent: true, hasContentHTML: true, hasContentData: true, contentFormat: "tiptap" }
-🔍 [DEBUG] getSessionHTML - Using content_html: <p xmlns="http://www.w3.org/1999/xhtml">For my presentation today I want to tell you about how group...
-🔍 [DEBUG] getSessionHTML - Session data:  
-Object { hasContent: true, hasContentHTML: true, hasContentData: true, contentFormat: "tiptap" }
-🔍 [DEBUG] getSessionHTML - Using content_html: <p xmlns="http://www.w3.org/1999/xhtml">For my presentation today I want to tell you about how group...
-[AnalysisTabs] DEBUG: Gọi hooks ở top level - ĐÚNG QUY TẮC
-[AnalysisTabs] DEBUG: activeTab hiện tại: word
-[useWordAnalyses] Initializing hook, enabled: true, pageSize: 15, queryKey: 
-Array [ "word-analyses", "bfd6ec15-e9ca-46e9-8995-ebec4072c0fe" ]
-[select] word: total analyses: 34, totalCount: 22
-[getNextPageParam] word: hasMore=true, nextPageOffset=15, currentTotalItems=34
-[fetchNextPage] Will fetch next page for word at offset 15
-[usePhraseAnalyses] Initializing hook, enabled: false, pageSize: 15, queryKey: 
-Array [ "phrase-analyses", "bfd6ec15-e9ca-46e9-8995-ebec4072c0fe" ]
-[useSentenceAnalyses] Initializing hook, enabled: false, pageSize: 15, queryKey: 
-Array [ "sentence-analyses", "bfd6ec15-e9ca-46e9-8995-ebec4072c0fe" ]
-[useParagraphAnalyses] Initializing hook, enabled: false, pageSize: 15, queryKey: 
-Array [ "paragraph-analyses", "bfd6ec15-e9ca-46e9-8995-ebec4072c0fe" ]
-[AnalysisTabs] DEBUG: Tạo tabQueries object - ĐÚNG QUY TẮC
-[AnalysisTabs] DEBUG: Tạo tabQueries object - ĐÚNG QUY TẮC
-[AnalysisTabs] DEBUG: Gọi hooks ở top level - ĐÚNG QUY TẮC
-[AnalysisTabs] DEBUG: activeTab hiện tại: word
-[useWordAnalyses] Initializing hook, enabled: true, pageSize: 15, queryKey:  
-Array [ "word-analyses", "bfd6ec15-e9ca-46e9-8995-ebec4072c0fe" ]
-[select] word: total analyses: 34, totalCount: 22
-[getNextPageParam] word: hasMore=true, nextPageOffset=15, currentTotalItems=34
-[fetchNextPage] Will fetch next page for word at offset 15
-[usePhraseAnalyses] Initializing hook, enabled: false, pageSize: 15, queryKey:  
-Array [ "phrase-analyses", "bfd6ec15-e9ca-46e9-8995-ebec4072c0fe" ]
-[useSentenceAnalyses] Initializing hook, enabled: false, pageSize: 15, queryKey:  
-Array [ "sentence-analyses", "bfd6ec15-e9ca-46e9-8995-ebec4072c0fe" ]
-[useParagraphAnalyses] Initializing hook, enabled: false, pageSize: 15, queryKey:  
-Array [ "paragraph-analyses", "bfd6ec15-e9ca-46e9-8995-ebec4072c0fe" ]
-[AnalysisTabs] DEBUG: Tạo tabQueries object - ĐÚNG QUY TẮC
-[AnalysisTabContent] Rendering tab: word
-[AnalysisTabContent] Rendering tab: word
-🔍 [DEBUG] AnalysisResultDialog - Props: 
-Object { isOpen: false, analysisType: "word", hasAnalysis: false, analysisKeys: null }
-🔍 [DEBUG] AnalysisResultDialog - No analysis, returning null
-🔍 [DEBUG] AnalysisResultDialog - Props:  
-Object { isOpen: false, analysisType: "word", hasAnalysis: false, analysisKeys: null }
-🔍 [DEBUG] AnalysisResultDialog - No analysis, returning null
-[getNextPageParam] word: hasMore=true, nextPageOffset=15, currentTotalItems=34
-[fetchNextPage] Will fetch next page for word at offset 15
-[AnalysisItemCard] handleCardClick - enableDialogSystem: true, analysisType: word
-🔍 [DEBUG] handleAnalysisClick - Called with: 
-Object { analysisItem: {…}, hasAnalysis: false, analysisType: "word" }
-🔍 [DEBUG] handleAnalysisClick - Using dialogDispatcher for word type
-Dialog size set to: default
-Dialog fullscreen enabled: true
+🐛 DEBUG: DialogContent clicked 
+Object { target: button.inline-flex.items-center.justify-center.gap-2.whitespace-nowrap.rounded-md.text-sm.font-medium.transition-all.disabled:pointer-events-none.disabled:opacity-50.[&_svg]:pointer-events-none.[&_svg:not([class*='size-'])]:size-4.shrink-0.[&_svg]:shrink-0.outline-none.focus-visible:border-ring.focus-visible:ring-ring/50.focus-visible:ring-[3px].aria-invalid:ring-destructive/20.dark:aria-invalid:ring-destructive/40.aria-invalid:border-destructive.hover:bg-accent.hover:text-accent-foreground.dark:hover:bg-accent/50.size-9, isInsideContent: true, timestamp: "2025-11-27T04:23:08.998Z" }
+node_modules_next_dist_7a8122d0._.js:2288:28
+🐛 DEBUG: DialogRoot container clicked 
+Object { target: button.inline-flex.items-center.justify-center.gap-2.whitespace-nowrap.rounded-md.text-sm.font-medium.transition-all.disabled:pointer-events-none.disabled:opacity-50.[&_svg]:pointer-events-none.[&_svg:not([class*='size-'])]:size-4.shrink-0.[&_svg]:shrink-0.outline-none.focus-visible:border-ring.focus-visible:ring-ring/50.focus-visible:ring-[3px].aria-invalid:ring-destructive/20.dark:aria-invalid:ring-destructive/40.aria-invalid:border-destructive.hover:bg-accent.hover:text-accent-foreground.dark:hover:bg-accent/50.size-9, isRootContainer: false, timestamp: "2025-11-27T04:23:09.004Z" }
+node_modules_next_dist_7a8122d0._.js:2288:28
+🐛 DEBUG: DialogRootRenderer render 
+Object { openDialogs: (1) […], dialogDataKeys: (4) […], totalOpenDialogs: 1, timestamp: "2025-11-27T04:23:09.072Z" }
+node_modules_next_dist_7a8122d0._.js:2288:28
+🐛 DEBUG: Rendering dialog 
+Object { type: "word", index: 0, zIndex: 1000, data: {…} }
+node_modules_next_dist_7a8122d0._.js:2288:28
+🐛 DEBUG: DialogRootRenderer render  
+Object { openDialogs: (1) […], dialogDataKeys: (4) […], totalOpenDialogs: 1, timestamp: "2025-11-27T04:23:09.075Z" }
+node_modules_next_dist_7a8122d0._.js:2288:28
+🐛 DEBUG: Rendering dialog  
+Object { type: "word", index: 0, zIndex: 1000, data: {…} }
+node_modules_next_dist_7a8122d0._.js:2288:28
+🐛 DEBUG: DialogRootRenderer render 
+Object { openDialogs: (1) […], dialogDataKeys: (4) […], totalOpenDialogs: 1, timestamp: "2025-11-27T04:23:09.094Z" }
+node_modules_next_dist_7a8122d0._.js:2288:28
+🐛 DEBUG: Rendering dialog 
+Object { type: "word", index: 0, zIndex: 1000, data: {…} }
+node_modules_next_dist_7a8122d0._.js:2288:28
+🐛 DEBUG: DialogRootRenderer render  
+Object { openDialogs: (1) […], dialogDataKeys: (4) […], totalOpenDialogs: 1, timestamp: "2025-11-27T04:23:09.094Z" }
+node_modules_next_dist_7a8122d0._.js:2288:28
+🐛 DEBUG: Rendering dialog  
+Object { type: "word", index: 0, zIndex: 1000, data: {…} }
+node_modules_next_dist_7a8122d0._.js:2288:28
+🐛 DEBUG: BaseAnalysisDialog render 
+Object { open: true, type: "word", hasChildren: true, timestamp: "2025-11-27T04:23:09.095Z" }
+node_modules_next_dist_7a8122d0._.js:2288:28
+🐛 DEBUG: BaseAnalysisDialog render  
+Object { open: true, type: "word", hasChildren: true, timestamp: "2025-11-27T04:23:09.095Z" }
+node_modules_next_dist_7a8122d0._.js:2288:28
+`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users.
+
+If you want to hide the `DialogTitle`, you can wrap it with our VisuallyHidden component.
+
+For more information, see https://radix-ui.com/primitives/docs/components/dialog node_modules_next_dist_7a8122d0._.js:3118:32
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}. node_modules_next_dist_7a8122d0._.js:2288:28
+`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users.
+
+If you want to hide the `DialogTitle`, you can wrap it with our VisuallyHidden component.
+
+For more information, see https://radix-ui.com/primitives/docs/components/dialog node_modules_next_dist_7a8122d0._.js:3118:32
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}. node_modules_next_dist_7a8122d0._.js:2288:28
+🐛 DEBUG: DialogRootRenderer render 
+Object { openDialogs: (1) […], dialogDataKeys: (4) […], totalOpenDialogs: 1, timestamp: "2025-11-27T04:23:09.161Z" }
+node_modules_next_dist_7a8122d0._.js:2288:28
+🐛 DEBUG: Rendering dialog 
+Object { type: "word", index: 0, zIndex: 1000, data: {…} }
+node_modules_next_dist_7a8122d0._.js:2288:28
+🐛 DEBUG: DialogRootRenderer render  
+Object { openDialogs: (1) […], dialogDataKeys: (4) […], totalOpenDialogs: 1, timestamp: "2025-11-27T04:23:09.161Z" }
+node_modules_next_dist_7a8122d0._.js:2288:28
+🐛 DEBUG: Rendering dialog  
+Object { type: "word", index: 0, zIndex: 1000, data: {…} }
+node_modules_next_dist_7a8122d0._.js:2288:28
+🐛 DEBUG: BaseAnalysisDialog render 
+Object { open: true, type: "word", hasChildren: true, timestamp: "2025-11-27T04:23:09.162Z" }
+node_modules_next_dist_7a8122d0._.js:2288:28
+🐛 DEBUG: BaseAnalysisDialog render  
+Object { open: true, type: "word", hasChildren: true, timestamp: "2025-11-27T04:23:09.163Z" }
+node_modules_next_dist_7a8122d0._.js:2288:28

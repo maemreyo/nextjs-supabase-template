@@ -109,8 +109,21 @@ export const useDialogStore = create<DialogStore>()(
       
       // Actions
       openDialog: (type: AnalysisType, data: AnalysisItem) => {
+        console.log('🐛 DEBUG: Store openDialog called', {
+          type,
+          hasData: !!data,
+          timestamp: new Date().toISOString()
+        });
+        
         set((state) => {
           const currentDialogState = getDialogState(state.dialogStates, type);
+          
+          console.log('🐛 DEBUG: Store openDialog setting state', {
+            type,
+            wasOpen: state.openDialogs[type],
+            isOpening: true,
+            timestamp: new Date().toISOString()
+          });
           
           return {
             ...state,
@@ -130,8 +143,20 @@ export const useDialogStore = create<DialogStore>()(
       },
       
       closeDialog: (type: AnalysisType) => {
+        console.log('🐛 DEBUG: Store closeDialog called', {
+          type,
+          timestamp: new Date().toISOString()
+        });
+        
         set((state) => {
           const currentDialogState = getDialogState(state.dialogStates, type);
+          
+          console.log('🐛 DEBUG: Store closeDialog setting state', {
+            type,
+            wasOpen: state.openDialogs[type],
+            isClosing: true,
+            timestamp: new Date().toISOString()
+          });
           
           return {
             ...state,
@@ -169,11 +194,25 @@ export const useDialogStore = create<DialogStore>()(
       },
       
       setDialogLoading: (type: AnalysisType, loading: boolean | Partial<DialogState>) => {
+        console.log('🐛 DEBUG: Store setDialogLoading called', {
+          type,
+          loading,
+          isBoolean: typeof loading === 'boolean',
+          timestamp: new Date().toISOString()
+        });
+        
         set((state) => {
           const currentDialogState = getDialogState(state.dialogStates, type);
           
           if (typeof loading === 'boolean') {
             // Backward compatibility
+            console.log('🐛 DEBUG: Store setDialogLoading (boolean)', {
+              type,
+              fromLoading: currentDialogState.loading,
+              toLoading: loading,
+              timestamp: new Date().toISOString()
+            });
+            
             return {
               ...state,
               dialogStates: {
@@ -187,6 +226,12 @@ export const useDialogStore = create<DialogStore>()(
             };
           } else {
             // New partial state update
+            console.log('🐛 DEBUG: Store setDialogLoading (partial)', {
+              type,
+              partialState: loading,
+              timestamp: new Date().toISOString()
+            });
+            
             return {
               ...state,
               dialogStates: {

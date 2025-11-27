@@ -453,6 +453,13 @@ export const BaseAnalysisDialog = ({
                 variant="ghost"
                 size="icon"
                 onClick={() => {
+                  console.log('🐛 DEBUG: Export button clicked', {
+                    hasHandler: !!onExport,
+                    hasAnalysis: !!analysis,
+                    analysisType: analysis?.word ? 'word' : analysis?.sentence ? 'sentence' : analysis?.phrase ? 'phrase' : analysis?.paragraph ? 'paragraph' : 'unknown',
+                    timestamp: new Date().toISOString()
+                  });
+                  
                   if (onExport && analysis) {
                     onExport(analysis, 'json' as ExportFormat); // Default format to JSON
                   } else {
@@ -469,6 +476,12 @@ export const BaseAnalysisDialog = ({
                 variant="ghost"
                 size="icon"
                 onClick={() => {
+                  console.log('🐛 DEBUG: Share button clicked', {
+                    hasHandler: !!onShare,
+                    hasAnalysis: !!analysis,
+                    timestamp: new Date().toISOString()
+                  });
+                  
                   if (onShare && analysis) {
                     onShare(analysis);
                   } else {
@@ -485,9 +498,16 @@ export const BaseAnalysisDialog = ({
                 variant="ghost"
                 size="icon"
                 onClick={() => {
+                  console.log('🐛 DEBUG: Print button clicked', {
+                    hasHandler: !!onPrint,
+                    hasAnalysis: !!analysis,
+                    timestamp: new Date().toISOString()
+                  });
+                  
                   if (onPrint && analysis) {
                     onPrint(analysis);
                   } else {
+                    console.log('Print action triggered - using fallback');
                     window.print(); // Fallback to default print
                   }
                 }}
@@ -501,6 +521,12 @@ export const BaseAnalysisDialog = ({
                 variant="ghost"
                 size="icon"
                 onClick={async () => {
+                  console.log('🐛 DEBUG: Copy button clicked', {
+                    hasHandler: !!onCopy,
+                    hasAnalysis: !!analysis,
+                    timestamp: new Date().toISOString()
+                  });
+                  
                   if (onCopy && analysis) {
                     // Extract text content based on analysis type
                     let textToCopy = '';
@@ -517,7 +543,9 @@ export const BaseAnalysisDialog = ({
                     }
                     
                     try {
+                      console.log('🐛 DEBUG: Copying text to clipboard', { textLength: textToCopy.length });
                       await navigator.clipboard.writeText(textToCopy);
+                      console.log('🐛 DEBUG: Calling onCopy callback');
                       onCopy(textToCopy);
                     } catch (error) {
                       console.error('Failed to copy text:', error);
