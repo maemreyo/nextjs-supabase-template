@@ -30,7 +30,7 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
   onDelete,
   onPractice,
   className,
-  size = 'ultra' as 'default' | 'large' | 'xlarge' | 'xxlarge' | 'ultra' | 'mega' | 'ultra-wide' | 'fullscreen',
+  size = 'large',
   showCloseButton = true,
   resizable = true,
   fullscreen = false,
@@ -245,7 +245,7 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
       resizable={resizable}
       fullscreen={fullscreen}
       type="phrase"
-      title="Phrase Analysis"
+      title="Phrase"
       subtitle={analysis ? `Analyzing: ${analysis.phrase}` : "Loading..."}
       icon={
         <div className="flex items-center justify-center w-full h-full">

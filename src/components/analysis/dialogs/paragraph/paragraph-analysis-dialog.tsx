@@ -32,7 +32,7 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
   onAnalyzeStructure,
   onAnalyzeKeywords,
   className,
-  size = 'mega',
+  size = 'large',
   showCloseButton = true,
   resizable = true,
   fullscreen = false,
@@ -265,7 +265,7 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
       resizable={resizable}
       fullscreen={fullscreen}
       type="paragraph"
-      title="Paragraph Analysis"
+      title="Paragraph"
       subtitle={analysis ? `${analysis.paragraph.substring(0, 50)}${analysis.paragraph.length > 50 ? '...' : ''}` : "Loading..."}
       icon={
         <div className="flex items-center justify-center w-full h-full">

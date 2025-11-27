@@ -32,7 +32,7 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
   onAnalyzeGrammar,
   onBreakdown,
   className,
-  size = 'ultra',
+  size = 'large',
   showCloseButton = true,
   resizable = true,
   fullscreen = false,
@@ -255,7 +255,7 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
       resizable={resizable}
       fullscreen={fullscreen}
       type="sentence"
-      title="Sentence Analysis"
+      title="Sentence"
       subtitle={analysis ? `${analysis.sentence.substring(0, 50)}${analysis.sentence.length > 50 ? '...' : ''}` : "Loading..."}
       icon={
         <div className="flex items-center justify-center w-full h-full">
