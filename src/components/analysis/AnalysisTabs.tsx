@@ -14,64 +14,28 @@ import usePhraseAnalyses from '@/hooks/usePhraseAnalyses';
 import useSentenceAnalyses from '@/hooks/useSentenceAnalyses';
 import useParagraphAnalyses from '@/hooks/useParagraphAnalyses';
 
-// Height estimates for different analysis types (increased to prevent overlap)
+// Fixed heights for consistent layout (all items same height)
 const ANALYSIS_HEIGHTS = {
-  word: 150,
-  phrase: 170,
-  sentence: 190,
-  paragraph: 230,
+  word: 170,  // Fixed height for all word items
+  phrase: 170,  // Fixed height for all phrase items
+  sentence: 170,  // Fixed height for all sentence items
+  paragraph: 170,  // Fixed height for all paragraph items
 };
 
 // Maximum height limits to prevent overly tall cards
 const MAX_ANALYSIS_HEIGHTS = {
   word: 300,
-  phrase: 350,
-  sentence: 400,
-  paragraph: 500,
+  phrase: 300,
+  sentence: 300,
+  paragraph: 300,
 };
 
 // Single column layout for all analysis types
 const GRID_COLUMNS = 1;
 
-// Helper function to calculate dynamic height based on content length
-const calculateItemHeight = (analysis: AnalysisItem, type: AnalysisType): number => {
-  const baseHeight = ANALYSIS_HEIGHTS[type];
-  const maxHeight = MAX_ANALYSIS_HEIGHTS[type];
-  
-  // Get content length based on analysis type using type guards
-  let contentLength = 0;
-  if (isWordAnalysis(analysis)) {
-    contentLength = Math.max(
-      analysis.word?.length || 0,
-      analysis.translation?.length || 0,
-      analysis.definition?.length || 0,
-      analysis.contextMeaning?.length || 0
-    );
-  } else if (isPhraseAnalysis(analysis)) {
-    contentLength = Math.max(
-      analysis.phrase?.length || 0,
-      analysis.naturalTranslation?.length || 0,
-      analysis.contextualMeaning?.length || 0,
-      analysis.literalMeaning?.length || 0
-    );
-  } else if (isSentenceAnalysis(analysis)) {
-    contentLength = Math.max(
-      analysis.sentence?.length || 0,
-      analysis.naturalTranslation?.length || 0,
-      analysis.mainIdea?.length || 0
-    );
-  } else if (isParagraphAnalysis(analysis)) {
-    contentLength = Math.max(
-      analysis.paragraph?.length || 0,
-      analysis.mainTopic?.length || 0
-    );
-  }
-  
-  // Calculate additional height based on content length
-  // Rough estimate: every 100 characters adds about 20px of height
-  const additionalHeight = Math.floor(contentLength / 100) * 20;
-  
-  return Math.min(baseHeight + additionalHeight, maxHeight);
+// Fixed height function - returns consistent height for all analysis types
+const getFixedHeight = (type: AnalysisType): number => {
+  return ANALYSIS_HEIGHTS[type];
 };
 
 interface AnalysisTabContentProps {
@@ -150,8 +114,11 @@ const AnalysisTabContent = memo(function AnalysisTabContent({
     getScrollElement: () => parentRef.current,
     estimateSize: (index) => {
       const analysis = data?.flatAnalyses?.[index];
-      if (!analysis) return ANALYSIS_HEIGHTS[type] || 160;
-      return calculateItemHeight(analysis, type);
+      if (!analysis) {
+        return ANALYSIS_HEIGHTS[type] || 160;
+      }
+      const fixedSize = getFixedHeight(type);
+      return fixedSize;
     },
     overscan: 5,
     onChange: (instance) => {

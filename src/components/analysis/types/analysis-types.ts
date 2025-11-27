@@ -223,6 +223,7 @@ export const DEFAULT_LAYOUTS: Record<AnalysisType, LayoutConfig> = {
     titleSize: 'text-base font-semibold',
     textSize: 'text-sm',
     truncateLength: 150,
+    // Removed maxHeight to allow natural height based on content
   },
   phrase: {
     gridCols: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3',
@@ -230,6 +231,7 @@ export const DEFAULT_LAYOUTS: Record<AnalysisType, LayoutConfig> = {
     titleSize: 'text-lg font-semibold',
     textSize: 'text-sm',
     truncateLength: 200,
+    // Removed maxHeight to allow natural height based on content
   },
   sentence: {
     gridCols: 'grid-cols-1 md:grid-cols-1 lg:grid-cols-2',
@@ -237,13 +239,14 @@ export const DEFAULT_LAYOUTS: Record<AnalysisType, LayoutConfig> = {
     titleSize: 'text-lg font-semibold',
     textSize: 'text-base',
     truncateLength: 300,
+    // Removed maxHeight to allow natural height based on content
   },
   paragraph: {
     gridCols: 'grid-cols-1',
     cardPadding: 'p-5',
     titleSize: 'text-xl font-semibold',
     textSize: 'text-base',
-    maxHeight: 'max-h-64',
+    // Removed maxHeight to allow natural height based on content
     truncateLength: 500,
   },
 };
@@ -256,6 +259,7 @@ export const COMPACT_LAYOUTS: Record<AnalysisType, LayoutConfig> = {
     titleSize: 'text-sm font-medium',
     textSize: 'text-xs',
     truncateLength: 80,
+    // Removed maxHeight to allow natural height based on content
   },
   phrase: {
     gridCols: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4',
@@ -263,6 +267,7 @@ export const COMPACT_LAYOUTS: Record<AnalysisType, LayoutConfig> = {
     titleSize: 'text-sm font-medium',
     textSize: 'text-xs',
     truncateLength: 120,
+    // Removed maxHeight to allow natural height based on content
   },
   sentence: {
     gridCols: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
@@ -270,13 +275,14 @@ export const COMPACT_LAYOUTS: Record<AnalysisType, LayoutConfig> = {
     titleSize: 'text-sm font-medium',
     textSize: 'text-sm',
     truncateLength: 200,
+    // Removed maxHeight to allow natural height based on content
   },
   paragraph: {
     gridCols: 'grid-cols-1 md:grid-cols-1 lg:grid-cols-2',
     cardPadding: 'p-3',
     titleSize: 'text-base font-medium',
     textSize: 'text-sm',
-    maxHeight: 'max-h-32',
+    // Removed maxHeight to allow natural height based on content
     truncateLength: 300,
   },
 };
