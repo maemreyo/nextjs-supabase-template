@@ -8,6 +8,8 @@ import { ParagraphDialogContent } from './paragraph-dialog-content';
 import { ParagraphDialogActions } from './paragraph-dialog-actions';
 import { useDialogState } from '../hooks/use-dialog-state';
 import { useDialogKeyboard } from '../hooks/use-dialog-keyboard';
+import { Button } from '@/components/ui/button';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { cn } from '@/lib/utils';
 
 /**
@@ -181,13 +183,14 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
       <div className="flex items-center gap-2">
         <span>Phân tích đoạn văn: {analysis.paragraph.substring(0, 30)}{analysis.paragraph.length > 30 ? '...' : ''}</span>
         {onPronounce && (
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => handlePronounce(analysis.paragraph)}
-            className="p-1 hover:bg-accent rounded-md transition-colors"
             aria-label={`Phát âm ${analysis.paragraph}`}
           >
             <Volume2 className="h-4 w-4" />
-          </button>
+          </Button>
         )}
       </div>
     );
@@ -297,13 +300,15 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
               <span className="text-white text-xs">!</span>
             </div>
             <p className="text-sm text-destructive">{state.dialogState.error}</p>
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => actions.setError(null)}
               className="ml-auto text-destructive hover:text-destructive/80"
               aria-label="Đóng thông báo lỗi"
             >
               ×
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -314,13 +319,15 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
           <div className="flex items-center gap-2">
             <Volume2 className="h-4 w-4 text-yellow-600" />
             <p className="text-sm text-yellow-800">{pronunciationError}</p>
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setPronunciationError(null)}
               className="ml-auto text-yellow-600 hover:text-yellow-800"
               aria-label="Đóng thông báo lỗi phát âm"
             >
               ×
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -392,7 +399,7 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
       {state.dialogState.loading && (
         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="flex flex-col items-center gap-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary border-t-transparent"></div>
+            <LoadingSpinner size="lg" />
             <p className="text-sm text-muted-foreground">Đang xử lý...</p>
           </div>
         </div>

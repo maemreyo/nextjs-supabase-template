@@ -8,6 +8,8 @@ import {
   DialogPortal,
   DialogOverlay
 } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import {
   BaseDialogProps,
   DialogSize,
@@ -243,23 +245,52 @@ export const BaseAnalysisDialog = ({
     };
   }, [open]);
   
-  // Handle click outside to close
+  // ⚠️ LƯU Ý: Radix UI Dialog đã có sẵn click outside detection
+  // Custom logic này có thể gây conflict với built-in behavior
+  // Nếu muốn giữ custom logic, uncomment code bên dưới
+  
+  /*
+  // Handle click outside to close (CUSTOM - có thể conflict với Radix UI)
   useEffect(() => {
     if (!open) return;
     
     const handleClickOutside = (event: MouseEvent) => {
       const dialog = dialogRef.current;
-      if (!dialog || dialog.contains(event.target as Node)) {
+      const target = event.target as Node;
+      
+      console.log('🐛 DEBUG: Click detected', {
+        target: target,
+        targetElement: target?.toString?.(),
+        dialogExists: !!dialog,
+        isInsideDialog: dialog?.contains(target),
+        eventType: event.type,
+        timestamp: new Date().toISOString()
+      });
+      
+      // ✅ SỬA: Chỉ đóng dialog khi click BÊN NGOÀI!
+      if (!dialog || !dialog.contains(target)) {
+        console.log('🐛 DEBUG: Dialog closing due to OUTSIDE click', {
+          reason: !dialog ? 'Dialog not found' : 'Click outside dialog',
+          shouldClose: true,
+          target: target?.toString?.()
+        });
         onOpenChange(false);
+      } else {
+        console.log('🐛 DEBUG: Click inside dialog - dialog should stay open', {
+          target: target?.toString?.()
+        });
       }
     };
     
+    console.log('🐛 DEBUG: Setting up click outside listener for dialog');
     document.addEventListener('mousedown', handleClickOutside);
     
     return () => {
+      console.log('🐛 DEBUG: Cleaning up click outside listener');
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [open, onOpenChange]);
+  */
   
   // Combine all classes
   const dialogClasses = useMemo(() => {
@@ -318,11 +349,38 @@ export const BaseAnalysisDialog = ({
     }
   };
 
+  // Debug: Log dialog render
+  console.log('🐛 DEBUG: BaseAnalysisDialog render', {
+    open,
+    type,
+    hasChildren: !!children,
+    timestamp: new Date().toISOString()
+  });
+
   // Render dialog content using Dialog component from UI library
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(newOpen) => {
+        console.log('🐛 DEBUG: Dialog onOpenChange triggered', {
+          fromOpen: open,
+          toOpen: newOpen,
+          trigger: 'UI Dialog component',
+          timestamp: new Date().toISOString()
+        });
+        onOpenChange(newOpen);
+      }}
+    >
       <DialogPortal>
-        <DialogOverlay className={animationClasses} />
+        <DialogOverlay
+          className={animationClasses}
+          onMouseDown={(e) => {
+            console.log('🐛 DEBUG: DialogOverlay clicked', {
+              target: e.target,
+              timestamp: new Date().toISOString()
+            });
+          }}
+        />
         <DialogContent
           ref={dialogRef}
           size={getDialogSize()}
@@ -335,6 +393,13 @@ export const BaseAnalysisDialog = ({
           )}
           style={{
             zIndex: 1000,
+          }}
+          onMouseDown={(e) => {
+            console.log('🐛 DEBUG: DialogContent clicked', {
+              target: e.target,
+              isInsideContent: true,
+              timestamp: new Date().toISOString()
+            });
           }}
         >
           {/* Custom Dialog Header with Action Buttons */}
@@ -353,9 +418,10 @@ export const BaseAnalysisDialog = ({
             {/* Action Buttons */}
             <div className="flex items-center gap-2">
               {/* Fullscreen Toggle */}
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => setIsFullscreen(!isFullscreen)}
-                className="p-2 hover:bg-accent rounded-md transition-colors"
                 aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
               >
                 {isFullscreen ? (
@@ -363,52 +429,56 @@ export const BaseAnalysisDialog = ({
                 ) : (
                   <Maximize2 className="h-5 w-5" />
                 )}
-              </button>
+              </Button>
               
               {/* Export Button */}
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => {
                   // Export functionality would be implemented by specific dialogs
                   console.log('Export action triggered');
                 }}
-                className="p-2 hover:bg-accent rounded-md transition-colors"
                 aria-label="Export"
               >
                 <Download className="h-5 w-5" />
-              </button>
+              </Button>
               
               {/* Share Button */}
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => {
                   // Share functionality would be implemented by specific dialogs
                   console.log('Share action triggered');
                 }}
-                className="p-2 hover:bg-accent rounded-md transition-colors"
                 aria-label="Share"
               >
                 <Share2 className="h-5 w-5" />
-              </button>
+              </Button>
               
               {/* Print Button */}
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => window.print()}
-                className="p-2 hover:bg-accent rounded-md transition-colors"
                 aria-label="Print"
               >
                 <Printer className="h-5 w-5" />
-              </button>
+              </Button>
               
               {/* Copy Button */}
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => {
                   // Copy functionality would be implemented by specific dialogs
                   console.log('Copy action triggered');
                 }}
-                className="p-2 hover:bg-accent rounded-md transition-colors"
                 aria-label="Copy"
               >
                 <Copy className="h-5 w-5" />
-              </button>
+              </Button>
             </div>
           </div>
           
@@ -556,21 +626,14 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
       className
     )}>
       {actions.map((action, index) => (
-        <button
+        <Button
           key={index}
+          variant={action.variant || 'default'}
           onClick={action.onClick}
           disabled={action.disabled || action.loading}
-          className={cn(
-            'px-3 py-2 rounded-md text-sm font-medium transition-colors',
-            action.variant === 'destructive' && 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
-            action.variant === 'outline' && 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
-            action.variant === 'ghost' && 'hover:bg-accent hover:text-accent-foreground',
-            'bg-primary text-primary-foreground hover:bg-primary/90',
-            (action.disabled || action.loading) && 'opacity-50 cursor-not-allowed'
-          )}
         >
           {action.loading && (
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary border-t-transparent mr-2"></div>
+            <LoadingSpinner size="sm" className="mr-2" />
           )}
           
           {action.icon && !action.loading && (
@@ -580,7 +643,7 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
           {!action.loading && action.label}
           
           {action.loading && 'Loading...'}
-        </button>
+        </Button>
       ))}
     </div>
   );
@@ -628,12 +691,11 @@ export class DialogErrorBoundary extends React.Component<
             <p className="text-muted-foreground mb-4">
               {this.state.error?.message || 'An unexpected error occurred'}
             </p>
-            <button
+            <Button
               onClick={() => this.setState({ hasError: false })}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
             >
               Try Again
-            </button>
+            </Button>
           </div>
         </div>
       );

@@ -21,23 +21,49 @@ export const DialogRootRenderer: React.FC = () => {
   // Lấy dialogData từ store để truyền vào DynamicDialog
   const dialogData = store.dialogData;
 
+  console.log('🐛 DEBUG: DialogRootRenderer render', {
+    openDialogs,
+    dialogDataKeys: Object.keys(dialogData),
+    totalOpenDialogs: openDialogs.length,
+    timestamp: new Date().toISOString()
+  });
+
   // Nếu không có dialog nào mở, không render gì
   if (openDialogs.length === 0) {
+    console.log('🐛 DEBUG: No dialogs open, returning null');
     return null;
   }
 
   // Render dialogs với createPortal để đảm bảo chúng render ở top level
   // DialogPortal sẽ được sử dụng bên trong từng dialog component
   return createPortal(
-    <div className="dialog-root-container fixed inset-0 pointer-events-none z-50">
-      {openDialogs.map((type, index) => (
-        <DynamicAnalysisDialog
-          key={type}
-          type={type}
-          data={dialogData[type]}
-          zIndex={1000 + (index * 10)} // Tăng z-index cho mỗi dialog
-        />
-      ))}
+    <div
+      className="dialog-root-container fixed inset-0 pointer-events-none z-50"
+      onMouseDown={(e) => {
+        console.log('🐛 DEBUG: DialogRoot container clicked', {
+          target: e.target,
+          isRootContainer: e.target === e.currentTarget,
+          timestamp: new Date().toISOString()
+        });
+      }}
+    >
+      {openDialogs.map((type, index) => {
+        console.log('🐛 DEBUG: Rendering dialog', {
+          type,
+          index,
+          zIndex: 1000 + (index * 10),
+          data: dialogData[type]
+        });
+        
+        return (
+          <DynamicAnalysisDialog
+            key={type}
+            type={type}
+            data={dialogData[type]}
+            zIndex={1000 + (index * 10)} // Tăng z-index cho mỗi dialog
+          />
+        );
+      })}
     </div>,
     document.body
   );
