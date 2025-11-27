@@ -186,7 +186,15 @@ export const BaseAnalysisDialog = ({
   
   // Convert dialogSize to Dialog component size prop
   const getDialogSize = (): "default" | "large" | "xlarge" | "xxlarge" | "xxxlarge" | "ultra" | "mega" | "ultra-wide" | "fullscreen" => {
-    switch (dialogSize) {
+    const size = isFullscreen ? 'fullscreen' : dialogSize;
+    console.log('🐛 DEBUG: getDialogSize called', {
+      dialogSize,
+      isFullscreen,
+      finalSize: size,
+      timestamp: new Date().toISOString()
+    });
+    
+    switch (size) {
       case 'default': return 'default';
       case 'large': return 'large';
       case 'xlarge': return 'xlarge';

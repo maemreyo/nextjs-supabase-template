@@ -15,15 +15,39 @@ export const useAnalysisDialogFullscreenToggle = (propFullscreen: boolean): {
   
   // Sync local state with prop when prop changes
   useEffect(() => {
+    console.log('🐛 DEBUG: useEffect sync triggered', {
+      localState: isFullscreen,
+      propState: propFullscreen,
+      needsSync: isFullscreen !== propFullscreen,
+      timestamp: new Date().toISOString()
+    });
     if (isFullscreen !== propFullscreen) {
+      console.log('🐛 DEBUG: Syncing prop to local state', {
+        from: isFullscreen,
+        to: propFullscreen,
+        timestamp: new Date().toISOString()
+      });
       setIsFullscreen(propFullscreen);
     }
-  }, [isFullscreen, propFullscreen]);
+  }, [propFullscreen]); // Only depend on propFullscreen, not isFullscreen
   
   // Toggle function using useCallback for performance
   const toggleFullscreen = useCallback(() => {
-    setIsFullscreen(prev => !prev);
-  }, []);
+    console.log('🐛 DEBUG: toggleFullscreen called', {
+      currentState: isFullscreen,
+      newState: !isFullscreen,
+      timestamp: new Date().toISOString()
+    });
+    setIsFullscreen(prev => {
+      const newState = !prev;
+      console.log('🐛 DEBUG: setIsFullscreen called', {
+        previousState: prev,
+        newState: newState,
+        timestamp: new Date().toISOString()
+      });
+      return newState;
+    });
+  }, []); // Remove isFullscreen from dependencies to prevent closure issues
   
   return {
     isFullscreen,

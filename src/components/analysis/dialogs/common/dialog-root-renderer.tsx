@@ -40,11 +40,19 @@ export const DialogRootRenderer: React.FC = () => {
     <div
       className="dialog-root-container fixed inset-0 pointer-events-none z-50"
       onMouseDown={(e) => {
-        console.log('🐛 DEBUG: DialogRoot container clicked', {
-          target: e.target,
-          isRootContainer: e.target === e.currentTarget,
-          timestamp: new Date().toISOString()
-        });
+        // Only handle clicks on the actual container, not on child elements
+        if (e.target === e.currentTarget) {
+          console.log('🐛 DEBUG: DialogRoot container clicked', {
+            target: e.target,
+            isRootContainer: e.target === e.currentTarget,
+            targetElement: (e.target as HTMLElement).tagName,
+            targetClass: (e.target as HTMLElement).className,
+            timestamp: new Date().toISOString(),
+            eventPhase: e.eventPhase,
+            bubbles: e.bubbles,
+            cancelable: e.cancelable
+          });
+        }
       }}
     >
       {openDialogs.map((type, index) => {

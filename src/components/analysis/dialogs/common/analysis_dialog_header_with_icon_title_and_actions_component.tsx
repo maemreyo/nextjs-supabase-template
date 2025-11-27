@@ -48,7 +48,20 @@ export const AnalysisDialogHeaderWithIconTitleAndActionsComponent: React.FC<Anal
         <Button
           variant="ghost"
           size="icon"
-          onClick={onFullscreenToggle}
+          onClick={(e) => {
+            console.log('🐛 DEBUG: Fullscreen button clicked', {
+              hasHandler: !!onFullscreenToggle,
+              timestamp: new Date().toISOString(),
+              eventPhase: e.eventPhase,
+              bubbles: e.bubbles,
+              cancelable: e.cancelable,
+              currentTarget: e.currentTarget.tagName,
+              target: (e.target as HTMLElement).tagName
+            });
+            e.stopPropagation();
+            e.preventDefault();
+            onFullscreenToggle();
+          }}
           aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
         >
           {isFullscreen ? (
@@ -62,13 +75,17 @@ export const AnalysisDialogHeaderWithIconTitleAndActionsComponent: React.FC<Anal
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => {
+          onClick={(e) => {
             console.log('🐛 DEBUG: Export button clicked', {
               hasHandler: !!onExport,
               hasAnalysis: !!analysis,
               analysisType: analysis?.word ? 'word' : analysis?.sentence ? 'sentence' : analysis?.phrase ? 'phrase' : analysis?.paragraph ? 'paragraph' : 'unknown',
-              timestamp: new Date().toISOString()
+              timestamp: new Date().toISOString(),
+              eventPhase: e.eventPhase,
+              bubbles: e.bubbles,
+              cancelable: e.cancelable
             });
+            e.stopPropagation();
             
             if (onExport && analysis) {
               onExport(analysis, 'json' as ExportFormat); // Default format to JSON
@@ -85,12 +102,16 @@ export const AnalysisDialogHeaderWithIconTitleAndActionsComponent: React.FC<Anal
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => {
+          onClick={(e) => {
             console.log('🐛 DEBUG: Share button clicked', {
               hasHandler: !!onShare,
               hasAnalysis: !!analysis,
-              timestamp: new Date().toISOString()
+              timestamp: new Date().toISOString(),
+              eventPhase: e.eventPhase,
+              bubbles: e.bubbles,
+              cancelable: e.cancelable
             });
+            e.stopPropagation();
             
             if (onShare && analysis) {
               onShare(analysis);
@@ -107,12 +128,16 @@ export const AnalysisDialogHeaderWithIconTitleAndActionsComponent: React.FC<Anal
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => {
+          onClick={(e) => {
             console.log('🐛 DEBUG: Print button clicked', {
               hasHandler: !!onPrint,
               hasAnalysis: !!analysis,
-              timestamp: new Date().toISOString()
+              timestamp: new Date().toISOString(),
+              eventPhase: e.eventPhase,
+              bubbles: e.bubbles,
+              cancelable: e.cancelable
             });
+            e.stopPropagation();
             
             if (onPrint && analysis) {
               onPrint(analysis);
@@ -130,12 +155,16 @@ export const AnalysisDialogHeaderWithIconTitleAndActionsComponent: React.FC<Anal
         <Button
           variant="ghost"
           size="icon"
-          onClick={async () => {
+          onClick={async (e) => {
             console.log('🐛 DEBUG: Copy button clicked', {
               hasHandler: !!onCopy,
               hasAnalysis: !!analysis,
-              timestamp: new Date().toISOString()
+              timestamp: new Date().toISOString(),
+              eventPhase: e.eventPhase,
+              bubbles: e.bubbles,
+              cancelable: e.cancelable
             });
+            e.stopPropagation();
             
             if (onCopy && analysis) {
               // Extract text content based on analysis type
