@@ -265,6 +265,13 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
       resizable={resizable}
       fullscreen={fullscreen}
       type="paragraph"
+      title="Paragraph Analysis"
+      subtitle={analysis ? `${analysis.paragraph.substring(0, 50)}${analysis.paragraph.length > 50 ? '...' : ''}` : "Loading..."}
+      icon={
+        <div className="flex items-center justify-center w-full h-full">
+          <FileText className="h-5 w-5 text-primary" />
+        </div>
+      }
       className={cn(
         'paragraph-analysis-dialog',
         isAnimating && 'animate-pulse',

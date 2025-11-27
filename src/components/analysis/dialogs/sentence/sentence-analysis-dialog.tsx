@@ -255,6 +255,13 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
       resizable={resizable}
       fullscreen={fullscreen}
       type="sentence"
+      title="Sentence Analysis"
+      subtitle={analysis ? `${analysis.sentence.substring(0, 50)}${analysis.sentence.length > 50 ? '...' : ''}` : "Loading..."}
+      icon={
+        <div className="flex items-center justify-center w-full h-full">
+          <FileText className="h-5 w-5 text-primary" />
+        </div>
+      }
       className={cn(
         'sentence-analysis-dialog',
         isAnimating && 'animate-pulse',

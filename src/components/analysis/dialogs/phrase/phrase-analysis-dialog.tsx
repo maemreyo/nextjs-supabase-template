@@ -245,6 +245,13 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
       resizable={resizable}
       fullscreen={fullscreen}
       type="phrase"
+      title="Phrase Analysis"
+      subtitle={analysis ? `Analyzing: ${analysis.phrase}` : "Loading..."}
+      icon={
+        <div className="flex items-center justify-center w-full h-full">
+          <Languages className="h-5 w-5 text-primary" />
+        </div>
+      }
       className={cn(
         'phrase-analysis-dialog',
         isAnimating && 'animate-pulse',

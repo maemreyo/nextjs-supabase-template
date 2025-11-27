@@ -133,6 +133,7 @@ export const SentenceDialogActions: React.FC<SentenceDialogActionsProps> = ({
         onClick: handleAddToVocabulary,
         disabled: loading['addToVocabulary'] || disabled,
         loading: loading['addToVocabulary'] || false,
+        hidden: true,
       },
       {
         label: 'Luyện tập',
@@ -140,6 +141,7 @@ export const SentenceDialogActions: React.FC<SentenceDialogActionsProps> = ({
         onClick: handlePractice,
         disabled: loading['practice'] || disabled,
         loading: loading['practice'] || false,
+        hidden: true,
       },
     ],
     secondary: [
@@ -266,22 +268,27 @@ export const SentenceDialogActions: React.FC<SentenceDialogActionsProps> = ({
   ], [loading, disabled, handleExportAction]);
 
   if (compact) {
+    // Filter out hidden actions for compact mode
+    const visiblePrimaryActions = actionConfig.primary.filter(action => !action.hidden);
+    
     return (
       <div className={cn('flex items-center gap-2', className)}>
-        <Button
-          variant="default"
-          size="sm"
-          onClick={handleAddToVocabulary}
-          disabled={loading['addToVocabulary'] || disabled}
-          className="flex-1"
-        >
-          {loading['addToVocabulary'] ? (
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary border-t-transparent mr-2"></div>
-          ) : (
-            <Plus className="h-4 w-4 mr-2" />
-          )}
-          Thêm vào từ vựng
-        </Button>
+        {visiblePrimaryActions.length > 0 && (
+          <Button
+            variant="default"
+            size="sm"
+            onClick={visiblePrimaryActions[0]!.onClick}
+            disabled={visiblePrimaryActions[0]!.disabled}
+            className="flex-1"
+          >
+            {visiblePrimaryActions[0]!.loading ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary border-t-transparent mr-2"></div>
+            ) : (
+              visiblePrimaryActions[0]!.icon
+            )}
+            {visiblePrimaryActions[0]!.label}
+          </Button>
+        )}
         
         <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
           <DropdownMenuTrigger asChild>
@@ -351,7 +358,7 @@ export const SentenceDialogActions: React.FC<SentenceDialogActionsProps> = ({
     <div className={cn('flex flex-col gap-4', className)}>
       {/* Primary Actions */}
       <div className="flex flex-wrap gap-2">
-        {actionConfig.primary.map((action, index) => (
+        {actionConfig.primary.filter(action => !action.hidden).map((action, index) => (
           <Button
             key={index}
             variant="default"

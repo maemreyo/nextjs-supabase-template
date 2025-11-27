@@ -48,6 +48,9 @@ export const BaseAnalysisDialog = ({
   resizable = true,
   fullscreen = false,
   type = 'word',
+  title,
+  subtitle,
+  icon,
   loadingConfig = {
     showGlobalLoading: true,
     showActionLoading: true,
@@ -406,12 +409,13 @@ export const BaseAnalysisDialog = ({
           <div className="flex items-center justify-between p-4 border-b">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-primary/10 rounded-md flex items-center justify-center">
-                {/* Icon would be based on analysis type */}
-                <div className="text-primary font-bold">A</div>
+                {icon || <div className="text-primary font-bold">A</div>}
               </div>
               <div>
-                <h2 className="text-lg font-semibold">Analysis</h2>
-                <p className="text-sm text-muted-foreground">Loading content...</p>
+                <h2 className="text-lg font-semibold">{title || "Analysis"}</h2>
+                {subtitle && (
+                  <p className="text-sm text-muted-foreground">{subtitle}</p>
+                )}
               </div>
             </div>
             

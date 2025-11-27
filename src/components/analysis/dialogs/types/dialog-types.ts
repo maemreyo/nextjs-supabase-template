@@ -69,6 +69,9 @@ export interface BaseDialogProps {
   resizable?: boolean;
   fullscreen?: boolean;
   type?: AnalysisType;
+  title?: string;
+  subtitle?: string;
+  icon?: React.ReactNode;
 }
 
 // Enhanced BaseDialogProps interface for loading configuration
@@ -133,6 +136,7 @@ export interface DialogAction {
   onClick: () => void;
   disabled?: boolean;
   loading?: boolean;
+  hidden?: boolean;
 }
 
 // Dialog actions props

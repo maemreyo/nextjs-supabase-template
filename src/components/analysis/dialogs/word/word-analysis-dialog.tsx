@@ -247,6 +247,13 @@ export const WordAnalysisDialog: React.FC<WordAnalysisDialogProps> = ({
       resizable={resizable}
       fullscreen={fullscreen}
       type="word"
+      title="Word Analysis"
+      subtitle={analysis ? `Analyzing: ${analysis.word}` : "Loading..."}
+      icon={
+        <div className="flex items-center justify-center w-full h-full">
+          <BookOpen className="h-5 w-5 text-primary" />
+        </div>
+      }
       className={cn(
         'word-analysis-dialog',
         isAnimating && 'animate-pulse',
