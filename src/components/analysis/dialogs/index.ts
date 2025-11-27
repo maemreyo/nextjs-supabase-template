@@ -9,7 +9,18 @@ export {
   DialogActions,
   DialogErrorBoundary,
   DialogLoadingSkeleton,
-  DialogContainer
+  DialogContainer,
+  // Re-export Dialog components from UI library
+  Dialog,
+  DialogContent,
+  DialogHeader as UIDialogHeader,
+  DialogFooter as UIDialogFooter,
+  DialogPortal,
+  DialogOverlay,
+  DialogClose,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger
 } from './common/base-analysis-dialog';
 
 // Dialog renderer components

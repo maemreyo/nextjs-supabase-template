@@ -1,12 +1,20 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { X, Maximize2, Minimize2, Download, Share2, Printer, Copy, Volume2 } from 'lucide-react';
-import { 
-  BaseDialogProps, 
-  DialogSize, 
-  AnalysisType, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader as UIDialogHeader,
+  DialogFooter as UIDialogFooter,
+  DialogPortal,
+  DialogOverlay
+} from '@/components/ui/dialog';
+import {
+  BaseDialogProps,
+  DialogSize,
+  AnalysisType,
   AnalysisItem,
   DialogError,
-  DialogErrorType 
+  DialogErrorType
 } from '../types/dialog-types';
 import { useDialogState } from '../hooks/use-dialog-state';
 import { useDialogKeyboard } from '../hooks/use-dialog-keyboard';
@@ -41,8 +49,7 @@ export const BaseAnalysisDialog = ({
   loadingConfig = {
     showGlobalLoading: true,
     showActionLoading: true,
-    customMessages: {},
-    ...loadingConfig
+    customMessages: {}
   }
 }: EnhancedBaseDialogProps) => {
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -291,7 +298,7 @@ export const BaseAnalysisDialog = ({
       <div className={dialogClasses}>
         <DialogLoadingIndicator
           type="global"
-          message={loadingConfig?.customMessages?.global || message}
+          message={loadingConfig?.customMessages?.global || message || undefined}
           overlay={true}
           size="lg"
         />
@@ -299,159 +306,161 @@ export const BaseAnalysisDialog = ({
     );
   }
   
-  // Render dialog content
+  // Convert dialogSize to Dialog component size prop
+  const getDialogSize = (): "default" | "large" | "xlarge" | "xxlarge" | "fullscreen" => {
+    switch (dialogSize) {
+      case 'default': return 'default';
+      case 'large': return 'large';
+      case 'xlarge': return 'xlarge';
+      case 'xxlarge': return 'xxlarge';
+      case 'fullscreen': return 'fullscreen';
+      default: return 'large';
+    }
+  };
+
+  // Render dialog content using Dialog component from UI library
   return (
-    <div className={dialogClasses}>
-      <div
-        ref={dialogRef}
-        className={cn(
-          'relative bg-background rounded-lg shadow-lg border',
-          {
-            'w-full': isFullscreen,
-            'max-w-screen': !isFullscreen,
-          }
-        )}
-        style={{
-          width: isFullscreen ? '100vw' : undefined,
-          height: isFullscreen ? '100vh' : undefined,
-          left: !isFullscreen && position.x !== 0 ? position.x : undefined,
-          top: !isFullscreen && position.y !== 0 ? position.y : undefined,
-        }}
-      >
-        {/* Dialog Header */}
-        <div className="flex items-center justify-between p-4 border-b">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary/10 rounded-md flex items-center justify-center">
-              {/* Icon would be based on analysis type */}
-              <div className="text-primary font-bold">A</div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogPortal>
+        <DialogOverlay className={animationClasses} />
+        <DialogContent
+          ref={dialogRef}
+          size={getDialogSize()}
+          showCloseButton={showCloseButton}
+          className={cn(
+            animationClasses,
+            {
+              'pointer-events-auto': true,
+            }
+          )}
+          style={{
+            zIndex: 1000,
+          }}
+        >
+          {/* Custom Dialog Header with Action Buttons */}
+          <div className="flex items-center justify-between p-4 border-b">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-primary/10 rounded-md flex items-center justify-center">
+                {/* Icon would be based on analysis type */}
+                <div className="text-primary font-bold">A</div>
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold">Analysis</h2>
+                <p className="text-sm text-muted-foreground">Loading content...</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-lg font-semibold">Analysis</h2>
-              <p className="text-sm text-muted-foreground">Loading content...</p>
+            
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2">
+              {/* Fullscreen Toggle */}
+              <button
+                onClick={() => setIsFullscreen(!isFullscreen)}
+                className="p-2 hover:bg-accent rounded-md transition-colors"
+                aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+              >
+                {isFullscreen ? (
+                  <Minimize2 className="h-5 w-5" />
+                ) : (
+                  <Maximize2 className="h-5 w-5" />
+                )}
+              </button>
+              
+              {/* Export Button */}
+              <button
+                onClick={() => {
+                  // Export functionality would be implemented by specific dialogs
+                  console.log('Export action triggered');
+                }}
+                className="p-2 hover:bg-accent rounded-md transition-colors"
+                aria-label="Export"
+              >
+                <Download className="h-5 w-5" />
+              </button>
+              
+              {/* Share Button */}
+              <button
+                onClick={() => {
+                  // Share functionality would be implemented by specific dialogs
+                  console.log('Share action triggered');
+                }}
+                className="p-2 hover:bg-accent rounded-md transition-colors"
+                aria-label="Share"
+              >
+                <Share2 className="h-5 w-5" />
+              </button>
+              
+              {/* Print Button */}
+              <button
+                onClick={() => window.print()}
+                className="p-2 hover:bg-accent rounded-md transition-colors"
+                aria-label="Print"
+              >
+                <Printer className="h-5 w-5" />
+              </button>
+              
+              {/* Copy Button */}
+              <button
+                onClick={() => {
+                  // Copy functionality would be implemented by specific dialogs
+                  console.log('Copy action triggered');
+                }}
+                className="p-2 hover:bg-accent rounded-md transition-colors"
+                aria-label="Copy"
+              >
+                <Copy className="h-5 w-5" />
+              </button>
             </div>
           </div>
           
-          {/* Close Button */}
-          {showCloseButton && (
-            <button
-              onClick={() => onOpenChange(false)}
-              className="p-2 hover:bg-accent rounded-md transition-colors"
-              aria-label="Close dialog"
-            >
-              <X className="h-5 w-5" />
-            </button>
+          {/* Error State */}
+          {error && !shouldShowGlobalLoading && (
+            <div className="p-4 border-b">
+              <DialogErrorHandler
+                error={error}
+                onRetry={handleRetry}
+                onDismiss={handleDismissError}
+              />
+            </div>
           )}
           
-          {/* Action Buttons */}
-          <div className="flex items-center gap-2">
-            {/* Fullscreen Toggle */}
-            <button
-              onClick={() => setIsFullscreen(!isFullscreen)}
-              className="p-2 hover:bg-accent rounded-md transition-colors"
-              aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+          {/* Action Loading Indicators */}
+          {shouldShowActionLoading && (
+            <div className="flex gap-2 p-2 border-b">
+              {Object.entries(loadingStates.actions || {}).map(([action, loading]) => (
+                loading && (
+                  <DialogLoadingIndicator
+                    key={action}
+                    type="action"
+                    message={loadingConfig?.customMessages?.[action]}
+                    size="sm"
+                  />
+                )
+              ))}
+            </div>
+          )}
+          
+          {/* Resize Handle */}
+          {resizable && !isFullscreen && (
+            <div
+              className="absolute right-2 top-2 w-4 h-4 bg-accent cursor-ew-resize hover:bg-accent/80 rounded-sm flex items-center justify-center"
+              onMouseDown={handleResizeStart}
             >
-              {isFullscreen ? (
-                <Minimize2 className="h-5 w-5" />
-              ) : (
-                <Maximize2 className="h-5 w-5" />
-              )}
-            </button>
-            
-            {/* Export Button */}
-            <button
-              onClick={() => {
-                // Export functionality would be implemented by specific dialogs
-                console.log('Export action triggered');
-              }}
-              className="p-2 hover:bg-accent rounded-md transition-colors"
-              aria-label="Export"
-            >
-              <Download className="h-5 w-5" />
-            </button>
-            
-            {/* Share Button */}
-            <button
-              onClick={() => {
-                // Share functionality would be implemented by specific dialogs
-                console.log('Share action triggered');
-              }}
-              className="p-2 hover:bg-accent rounded-md transition-colors"
-              aria-label="Share"
-            >
-              <Share2 className="h-5 w-5" />
-            </button>
-            
-            {/* Print Button */}
-            <button
-              onClick={() => window.print()}
-              className="p-2 hover:bg-accent rounded-md transition-colors"
-              aria-label="Print"
-            >
-              <Printer className="h-5 w-5" />
-            </button>
-            
-            {/* Copy Button */}
-            <button
-              onClick={() => {
-                // Copy functionality would be implemented by specific dialogs
-                console.log('Copy action triggered');
-              }}
-              className="p-2 hover:bg-accent rounded-md transition-colors"
-              aria-label="Copy"
-            >
-              <Copy className="h-5 w-5" />
-            </button>
+              <div className="w-1 h-4 bg-border"></div>
+            </div>
+          )}
+          
+          {/* Dialog Content */}
+          <div className="p-6 overflow-y-auto max-h-[calc(100vh-8rem)]">
+            {children}
           </div>
-        </div>
-        
-        {/* Error State */}
-        {error && !shouldShowGlobalLoading && (
-          <div className="p-4 border-b">
-            <DialogErrorHandler
-              error={error}
-              onRetry={handleRetry}
-              onDismiss={handleDismissError}
-            />
-          </div>
-        )}
-        
-        {/* Action Loading Indicators */}
-        {shouldShowActionLoading && (
-          <div className="flex gap-2 p-2 border-b">
-            {Object.entries(loadingStates.actions || {}).map(([action, loading]) => (
-              loading && (
-                <DialogLoadingIndicator
-                  key={action}
-                  type="action"
-                  message={loadingConfig?.customMessages?.[action]}
-                  size="sm"
-                />
-              )
-            ))}
-          </div>
-        )}
-        
-        {/* Resize Handle */}
-        {resizable && !isFullscreen && (
-          <div
-            className="absolute right-2 top-2 w-4 h-4 bg-accent cursor-ew-resize hover:bg-accent/80 rounded-sm flex items-center justify-center"
-            onMouseDown={handleResizeStart}
-          >
-            <div className="w-1 h-4 bg-border"></div>
-          </div>
-        )}
-        
-        {/* Dialog Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(100vh-8rem)]">
-          {children}
-        </div>
-      </div>
-    </div>
+        </DialogContent>
+      </DialogPortal>
+    </Dialog>
   );
 };
 
 /**
- * Dialog Header Component
+ * Dialog Header Component - Re-export from UI library with enhanced functionality
  */
 interface DialogHeaderProps {
   title: string;
@@ -469,7 +478,7 @@ export const DialogHeader: React.FC<DialogHeaderProps> = ({
   className,
 }) => {
   return (
-    <div className={cn('flex items-center justify-between p-4 border-b', className)}>
+    <UIDialogHeader className={cn('flex items-center justify-between', className)}>
       <div className="flex items-center gap-3">
         {icon && (
           <div className="w-10 h-10 bg-primary/10 rounded-md flex items-center justify-center">
@@ -489,12 +498,12 @@ export const DialogHeader: React.FC<DialogHeaderProps> = ({
           {actions}
         </div>
       )}
-    </div>
+    </UIDialogHeader>
   );
 };
 
 /**
- * Dialog Footer Component
+ * Dialog Footer Component - Re-export from UI library with enhanced functionality
  */
 interface DialogFooterProps {
   children: React.ReactNode;
@@ -508,16 +517,14 @@ export const DialogFooter: React.FC<DialogFooterProps> = ({
   position = 'right',
 }) => {
   return (
-    <div className={cn('flex items-center justify-between p-4 border-t', className)}>
-      <div className={cn(
-        'flex-1',
-        position === 'left' && 'justify-start',
-        position === 'center' && 'justify-center',
-        position === 'right' && 'justify-end'
-      )}>
-        {children}
-      </div>
-    </div>
+    <UIDialogFooter className={cn(
+      position === 'left' && 'justify-start',
+      position === 'center' && 'justify-center',
+      position === 'right' && 'justify-end',
+      className
+    )}>
+      {children}
+    </UIDialogFooter>
   );
 };
 
@@ -637,46 +644,70 @@ export class DialogErrorBoundary extends React.Component<
 }
 
 /**
- * Dialog Loading Skeleton Component
+ * Dialog Loading Skeleton Component - Using Dialog from UI library
  */
 export const DialogLoadingSkeleton: React.FC = () => {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/95 backdrop-blur-sm">
-      <div className="bg-background rounded-lg shadow-lg border max-w-2xl w-full max-h-[85vh]">
-        <div className="flex items-center justify-center min-h-[200px]">
-          <div className="animate-pulse space-y-4 w-full">
-            <div className="h-4 bg-muted rounded-md w-3/4"></div>
-            <div className="h-4 bg-muted rounded-md w-1/2"></div>
-            <div className="h-4 bg-muted rounded-md w-full"></div>
-            <div className="h-4 bg-muted rounded-md w-2/3"></div>
+    <Dialog open={true}>
+      <DialogPortal>
+        <DialogOverlay className="bg-background/95 backdrop-blur-sm" />
+        <DialogContent size="large" showCloseButton={false}>
+          <div className="flex items-center justify-center min-h-[200px]">
+            <div className="animate-pulse space-y-4 w-full">
+              <div className="h-4 bg-muted rounded-md w-3/4"></div>
+              <div className="h-4 bg-muted rounded-md w-1/2"></div>
+              <div className="h-4 bg-muted rounded-md w-full"></div>
+              <div className="h-4 bg-muted rounded-md w-2/3"></div>
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
+        </DialogContent>
+      </DialogPortal>
+    </Dialog>
   );
 };
 
 /**
- * Dialog Container Component for wrapping dialogs
+ * Dialog Container Component for wrapping dialogs - Using Dialog from UI library
  */
 interface DialogContainerProps {
   children: React.ReactNode;
   className?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export const DialogContainer: React.FC<DialogContainerProps> = ({
   children,
   className,
+  open = true,
+  onOpenChange,
 }) => {
   return (
-    <div className={cn('fixed inset-0 z-50 flex items-center justify-center p-4', className)}>
-      <div className="bg-background/95 backdrop-blur-sm rounded-lg">
-        {children}
-      </div>
-    </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogPortal>
+        <DialogOverlay className={cn('bg-background/95 backdrop-blur-sm', className)} />
+        <DialogContent className="rounded-lg">
+          {children}
+        </DialogContent>
+      </DialogPortal>
+    </Dialog>
   );
 };
 
 // Export new components
 export { DialogLoadingIndicator } from './dialog-loading-indicator';
 export { DialogErrorHandler } from './dialog-error-handler';
+
+// Re-export Dialog components from UI library for convenience
+export {
+  Dialog,
+  DialogContent,
+  DialogHeader as UIDialogHeader,
+  DialogFooter as UIDialogFooter,
+  DialogPortal,
+  DialogOverlay,
+  DialogClose,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger
+} from '@/components/ui/dialog';

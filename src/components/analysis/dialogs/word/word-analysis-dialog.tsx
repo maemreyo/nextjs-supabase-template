@@ -226,6 +226,8 @@ export const WordAnalysisDialog: React.FC<WordAnalysisDialogProps> = ({
       
       return () => clearTimeout(timer);
     }
+    
+    return undefined;
   }, [open, analysis]);
 
   if (!analysis) {

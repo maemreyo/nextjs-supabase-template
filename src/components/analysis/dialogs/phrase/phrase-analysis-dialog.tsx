@@ -226,6 +226,8 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
       
       return () => clearTimeout(timer);
     }
+    
+    return undefined;
   }, [open, analysis]);
 
   if (!analysis) {

@@ -26,7 +26,8 @@ export const DialogRootRenderer: React.FC = () => {
     return null;
   }
 
-  // Render dialogs với Portal để đảm bảo chúng render ở top level
+  // Render dialogs với createPortal để đảm bảo chúng render ở top level
+  // DialogPortal sẽ được sử dụng bên trong từng dialog component
   return createPortal(
     <div className="dialog-root-container fixed inset-0 pointer-events-none z-50">
       {openDialogs.map((type, index) => (
