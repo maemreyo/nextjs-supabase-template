@@ -9,6 +9,7 @@ import { SentenceDialogActions } from './sentence-dialog-actions';
 import { SentencePronunciationAudioPlayer } from './sentence-pronunciation-audio-player';
 import { useDialogState } from '../hooks/use-dialog-state';
 import { useDialogKeyboard } from '../hooks/use-dialog-keyboard';
+import { useDialogLoading } from '../hooks/use-dialog-loading';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { cn } from '@/lib/utils';
@@ -39,6 +40,7 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
 }) => {
   // Dialog state management
   const { state, actions } = useDialogState('sentence');
+  const { setActionLoading, loadingStates } = useDialogLoading('sentence');
   const [activeTab, setActiveTab] = useState('translation');
   const [isAnimating, setIsAnimating] = useState(false);
   const [pronunciationError, setPronunciationError] = useState<string | null>(null);
@@ -58,41 +60,205 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
   // Handle export with loading state
   const handleExport = useCallback(async (analysis: SentenceAnalysis, format: ExportFormat) => {
     try {
-      actions.setLoading(true);
-      await onExport?.(analysis, format);
+      setActionLoading('export', true);
+      
+      // If onExport prop is provided, use it
+      if (onExport) {
+        await onExport(analysis, format);
+      } else {
+        // Default export implementation
+        await exportSentenceAnalysis(analysis, format);
+      }
     } catch (error) {
       console.error('Export error:', error);
       actions.setError('Không thể xuất dữ liệu. Vui lòng thử lại.');
     } finally {
-      actions.setLoading(false);
+      setActionLoading('export', false);
     }
-  }, [onExport, actions]);
+  }, [onExport, actions, setActionLoading]);
+
+  // Default export implementation
+  const exportSentenceAnalysis = useCallback(async (analysis: SentenceAnalysis, format: ExportFormat) => {
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+    const filename = `sentence-analysis-${analysis.sentence.replace(/[^a-zA-Z0-9]/g, '-')}-${timestamp}`;
+    
+    switch (format) {
+      case 'txt':
+        const textContent = formatSentenceAsText(analysis);
+        downloadFile(textContent, `${filename}.txt`, 'text/plain');
+        break;
+      case 'json':
+        const jsonContent = JSON.stringify(analysis, null, 2);
+        downloadFile(jsonContent, `${filename}.json`, 'application/json');
+        break;
+      case 'pdf':
+        // For PDF, we'll use a simple text fallback for now
+        // In a real implementation, you would use a library like jsPDF
+        const pdfContent = formatSentenceAsText(analysis);
+        downloadFile(pdfContent, `${filename}.pdf`, 'application/pdf');
+        break;
+      default:
+        throw new Error(`Unsupported export format: ${format}`);
+    }
+  }, []);
+
+  // Format sentence analysis as text
+  const formatSentenceAsText = useCallback((analysis: SentenceAnalysis): string => {
+    let content = `SENTENCE ANALYSIS REPORT\n`;
+    content += `===========================\n\n`;
+    content += `Sentence: ${analysis.sentence}\n`;
+    content += `Generated: ${new Date().toLocaleString()}\n\n`;
+    
+    if (analysis.naturalTranslation) {
+      content += `NATURAL TRANSLATION:\n${analysis.naturalTranslation}\n\n`;
+    }
+    
+    if (analysis.literalTranslation) {
+      content += `LITERAL TRANSLATION:\n${analysis.literalTranslation}\n\n`;
+    }
+    
+    if (analysis.mainIdea) {
+      content += `MAIN IDEA:\n${analysis.mainIdea}\n\n`;
+    }
+    
+    if (analysis.subject) {
+      content += `SUBJECT:\n${analysis.subject}\n\n`;
+    }
+    
+    if (analysis.mainVerb) {
+      content += `MAIN VERB:\n${analysis.mainVerb}\n\n`;
+    }
+    
+    if (analysis.object) {
+      content += `OBJECT:\n${analysis.object}\n\n`;
+    }
+    
+    if (analysis.function) {
+      content += `FUNCTION:\n${analysis.function}\n\n`;
+    }
+    
+    if (analysis.sentenceType) {
+      content += `SENTENCE TYPE:\n${analysis.sentenceType}\n\n`;
+    }
+    
+    if (analysis.complexityLevel) {
+      content += `COMPLEXITY LEVEL:\n${analysis.complexityLevel}\n\n`;
+    }
+    
+    if (analysis.sentiment) {
+      content += `SENTIMENT:\n${analysis.sentiment}\n\n`;
+    }
+    
+    content += `\n--- End of Report ---`;
+    return content;
+  }, []);
+
+  // Download file helper
+  const downloadFile = useCallback((content: string, filename: string, mimeType: string) => {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, []);
 
   // Handle share with loading state
   const handleShare = useCallback(async (analysis: SentenceAnalysis) => {
     try {
-      actions.setLoading(true);
-      await onShare?.(analysis);
+      setActionLoading('share', true);
+      
+      // If onShare prop is provided, use it
+      if (onShare) {
+        await onShare(analysis);
+      } else {
+        // Default share implementation
+        await shareSentenceAnalysis(analysis);
+      }
     } catch (error) {
       console.error('Share error:', error);
       actions.setError('Không thể chia sẻ. Vui lòng thử lại.');
     } finally {
-      actions.setLoading(false);
+      setActionLoading('share', false);
     }
-  }, [onShare, actions]);
+  }, [onShare, actions, setActionLoading]);
+
+  // Default share implementation
+  const shareSentenceAnalysis = useCallback(async (analysis: SentenceAnalysis) => {
+    const shareText = `Sentence: "${analysis.sentence}"\nTranslation: ${analysis.naturalTranslation || 'N/A'}\nMain Idea: ${analysis.mainIdea || 'N/A'}`;
+    const shareUrl = window.location.href;
+    
+    if (navigator.share) {
+      // Use Web Share API if available
+      try {
+        await navigator.share({
+          title: `Sentence Analysis: ${analysis.sentence.substring(0, 30)}...`,
+          text: shareText,
+          url: shareUrl
+        });
+      } catch (error) {
+        // If user cancels or Web Share API fails, fallback to clipboard
+        await navigator.clipboard.writeText(`${shareText}\n\nRead more: ${shareUrl}`);
+        console.log('Đã sao chép link chia sẻ vào clipboard');
+      }
+    } else {
+      // Fallback to clipboard
+      await navigator.clipboard.writeText(`${shareText}\n\nRead more: ${shareUrl}`);
+      console.log('Đã sao chép link chia sẻ vào clipboard');
+    }
+  }, []);
 
   // Handle print with loading state
   const handlePrint = useCallback(async (analysis: SentenceAnalysis) => {
     try {
-      actions.setLoading(true);
-      await onPrint?.(analysis);
+      setActionLoading('print', true);
+      
+      // If onPrint prop is provided, use it
+      if (onPrint) {
+        await onPrint(analysis);
+      } else {
+        // Default print implementation
+        printSentenceAnalysis(analysis);
+      }
     } catch (error) {
       console.error('Print error:', error);
       actions.setError('Không thể in. Vui lòng thử lại.');
     } finally {
-      actions.setLoading(false);
+      setActionLoading('print', false);
     }
-  }, [onPrint, actions]);
+  }, [onPrint, actions, setActionLoading]);
+
+  // Default print implementation
+  const printSentenceAnalysis = useCallback((analysis: SentenceAnalysis) => {
+    const printContent = formatSentenceAsText(analysis);
+    const printWindow = window.open('', '_blank');
+    
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Sentence Analysis: ${analysis.sentence.substring(0, 30)}...</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+              h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; }
+              h2 { color: #555; margin-top: 20px; }
+              pre { white-space: pre-wrap; background-color: #f5f5f5; padding: 10px; border-radius: 5px; }
+            </style>
+          </head>
+          <body>
+            <pre>${printContent}</pre>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    } else {
+      throw new Error('Không thể mở cửa sổ in. Vui lòng kiểm tra cài đặt trình duyệt.');
+    }
+  }, [formatSentenceAsText]);
 
   // Handle add to vocabulary with loading state
   const handleAddToVocabulary = useCallback(async (analysis: SentenceAnalysis) => {
@@ -145,13 +311,21 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
   }, [onBreakdown]);
 
   // Handle copy
-  const handleCopy = useCallback((text: string) => {
+  const handleCopy = useCallback(async (text: string) => {
     try {
-      navigator.clipboard.writeText(text);
+      setActionLoading('copy', true);
+      await navigator.clipboard.writeText(text);
+      // Show success message
+      actions.setError(null); // Clear any existing errors
+      // You could add a toast notification here if you have one
+      console.log('Đã sao chép thành công:', text);
     } catch (error) {
       console.error('Copy error:', error);
+      actions.setError('Không thể sao chép. Vui lòng thử lại.');
+    } finally {
+      setActionLoading('copy', false);
     }
-  }, []);
+  }, [setActionLoading, actions]);
 
   // Handle tab change with animation
   const handleTabChange = useCallback((tab: string) => {
@@ -201,20 +375,21 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
   }, [analysis]);
 
   // Loading states for different actions
-  const loadingStates = useMemo(() => ({
-    addToVocabulary: state.dialogState.loading && activeTab === 'vocabulary',
-    share: state.dialogState.loading && activeTab === 'share',
-    print: state.dialogState.loading && activeTab === 'print',
-    edit: state.dialogState.loading && activeTab === 'edit',
+  const actionLoadingStates = useMemo(() => ({
+    addToVocabulary: loadingStates.actions.addToVocabulary,
+    share: loadingStates.actions.share,
+    print: loadingStates.actions.print,
+    edit: loadingStates.actions.edit,
     delete: state.dialogState.loading && activeTab === 'delete',
     practice: state.dialogState.loading && activeTab === 'practice',
     analyzeGrammar: state.dialogState.loading && activeTab === 'analyzeGrammar',
-    'export-pdf': state.dialogState.loading && activeTab === 'export-pdf',
-    'export-json': state.dialogState.loading && activeTab === 'export-json',
-    'export-csv': state.dialogState.loading && activeTab === 'export-csv',
-    'export-txt': state.dialogState.loading && activeTab === 'export-txt',
-    'export-html': state.dialogState.loading && activeTab === 'export-html',
-  }), [state.dialogState.loading, activeTab]);
+    'export-pdf': loadingStates.actions.export,
+    'export-json': loadingStates.actions.export,
+    'export-csv': loadingStates.actions.export,
+    'export-txt': loadingStates.actions.export,
+    'export-html': loadingStates.actions.export,
+    copy: loadingStates.actions.copy,
+  }), [loadingStates, state.dialogState.loading, activeTab]);
 
   // Clear error when dialog opens
   useEffect(() => {
@@ -370,7 +545,7 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
           onPractice={handlePractice}
           onAnalyzeGrammar={handleAnalyzeGrammar}
           onCopy={handleCopy}
-          loading={loadingStates}
+          loading={actionLoadingStates}
           disabled={state.dialogState.loading}
           compact={false}
           className="mt-4"

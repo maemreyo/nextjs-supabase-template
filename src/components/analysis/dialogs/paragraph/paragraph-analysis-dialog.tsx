@@ -8,6 +8,7 @@ import { ParagraphDialogContent } from './paragraph-dialog-content';
 import { ParagraphDialogActions } from './paragraph-dialog-actions';
 import { useDialogState } from '../hooks/use-dialog-state';
 import { useDialogKeyboard } from '../hooks/use-dialog-keyboard';
+import { useDialogLoading } from '../hooks/use-dialog-loading';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { cn } from '@/lib/utils';
@@ -39,6 +40,7 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
 }) => {
   // Dialog state management
   const { state, actions } = useDialogState('paragraph');
+  const { setActionLoading, loadingStates } = useDialogLoading('paragraph');
   const [activeTab, setActiveTab] = useState('topic');
   const [isAnimating, setIsAnimating] = useState(false);
   const [pronunciationError, setPronunciationError] = useState<string | null>(null);
@@ -58,41 +60,212 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
   // Handle export with loading state
   const handleExport = useCallback(async (analysisData: ParagraphAnalysis, format: ExportFormat) => {
     try {
-      actions.setLoading(true);
-      await onExport?.(analysisData, format);
+      setActionLoading('export', true);
+      
+      // If onExport prop is provided, use it
+      if (onExport) {
+        await onExport(analysisData, format);
+      } else {
+        // Default export implementation
+        await exportParagraphAnalysis(analysisData, format);
+      }
     } catch (error) {
       console.error('Export error:', error);
       actions.setError('Không thể xuất dữ liệu. Vui lòng thử lại.');
     } finally {
-      actions.setLoading(false);
+      setActionLoading('export', false);
     }
-  }, [onExport, actions]);
+  }, [onExport, actions, setActionLoading]);
+
+  // Default export implementation
+  const exportParagraphAnalysis = useCallback(async (analysis: ParagraphAnalysis, format: ExportFormat) => {
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+    const filename = `paragraph-analysis-${analysis.paragraph.replace(/[^a-zA-Z0-9]/g, '-')}-${timestamp}`;
+    
+    switch (format) {
+      case 'txt':
+        const textContent = formatParagraphAsText(analysis);
+        downloadFile(textContent, `${filename}.txt`, 'text/plain');
+        break;
+      case 'json':
+        const jsonContent = JSON.stringify(analysis, null, 2);
+        downloadFile(jsonContent, `${filename}.json`, 'application/json');
+        break;
+      case 'pdf':
+        // For PDF, we'll use a simple text fallback for now
+        // In a real implementation, you would use a library like jsPDF
+        const pdfContent = formatParagraphAsText(analysis);
+        downloadFile(pdfContent, `${filename}.pdf`, 'application/pdf');
+        break;
+      default:
+        throw new Error(`Unsupported export format: ${format}`);
+    }
+  }, []);
+
+  // Format paragraph analysis as text
+  const formatParagraphAsText = useCallback((analysis: ParagraphAnalysis): string => {
+    let content = `PARAGRAPH ANALYSIS REPORT\n`;
+    content += `============================\n\n`;
+    content += `Paragraph: ${analysis.paragraph}\n`;
+    content += `Generated: ${new Date().toLocaleString()}\n\n`;
+    
+    if (analysis.mainTopic) {
+      content += `MAIN TOPIC:\n${analysis.mainTopic}\n\n`;
+    }
+    
+    if (analysis.tone) {
+      content += `TONE:\n${analysis.tone}\n\n`;
+    }
+    
+    if (analysis.targetAudience) {
+      content += `TARGET AUDIENCE:\n${analysis.targetAudience}\n\n`;
+    }
+    
+    if (analysis.type) {
+      content += `TYPE:\n${analysis.type}\n\n`;
+    }
+    
+    if (analysis.vocabularyLevel) {
+      content += `VOCABULARY LEVEL:\n${analysis.vocabularyLevel}\n\n`;
+    }
+    
+    if (analysis.sentimentLabel) {
+      content += `SENTIMENT:\n${analysis.sentimentLabel}\n`;
+      if (analysis.sentimentIntensity) {
+        content += `Intensity: ${analysis.sentimentIntensity}\n`;
+      }
+      if (analysis.sentimentJustification) {
+        content += `Justification: ${analysis.sentimentJustification}\n`;
+      }
+      content += '\n';
+    }
+    
+    if (analysis.keywords && analysis.keywords.length > 0) {
+      content += `KEYWORDS:\n`;
+      analysis.keywords.forEach((keyword, index) => {
+        content += `${index + 1}. ${keyword}\n`;
+      });
+      content += '\n';
+    }
+    
+    if (analysis.betterVersion) {
+      content += `BETTER VERSION:\n${analysis.betterVersion}\n\n`;
+    }
+    
+    if (analysis.gapAnalysis) {
+      content += `GAP ANALYSIS:\n${analysis.gapAnalysis}\n\n`;
+    }
+    
+    content += `\n--- End of Report ---`;
+    return content;
+  }, []);
+
+  // Download file helper
+  const downloadFile = useCallback((content: string, filename: string, mimeType: string) => {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, []);
 
   // Handle share with loading state
   const handleShare = useCallback(async (analysisData: ParagraphAnalysis) => {
     try {
-      actions.setLoading(true);
-      await onShare?.(analysisData);
+      setActionLoading('share', true);
+      
+      // If onShare prop is provided, use it
+      if (onShare) {
+        await onShare(analysisData);
+      } else {
+        // Default share implementation
+        await shareParagraphAnalysis(analysisData);
+      }
     } catch (error) {
       console.error('Share error:', error);
       actions.setError('Không thể chia sẻ. Vui lòng thử lại.');
     } finally {
-      actions.setLoading(false);
+      setActionLoading('share', false);
     }
-  }, [onShare, actions]);
+  }, [onShare, actions, setActionLoading]);
+
+  // Default share implementation
+  const shareParagraphAnalysis = useCallback(async (analysis: ParagraphAnalysis) => {
+    const shareText = `Paragraph: "${analysis.paragraph.substring(0, 100)}..."\nMain Topic: ${analysis.mainTopic || 'N/A'}\nSentiment: ${analysis.sentimentLabel || 'N/A'}`;
+    const shareUrl = window.location.href;
+    
+    if (navigator.share) {
+      // Use Web Share API if available
+      try {
+        await navigator.share({
+          title: `Paragraph Analysis: ${analysis.mainTopic || 'Analysis'}`,
+          text: shareText,
+          url: shareUrl
+        });
+      } catch (error) {
+        // If user cancels or Web Share API fails, fallback to clipboard
+        await navigator.clipboard.writeText(`${shareText}\n\nRead more: ${shareUrl}`);
+        console.log('Đã sao chép link chia sẻ vào clipboard');
+      }
+    } else {
+      // Fallback to clipboard
+      await navigator.clipboard.writeText(`${shareText}\n\nRead more: ${shareUrl}`);
+      console.log('Đã sao chép link chia sẻ vào clipboard');
+    }
+  }, []);
 
   // Handle print with loading state
   const handlePrint = useCallback(async (analysisData: ParagraphAnalysis) => {
     try {
-      actions.setLoading(true);
-      await onPrint?.(analysisData);
+      setActionLoading('print', true);
+      
+      // If onPrint prop is provided, use it
+      if (onPrint) {
+        await onPrint(analysisData);
+      } else {
+        // Default print implementation
+        printParagraphAnalysis(analysisData);
+      }
     } catch (error) {
       console.error('Print error:', error);
       actions.setError('Không thể in. Vui lòng thử lại.');
     } finally {
-      actions.setLoading(false);
+      setActionLoading('print', false);
     }
-  }, [onPrint, actions]);
+  }, [onPrint, actions, setActionLoading]);
+
+  // Default print implementation
+  const printParagraphAnalysis = useCallback((analysis: ParagraphAnalysis) => {
+    const printContent = formatParagraphAsText(analysis);
+    const printWindow = window.open('', '_blank');
+    
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Paragraph Analysis: ${analysis.mainTopic || 'Analysis'}</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+              h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; }
+              h2 { color: #555; margin-top: 20px; }
+              pre { white-space: pre-wrap; background-color: #f5f5f5; padding: 10px; border-radius: 5px; }
+            </style>
+          </head>
+          <body>
+            <pre>${printContent}</pre>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    } else {
+      throw new Error('Không thể mở cửa sổ in. Vui lòng kiểm tra cài đặt trình duyệt.');
+    }
+  }, [formatParagraphAsText]);
 
   // Handle add to vocabulary with loading state
   const handleAddToVocabulary = useCallback(async (analysisData: ParagraphAnalysis) => {
@@ -150,13 +323,17 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
   }, [onAnalyzeKeywords]);
 
   // Handle copy
-  const handleCopy = useCallback((text: string) => {
+  const handleCopy = useCallback(async (text: string) => {
     try {
-      navigator.clipboard.writeText(text);
+      setActionLoading('copy', true);
+      await navigator.clipboard.writeText(text);
     } catch (error) {
       console.error('Copy error:', error);
+      actions.setError('Không thể sao chép. Vui lòng thử lại.');
+    } finally {
+      setActionLoading('copy', false);
     }
-  }, []);
+  }, [setActionLoading, actions]);
 
   // Handle tab change with animation
   const handleTabChange = useCallback((tab: string) => {
@@ -209,22 +386,23 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
   }, [analysis]);
 
   // Loading states for different actions
-  const loadingStates = useMemo(() => ({
-    addToVocabulary: state.dialogState.loading && activeTab === 'vocabulary',
-    share: state.dialogState.loading && activeTab === 'share',
-    print: state.dialogState.loading && activeTab === 'print',
-    edit: state.dialogState.loading && activeTab === 'edit',
+  const actionLoadingStates = useMemo(() => ({
+    addToVocabulary: loadingStates.actions.addToVocabulary,
+    share: loadingStates.actions.share,
+    print: loadingStates.actions.print,
+    edit: loadingStates.actions.edit,
     delete: state.dialogState.loading && activeTab === 'delete',
     practice: state.dialogState.loading && activeTab === 'practice',
     summarize: state.dialogState.loading && activeTab === 'summarize',
     analyzeStructure: state.dialogState.loading && activeTab === 'analyzeStructure',
     analyzeKeywords: state.dialogState.loading && activeTab === 'analyzeKeywords',
-    'export-pdf': state.dialogState.loading && activeTab === 'export-pdf',
-    'export-json': state.dialogState.loading && activeTab === 'export-json',
-    'export-csv': state.dialogState.loading && activeTab === 'export-csv',
-    'export-txt': state.dialogState.loading && activeTab === 'export-txt',
-    'export-html': state.dialogState.loading && activeTab === 'export-html',
-  }), [state.dialogState.loading, activeTab]);
+    'export-pdf': loadingStates.actions.export,
+    'export-json': loadingStates.actions.export,
+    'export-csv': loadingStates.actions.export,
+    'export-txt': loadingStates.actions.export,
+    'export-html': loadingStates.actions.export,
+    copy: loadingStates.actions.copy,
+  }), [loadingStates, state.dialogState.loading, activeTab]);
 
   // Clear error when dialog opens
   useEffect(() => {
@@ -383,7 +561,7 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
           onAnalyzeStructure={handleAnalyzeStructure}
           onAnalyzeKeywords={handleAnalyzeKeywords}
           onCopy={handleCopy}
-          loading={loadingStates}
+          loading={actionLoadingStates}
           disabled={state.dialogState.loading}
           compact={false}
           className="mt-4"
