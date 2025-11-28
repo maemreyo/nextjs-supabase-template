@@ -147,7 +147,7 @@ export const useAuthStore = create<AuthStore>()(
       clearError: () => set({ error: null }, false, 'clearError'),
       setInitialized: (isInitialized) => set({ isInitialized }, false, 'setInitialized'),
       
-      signIn: async (email, _password) => {
+      signIn: async (email, _password) => { // eslint-disable-line @typescript-eslint/no-unused-vars
         set({ isLoading: true, error: null })
         try {
           console.log('Sign in:', { email })
@@ -207,7 +207,7 @@ export const useAuthStore = create<AuthStore>()(
         }
       },
       
-      updatePassword: async (_newPassword) => {
+      updatePassword: async (_newPassword) => { // eslint-disable-line @typescript-eslint/no-unused-vars
         set({ isLoading: true, error: null })
         try {
           console.log('Update password')
