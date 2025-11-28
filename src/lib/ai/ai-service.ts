@@ -8,6 +8,7 @@ import {
   AIError,
   UsageTrackingConfig,
   CacheConfig,
+
   RateLimitConfig,
   WordAnalysis,
   SentenceAnalysis,
@@ -33,7 +34,7 @@ import {
   createFallbackParagraphAnalysis,
   createFallbackPhraseAnalysis
 } from './prompt-utils'
-
+import { clientLogger } from '@/services/logger'
 export class AIService {
   private config: AIServiceConfig
   private cache: Map<string, any> = new Map()
@@ -44,12 +45,6 @@ export class AIService {
     const defaultProvider = process.env.AI_DEFAULT_PROVIDER || config.defaultProvider || 'gemini'
     const defaultModel = process.env.AI_DEFAULT_MODEL || config.defaultModel || 'gemini-2.5-flash-lite'
     
-    console.log('AI Service Initializing with:', {
-      defaultProvider,
-      defaultModel,
-      envProvider: process.env.AI_DEFAULT_PROVIDER,
-      envModel: process.env.AI_DEFAULT_MODEL
-    })
     
     this.config = {
       defaultProvider,
@@ -89,6 +84,8 @@ export class AIService {
   async generateText(params: GenerateTextParams): Promise<GenerateTextResponse> {
     const startTime = Date.now()
     let lastError: AIError | null = null
+    
+    clientLogger.start('AI text generation', { model: params.model, operation: params.metadata?.operation || 'unknown' })
 
     // Check cache first
     if (this.config.cache.enabled) {
@@ -108,6 +105,7 @@ export class AIService {
     const provider = this.getProvider(params.model || this.config.defaultModel)
     
     try {
+      clientLogger.info('Using AI provider', { provider: provider.name, model: params.model || this.config.defaultModel })
       const response = await provider.generateText(params)
       
       // Cache the response
@@ -143,6 +141,7 @@ export class AIService {
             const fallbackProvider = providerRegistry.getProvider(fallbackProviderName)
             if (!fallbackProvider) continue
 
+            clientLogger.info('Trying fallback provider', { fallbackProvider: fallbackProviderName })
             const response = await fallbackProvider.generateText(params)
             
             // Track usage for fallback
@@ -161,9 +160,10 @@ export class AIService {
               })
             }
 
+            clientLogger.success('Fallback provider succeeded', { fallbackProvider: fallbackProviderName, model: response.model })
             return response
           } catch (fallbackError) {
-            console.error(`Fallback provider ${fallbackProviderName} failed:`, fallbackError)
+            clientLogger.error('Fallback provider failed', { fallbackProvider: fallbackProviderName, error: fallbackError instanceof Error ? fallbackError.message : 'Unknown error' })
           }
         }
       }
@@ -185,6 +185,7 @@ export class AIService {
         })
       }
 
+      clientLogger.error('All providers failed for text generation', { primaryProvider: provider.name, error: lastError?.message })
       throw lastError
     }
   }
@@ -291,7 +292,6 @@ export class AIService {
     // Fix for Unicode characters - use proper encoding
     const jsonString = JSON.stringify(keyData)
     const cacheKey = Buffer.from(jsonString, 'utf8').toString('base64')
-    console.log('Generated cache key for operation:', operation, 'key length:', cacheKey.length)
     return cacheKey
   }
 
@@ -350,6 +350,7 @@ export class AIService {
     const startTime = Date.now()
     
     try {
+      clientLogger.info('Starting word analysis', { word: request.word, hasContext: !!request.sentenceContext })
       const prompt = buildWordAnalysisPrompt(request)
       const response = await this.generateText({
         prompt,
@@ -366,10 +367,10 @@ export class AIService {
       const analysisResult = JSON.parse(response.text)
       const validatedAnalysis = validateWordAnalysis(analysisResult)
       
+      clientLogger.success('Word analysis completed', { word: request.word, duration: Date.now() - startTime })
       return validatedAnalysis
     } catch (error) {
-      console.error('Error analyzing word:', error)
-      
+      clientLogger.error('Word analysis failed', { word: request.word, error: error instanceof Error ? error.message : 'Unknown error' })
       // Return fallback response
       return createFallbackWordAnalysis(request.word)
     }
@@ -380,6 +381,7 @@ export class AIService {
     const startTime = Date.now()
     
     try {
+      clientLogger.info('Starting sentence analysis', { sentenceLength: request.sentence.length })
       const prompt = buildSentenceAnalysisPrompt(request)
       const response = await this.generateText({
         prompt,
@@ -395,10 +397,10 @@ export class AIService {
       const analysisResult = JSON.parse(response.text)
       const validatedAnalysis = validateSentenceAnalysis(analysisResult)
       
+      clientLogger.success('Sentence analysis completed', { duration: Date.now() - startTime })
       return validatedAnalysis
     } catch (error) {
-      console.error('Error analyzing sentence:', error)
-      
+      clientLogger.error('Sentence analysis failed', { error: error instanceof Error ? error.message : 'Unknown error' })
       // Return fallback response
       return createFallbackSentenceAnalysis(request.sentence)
     }
@@ -409,6 +411,7 @@ export class AIService {
     const startTime = Date.now()
     
     try {
+      clientLogger.info('Starting paragraph analysis', { paragraphLength: request.paragraph.length })
       const prompt = buildParagraphAnalysisPrompt(request)
       const response = await this.generateText({
         prompt,
@@ -424,10 +427,10 @@ export class AIService {
       const analysisResult = JSON.parse(response.text)
       const validatedAnalysis = validateParagraphAnalysis(analysisResult)
       
+      clientLogger.success('Paragraph analysis completed', { duration: Date.now() - startTime })
       return validatedAnalysis
     } catch (error) {
-      console.error('Error analyzing paragraph:', error)
-      
+      clientLogger.error('Paragraph analysis failed', { error: error instanceof Error ? error.message : 'Unknown error' })
       // Return fallback response
       return createFallbackParagraphAnalysis(request.paragraph)
     }
@@ -438,6 +441,7 @@ export class AIService {
     const startTime = Date.now()
     
     try {
+      clientLogger.info('Starting phrase analysis', { phrase: request.phrase, hasContext: !!request.sentenceContext })
       const prompt = buildPhraseAnalysisPrompt(request)
       const response = await this.generateText({
         prompt,
@@ -454,10 +458,10 @@ export class AIService {
       const analysisResult = JSON.parse(response.text)
       const validatedAnalysis = validatePhraseAnalysis(analysisResult)
       
+      clientLogger.success('Phrase analysis completed', { phrase: request.phrase, duration: Date.now() - startTime })
       return validatedAnalysis
     } catch (error) {
-      console.error('Error analyzing phrase:', error)
-      
+      clientLogger.error('Phrase analysis failed', { phrase: request.phrase, error: error instanceof Error ? error.message : 'Unknown error' })
       // Return fallback response
       return createFallbackPhraseAnalysis(request.phrase)
     }
@@ -556,15 +560,12 @@ JSON SCHEMA FOR EACH WORD:
         try {
           return validateWordAnalysis(result)
         } catch (error) {
-          console.error('Invalid word analysis in batch:', error)
           // Return fallback for invalid result
           const word = result?.meta?.word || 'unknown'
           return createFallbackWordAnalysis(word)
         }
       })
     } catch (error) {
-      console.error('Error analyzing words batch:', error)
-      
       // Fallback: return empty analyses
       return requests.map(request => createFallbackWordAnalysis(request.word))
     }
@@ -607,9 +608,7 @@ class UsageTracker {
 
     try {
       // This would integrate with your database/logging system
-      console.log('Flushing usage logs:', logsToFlush)
     } catch (error) {
-      console.error('Failed to flush usage logs:', error)
       // Re-add logs to pending if flush failed
       this.pendingLogs.unshift(...logsToFlush)
     }

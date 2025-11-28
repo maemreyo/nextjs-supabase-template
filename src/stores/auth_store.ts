@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { devtools, subscribeWithSelector } from 'zustand/middleware'
 import type { User, Session } from '@supabase/supabase-js'
+import { authLogger } from '@/services/logger'
 
 // User profile interface
 export interface UserProfile {
@@ -139,7 +140,7 @@ export const useAuthStore = create<AuthStore>()(
       },
       
       setTokens: (accessToken, refreshToken) => {
-        console.log('Tokens set:', { accessToken: !!accessToken, refreshToken: !!refreshToken })
+        authLogger.info('Tokens set', { hasAccessToken: !!accessToken, hasRefreshToken: !!refreshToken })
       },
       
       setLoading: (isLoading) => set({ isLoading }, false, 'setLoading'),
@@ -150,10 +151,11 @@ export const useAuthStore = create<AuthStore>()(
       signIn: async (email, _password) => { // eslint-disable-line @typescript-eslint/no-unused-vars
         set({ isLoading: true, error: null })
         try {
-          console.log('Sign in:', { email })
+          authLogger.info('User login attempt', { email })
           return { success: true }
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Sign in failed'
+          authLogger.error('Login failed', { email, error: errorMessage })
           set({ error: errorMessage })
           return { success: false, error: errorMessage }
         } finally {
@@ -164,10 +166,11 @@ export const useAuthStore = create<AuthStore>()(
       signUp: async (email, password, metadata) => {
         set({ isLoading: true, error: null })
         try {
-          console.log('Sign up:', { email, metadata })
+          authLogger.info('User signup attempt', { email, hasMetadata: !!metadata })
           return { success: true }
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Sign up failed'
+          authLogger.error('Signup failed', { email, error: errorMessage })
           set({ error: errorMessage })
           return { success: false, error: errorMessage }
         } finally {
@@ -178,7 +181,7 @@ export const useAuthStore = create<AuthStore>()(
       signOut: async () => {
         set({ isLoading: true })
         try {
-          console.log('Sign out')
+          authLogger.info('User sign out initiated')
           set({
             user: null,
             profile: null,
@@ -190,8 +193,9 @@ export const useAuthStore = create<AuthStore>()(
             isEmailVerified: false,
             canEditProfile: false,
           })
+          authLogger.success('User signed out successfully')
         } catch (error) {
-          console.error('Sign out error:', error)
+          authLogger.error('Sign out error', { error: error instanceof Error ? error.message : 'Unknown error' })
         } finally {
           set({ isLoading: false })
         }
@@ -199,10 +203,11 @@ export const useAuthStore = create<AuthStore>()(
       
       resetPassword: async (email) => {
         try {
-          console.log('Reset password:', { email })
+          authLogger.info('Password reset requested', { email })
           return { success: true }
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Password reset failed'
+          authLogger.error('Password reset failed', { email, error: errorMessage })
           return { success: false, error: errorMessage }
         }
       },
@@ -210,10 +215,11 @@ export const useAuthStore = create<AuthStore>()(
       updatePassword: async (_newPassword) => { // eslint-disable-line @typescript-eslint/no-unused-vars
         set({ isLoading: true, error: null })
         try {
-          console.log('Update password')
+          authLogger.info('Password update attempt')
           return { success: true }
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Password update failed'
+          authLogger.error('Password update failed', { error: errorMessage })
           set({ error: errorMessage })
           return { success: false, error: errorMessage }
         } finally {
@@ -226,20 +232,22 @@ export const useAuthStore = create<AuthStore>()(
         if (!user) return
         
         try {
-          console.log('Fetch profile for user:', user.id)
+          authLogger.info('Fetching user profile', { userId: user.id })
         } catch (error) {
-          console.error('Fetch profile error:', error)
+          authLogger.error('Failed to fetch profile', { userId: user.id, error: error instanceof Error ? error.message : 'Unknown error' })
         }
       },
       
       updateProfile: async (updates) => {
         set({ isLoading: true, error: null })
         try {
-          console.log('Update profile:', updates)
+          authLogger.info('Updating user profile', { fields: Object.keys(updates) })
           get().updateUserProfile(updates)
+          authLogger.success('Profile updated successfully')
           return { success: true }
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Profile update failed'
+          authLogger.error('Profile update failed', { updates, error: errorMessage })
           set({ error: errorMessage })
           return { success: false, error: errorMessage }
         } finally {
@@ -250,12 +258,14 @@ export const useAuthStore = create<AuthStore>()(
       uploadAvatar: async (file) => {
         set({ isLoading: true, error: null })
         try {
-          console.log('Upload avatar:', file.name)
+          authLogger.info('Avatar upload started', { fileName: file.name, fileSize: file.size })
           const url = 'https://placeholder-avatar-url.com'
           get().updateUserProfile({ avatar_url: url })
+          authLogger.success('Avatar uploaded successfully')
           return { success: true, url }
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Avatar upload failed'
+          authLogger.error('Avatar upload failed', { fileName: file.name, error: errorMessage })
           set({ error: errorMessage })
           return { success: false, error: errorMessage }
         } finally {
@@ -265,9 +275,9 @@ export const useAuthStore = create<AuthStore>()(
       
       refreshSession: async () => {
         try {
-          console.log('Refresh session')
+          authLogger.start('Session refresh attempt')
         } catch (error) {
-          console.error('Refresh session error:', error)
+          authLogger.error('Session refresh failed', { error: error instanceof Error ? error.message : 'Unknown error' })
           set({ error: 'Session refresh failed' })
         }
       },

@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { Editor } from '@tiptap/react';
 import { toast } from 'sonner';
 import { useSupabase } from '@/components/providers/supabase-provider';
+import { clientLogger } from '@/services/logger';
 
 interface AutoSaveOptions {
   enabled?: boolean;
@@ -77,7 +78,7 @@ export function useTipTapAutoSave({
         // Default save to session API
         const token = await getAccessToken();
         
-        console.log('🔍 [DEBUG] useTipTapAutoSave - Token retrieved:', !!token);
+        clientLogger.debug('AutoSave token retrieved', { hasToken: !!token });
         
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
@@ -86,7 +87,7 @@ export function useTipTapAutoSave({
         if (token) {
           headers['Authorization'] = `Bearer ${token}`;
         } else {
-          console.error('🔍 [DEBUG] useTipTapAutoSave - No token available');
+          clientLogger.error('AutoSave no token available');
           throw new Error('No authentication token available');
         }
 
@@ -98,10 +99,10 @@ export function useTipTapAutoSave({
           content_format: 'tiptap', // Format identifier
         };
 
-        console.log('🔍 [DEBUG] useTipTapAutoSave - Sending request:', {
-          url: `/api/sessions/${sessionId}/content`,
+        clientLogger.start('AutoSave sending request', {
+          sessionId,
           hasToken: !!token,
-          dataKeys: Object.keys(requestData),
+          contentLength: content.html.length
         });
 
         const response = await fetch(`/api/sessions/${sessionId}/content`, {
@@ -112,10 +113,10 @@ export function useTipTapAutoSave({
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          console.error('🔍 [DEBUG] useTipTapAutoSave - API Error:', {
+          clientLogger.error('AutoSave API error', {
             status: response.status,
             statusText: response.statusText,
-            errorData,
+            sessionId,
           });
           throw new Error(errorData.error || `Failed to save session content (${response.status})`);
         }

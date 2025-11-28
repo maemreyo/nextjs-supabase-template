@@ -3,6 +3,7 @@ import { OpenAIProvider } from './openai-provider'
 import { AnthropicProvider } from './anthropic-provider'
 import { GoogleAIProvider } from './gemini-provider'
 import { CohereProvider } from './cohere-provider'
+import { clientLogger } from '@/services/logger'
 
 export class ProviderRegistry {
   private static instance: ProviderRegistry
@@ -27,35 +28,23 @@ export class ProviderRegistry {
     const googleConfig = this.getProviderConfig('google')
     const cohereConfig = this.getProviderConfig('cohere')
 
-    console.log('Initializing AI Providers:', {
-      hasOpenAI: !!openaiConfig?.apiKey,
-      hasAnthropic: !!anthropicConfig?.apiKey,
-      hasGoogle: !!googleConfig?.apiKey,
-      hasCohere: !!cohereConfig?.apiKey,
-      googleConfig: googleConfig ? { ...googleConfig, apiKey: googleConfig.apiKey ? '***' : undefined } : undefined
-    })
 
     if (openaiConfig?.apiKey) {
       this.registerProvider('openai', new OpenAIProvider(openaiConfig))
-      console.log('OpenAI provider registered')
     }
 
     if (anthropicConfig?.apiKey) {
       this.registerProvider('anthropic', new AnthropicProvider(anthropicConfig))
-      console.log('Anthropic provider registered')
     }
 
     if (googleConfig?.apiKey) {
       this.registerProvider('google', new GoogleAIProvider(googleConfig))
-      console.log('Google AI provider registered')
     }
 
     if (cohereConfig?.apiKey) {
       this.registerProvider('cohere', new CohereProvider(cohereConfig))
-      console.log('Cohere provider registered')
     }
 
-    console.log('Available providers after initialization:', this.getAvailableProviders())
   }
 
   private getProviderConfig(provider: string) {
@@ -137,7 +126,6 @@ export class ProviderRegistry {
       this.models.set(provider, models)
       return models
     } catch (error) {
-      console.error(`Failed to fetch models for provider ${provider}:`, error)
       return []
     }
   }
@@ -150,7 +138,7 @@ export class ProviderRegistry {
         const models = await this.getModelsForProvider(provider)
         allModels.push(...models)
       } catch (error) {
-        console.error(`Failed to fetch models for provider ${provider}:`, error)
+        clientLogger.error(`Failed to fetch models for provider ${provider}`, error)
       }
     }
 
@@ -176,7 +164,6 @@ export class ProviderRegistry {
 
       return await providerInstance.validateApiKey(config.apiKey)
     } catch (error) {
-      console.error(`Failed to validate provider ${provider}:`, error)
       return false
     }
   }
@@ -247,7 +234,6 @@ export class ProviderRegistry {
       try {
         await this.getModelsForProvider(provider)
       } catch (error) {
-        console.error(`Failed to refresh models for provider ${provider}:`, error)
       }
     }
   }

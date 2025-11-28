@@ -63,7 +63,6 @@ export class OpenAIProvider implements AIProvider {
 
       return models.map((model: any) => this.mapModelToAIModel(model))
     } catch (error) {
-      console.error('Failed to fetch OpenAI models:', error)
       return this.getDefaultModels()
     }
   }

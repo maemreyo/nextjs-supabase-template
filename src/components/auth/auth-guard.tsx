@@ -5,6 +5,7 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/stores/use-auth-store'
 import { Loader2Icon } from 'lucide-react'
+import { authLogger } from '@/services/logger'
 
 interface AuthGuardProps {
   children: React.ReactNode
@@ -17,7 +18,7 @@ export default function AuthGuard({
   redirectTo = '/auth/signin',
   requireAuth = true
 }: AuthGuardProps) {
-  console.log('🔍 [DEBUG] AuthGuard rendering')
+  authLogger.debug('AuthGuard rendering')
   const router = useRouter()
   const { user, isLoading, isInitialized } = useAuth()
 

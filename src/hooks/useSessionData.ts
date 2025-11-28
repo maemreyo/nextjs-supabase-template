@@ -2,6 +2,7 @@ import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { queryKeys } from '@/lib/query-keys';
 import { api } from '@/lib/api-client-client';
+import { clientLogger } from '@/services/logger';
 import type { AnalysisSession, SessionAnalysis, SessionSettings, SessionTag } from '@/types/sessions';
 
 interface SessionDataResponse {
@@ -65,7 +66,7 @@ export function useSessionData(sessionId: string | undefined, options: UseSessio
             throw new Error('Session ID is required');
           }
 
-          console.log('🔍 [DEBUG] useSessionData - Fetching session detail', { sessionId });
+          clientLogger.start('Fetching session data', { sessionId })
 
           try {
             const apiResponse = await api.sessions.getDetail(sessionId);
@@ -77,7 +78,7 @@ export function useSessionData(sessionId: string | undefined, options: UseSessio
               return apiResponse;
             }
           } catch (error) {
-            console.error('🔍 [DEBUG] useSessionData - Detail fetch failed', error);
+            clientLogger.error('useSessionData fetch failed', error);
             throw error instanceof Error ? error : new Error('Failed to fetch session detail');
           }
         },
@@ -92,7 +93,7 @@ export function useSessionData(sessionId: string | undefined, options: UseSessio
             throw new Error('Session ID is required');
           }
 
-          console.log('🔍 [DEBUG] useSessionData - Analyses fetch REMOVED to avoid duplicate API call');
+          clientLogger.info('Fetching session analyses (using optimized endpoint)', { sessionId })
           return {
             analyses: [],
             pagination: {
@@ -143,7 +144,7 @@ export function useSessionData(sessionId: string | undefined, options: UseSessio
 
   // Utility functions for cache management
   const invalidateCache = () => {
-    console.log('🔍 [DEBUG] useSessionData - Invalidating cache');
+    clientLogger.debug('Invalidating cache');
     queryClient.invalidateQueries({
       queryKey: detailQueryKey,
     });
@@ -179,7 +180,8 @@ export function useSessionData(sessionId: string | undefined, options: UseSessio
 
   // Extract session HTML content for rich text editor
   const getSessionHTML = () => {
-    console.log('🔍 [DEBUG] getSessionHTML - Session data:', {
+    clientLogger.debug('Getting session HTML content', {
+      sessionId,
       hasContent: !!data?.session?.content,
       hasContentHTML: !!data?.session?.content_html,
       hasContentData: !!data?.session?.content_data,
@@ -188,13 +190,13 @@ export function useSessionData(sessionId: string | undefined, options: UseSessio
     
     // First, try to get HTML content from content_html column (new format)
     if (data?.session?.content_html) {
-      console.log('🔍 [DEBUG] getSessionHTML - Using content_html:', data.session.content_html.substring(0, 100) + '...');
+      clientLogger.debug('Using content_html', { preview: data.session.content_html.substring(0, 100) + '...' });
       return data.session.content_html;
     }
     
     // Fallback to legacy content column
     if (data?.session?.content) {
-      console.log('🔍 [DEBUG] getSessionHTML - Using legacy content column');
+      clientLogger.debug('Using legacy content column');
       // Check if content contains HTML tags
       const hasHTML = /<[a-z][\s\S]*>/i.test(data.session.content);
       if (hasHTML) {
@@ -207,7 +209,7 @@ export function useSessionData(sessionId: string | undefined, options: UseSessio
     // Fallback: Extract text from analyses and convert to HTML
     if (!data?.analyses) return '';
     
-    console.log('🔍 [DEBUG] getSessionHTML - Falling back to analyses');
+    clientLogger.debug('Falling back to analyses');
     const textParts: string[] = [];
     
     data.analyses.forEach((analysis: any) => {

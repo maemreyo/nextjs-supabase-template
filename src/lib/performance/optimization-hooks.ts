@@ -409,9 +409,6 @@ export function usePerformanceMonitor(componentName: string): PerformanceMetrics
 
       const averageRenderTime = renderTimes.current.reduce((sum, time) => sum + time, 0) / renderTimes.current.length;
       
-      if (process.env.NODE_ENV === 'development') {
-        console.debug(`[Performance] ${componentName}: ${renderTime.toFixed(2)}ms (avg: ${averageRenderTime.toFixed(2)}ms, renders: ${renderCount.current})`);
-      }
     };
   });
 

@@ -29,7 +29,6 @@ export async function addAnalysisToSession(options: SessionAnalysisOptions) {
   const supabase = await createClient()
   
   if (!options.sessionId) {
-    console.warn('No sessionId provided, skipping session analysis creation')
     return { success: true, data: null }
   }
 
@@ -58,7 +57,6 @@ export async function addAnalysisToSession(options: SessionAnalysisOptions) {
       .single();
     
     if (existingSessionAnalysis) {
-      console.log('DEBUG: Found existing session analysis:', existingSessionAnalysis.id)
       return { success: true, data: existingSessionAnalysis }
     }
 
@@ -132,7 +130,6 @@ export async function addAnalysisToSession(options: SessionAnalysisOptions) {
 
     return { success: true, data: sessionAnalysis }
   } catch (error) {
-    console.error('Failed to add analysis to session:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'
@@ -198,7 +195,6 @@ export async function updateSessionCounters(update: SessionCounterUpdate) {
 
     return { success: true, data }
   } catch (error) {
-    console.error('Failed to update session counters:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'

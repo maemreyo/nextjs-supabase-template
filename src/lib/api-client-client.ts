@@ -1,4 +1,6 @@
 // Client-side API request helper
+import { apiLogger } from '@/services/logger';
+
 export class ApiClient {
   private static async getHeaders(): Promise<Record<string, string>> {
     // Import dynamically to avoid hook usage issues
@@ -19,8 +21,9 @@ export class ApiClient {
   }
 
   static async get<T = any>(url: string, options?: RequestInit): Promise<T> {
-    console.log(`[API GET] Requesting: ${url}`);
     const headers = await this.getHeaders();
+    
+    apiLogger.start('API GET request', { url, hasOptions: !!options });
     
     const response = await fetch(url, {
       method: 'GET',
@@ -30,19 +33,20 @@ export class ApiClient {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error(`[API GET] Error for ${url}:`, errorData);
-      throw new Error(
-        errorData.error || `Request failed: ${response.status} ${response.statusText}`
-      );
+      const errorMessage = errorData.error || `Request failed: ${response.status} ${response.statusText}`;
+      apiLogger.error('API GET failed', { url, status: response.status, error: errorMessage });
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();
-    console.log(`[API GET] Success for ${url}:`, data);
+    apiLogger.success('API GET success', { url, status: response.status });
     return data;
   }
 
   static async post<T = any>(url: string, data?: any, options?: RequestInit): Promise<T> {
     const headers = await this.getHeaders();
+    
+    apiLogger.start('API POST request', { url, hasData: !!data, hasOptions: !!options });
     
     const response = await fetch(url, {
       method: 'POST',
@@ -53,16 +57,20 @@ export class ApiClient {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.error || `Request failed: ${response.status} ${response.statusText}`
-      );
+      const errorMessage = errorData.error || `Request failed: ${response.status} ${response.statusText}`;
+      apiLogger.error('API POST failed', { url, status: response.status, error: errorMessage });
+      throw new Error(errorMessage);
     }
 
-    return response.json();
+    const responseData = await response.json();
+    apiLogger.success('API POST success', { url, status: response.status });
+    return responseData;
   }
 
   static async patch<T = any>(url: string, data?: any, options?: RequestInit): Promise<T> {
     const headers = await this.getHeaders();
+    
+    apiLogger.start('API PATCH request', { url, hasData: !!data, hasOptions: !!options });
     
     const response = await fetch(url, {
       method: 'PATCH',
@@ -73,16 +81,20 @@ export class ApiClient {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.error || `Request failed: ${response.status} ${response.statusText}`
-      );
+      const errorMessage = errorData.error || `Request failed: ${response.status} ${response.statusText}`;
+      apiLogger.error('API PATCH failed', { url, status: response.status, error: errorMessage });
+      throw new Error(errorMessage);
     }
 
-    return response.json();
+    const responseData = await response.json();
+    apiLogger.success('API PATCH success', { url, status: response.status });
+    return responseData;
   }
 
   static async put<T = any>(url: string, data?: any, options?: RequestInit): Promise<T> {
     const headers = await this.getHeaders();
+    
+    apiLogger.start('API PUT request', { url, hasData: !!data, hasOptions: !!options });
     
     const response = await fetch(url, {
       method: 'PUT',
@@ -93,16 +105,20 @@ export class ApiClient {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.error || `Request failed: ${response.status} ${response.statusText}`
-      );
+      const errorMessage = errorData.error || `Request failed: ${response.status} ${response.statusText}`;
+      apiLogger.error('API PUT failed', { url, status: response.status, error: errorMessage });
+      throw new Error(errorMessage);
     }
 
-    return response.json();
+    const responseData = await response.json();
+    apiLogger.success('API PUT success', { url, status: response.status });
+    return responseData;
   }
 
   static async delete<T = any>(url: string, options?: RequestInit): Promise<T> {
     const headers = await this.getHeaders();
+    
+    apiLogger.start('API DELETE request', { url, hasOptions: !!options });
     
     const response = await fetch(url, {
       method: 'DELETE',
@@ -112,12 +128,14 @@ export class ApiClient {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.error || `Request failed: ${response.status} ${response.statusText}`
-      );
+      const errorMessage = errorData.error || `Request failed: ${response.status} ${response.statusText}`;
+      apiLogger.error('API DELETE failed', { url, status: response.status, error: errorMessage });
+      throw new Error(errorMessage);
     }
 
-    return response.json();
+    const responseData = await response.json();
+    apiLogger.success('API DELETE success', { url, status: response.status });
+    return responseData;
   }
 }
 
@@ -132,7 +150,6 @@ export const api = {
     
     // Deprecated: Use getDetail and getAnalyses instead
     get: (id: string, params?: any) => {
-      console.warn('⚠️ [DEPRECATED] api.sessions.get() is deprecated. Use getDetail() and getAnalyses() instead.');
       const queryString = params ? `?${new URLSearchParams(params).toString()}` : '';
       return ApiClient.get(`/api/sessions/${id}/load${queryString}`);
     },
@@ -170,9 +187,7 @@ export const api = {
         ? `?${new URLSearchParams(queryParams).toString()}`
         : '';
       
-      // console.trace('[TRACE] getAnalyses called from stack trace:', new Error().stack);
       const url = `/api/sessions/${id}/analyses${queryString}`;
-      console.log('[API] getAnalyses called with params:', params, 'URL:', url);
       return ApiClient.get(url);
     },
     

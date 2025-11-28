@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { clientLogger } from '@/services/logger';
 import {
   Dialog,
   DialogContent,
@@ -134,6 +135,7 @@ export function SessionManager({
 
     setIsCreating(true);
     try {
+      clientLogger.info('Creating new session', { title: newSessionTitle.trim(), type: newSessionType });
       const result = await onCreateSession({
         title: newSessionTitle.trim(),
         description: newSessionDescription.trim() || undefined,
@@ -149,9 +151,10 @@ export function SessionManager({
       setTitleError('');
       
       // Show success notification
+      clientLogger.success('Session created successfully', { sessionId: result.id, title: result.title });
       success('Tạo session thành công', `Session "${result.title}" đã được tạo thành công.`);
     } catch (err) {
-      console.error('Failed to create session:', err);
+      clientLogger.error('Failed to create session', { title: newSessionTitle.trim(), error: err instanceof Error ? err.message : String(err) });
       setTitleError('Không thể tạo session. Vui lòng thử lại.');
       error('Tạo session thất bại');
     } finally {
@@ -166,6 +169,7 @@ export function SessionManager({
 
     setIsUpdatingSettings(true);
     try {
+      clientLogger.start('Updating session settings', { sessionId: currentSession.id });
       await onUpdateSettings(currentSession.id, {
         auto_save: autoSaveEnabled,
         analysis_depth: analysisDepth,
@@ -179,9 +183,10 @@ export function SessionManager({
       
       setSettingsError('');
       // Show success notification
+      clientLogger.success('Session settings updated successfully', { sessionId: currentSession.id });
       success('Cập nhật cài đặt thành công', 'Cài đặt session đã được cập nhật thành công.');
     } catch (err) {
-      console.error('Failed to update settings:', err);
+      clientLogger.error('Failed to update session settings', { sessionId: currentSession.id, error: err instanceof Error ? err.message : String(err) });
       setSettingsError('Không thể cập nhật cài đặt. Vui lòng thử lại.');
       error('Cập nhật cài đặt thất bại');
     } finally {

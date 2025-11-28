@@ -327,7 +327,6 @@ export function validateAnalysisText(text: string, options: {
   if (hasSuspiciousPattern && !hasSQLInjection) {
     // This catches cases like "tusks" which might be flagged by broader patterns
     // but doesn't contain actual SQL injection attempts
-    console.log('DEBUG: Suspicious pattern detected but not clear SQL injection:', trimmedText);
   }
   
   // Check for XSS

@@ -1,6 +1,6 @@
-import { 
-  useQuery, 
-  useMutation, 
+import {
+  useQuery,
+  useMutation,
   useQueryClient,
   UseQueryOptions,
   UseMutationOptions,
@@ -8,6 +8,7 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import { queryKeys, createQueryKeys } from '@/lib/query-keys'
 import type { Database } from '@/lib/database.types'
+import { dbLogger } from '@/services/logger'
 
 type Tables = Database['public']['Tables']
 type TableNames = keyof Tables
@@ -55,6 +56,7 @@ export function useSupabaseQuery<T extends TableNames>(
   return useQuery({
     queryKey: createQueryKeys.table(table).list(filters),
     queryFn: async () => {
+      dbLogger.start('Supabase query', { table, select, filters, orderBy, limit, offset })
       const supabase = createClient()
       let query = supabase.from(table).select(select)
       
@@ -81,7 +83,11 @@ export function useSupabaseQuery<T extends TableNames>(
       }
       
       const { data, error } = await query
-      if (error) throw error
+      if (error) {
+        dbLogger.error('Supabase query failed', { table, error: error.message })
+        throw error
+      }
+      dbLogger.success('Supabase query completed', { table, count: data?.length || 0 })
       return data || []
     },
     enabled,
@@ -102,6 +108,7 @@ export function useSupabaseDetailQuery<T extends TableNames>(
   return useQuery({
     queryKey: createQueryKeys.table(table).detail(id),
     queryFn: async () => {
+      dbLogger.start('Supabase detail query', { table, id, select })
       const supabase = createClient()
       const { data, error } = await supabase
         .from(table)
@@ -109,7 +116,11 @@ export function useSupabaseDetailQuery<T extends TableNames>(
         .eq('id', id as any)
         .single()
         
-      if (error) throw error
+      if (error) {
+        dbLogger.error('Supabase detail query failed', { table, id, error: error.message })
+        throw error
+      }
+      dbLogger.success('Supabase detail query completed', { table, id })
       return data
     },
     enabled: !!id && enabled !== false,
@@ -129,6 +140,7 @@ export function useSupabaseMutation<T extends TableNames>(
   
   return useMutation({
     mutationFn: async (data: TableInsert<T>) => {
+      dbLogger.start('Supabase insert', { table })
       const supabase = createClient()
       const { data: result, error } = await supabase
         .from(table)
@@ -136,7 +148,11 @@ export function useSupabaseMutation<T extends TableNames>(
         .select()
         .single()
         
-      if (error) throw error
+      if (error) {
+        dbLogger.error('Supabase insert failed', { table, error: error.message })
+        throw error
+      }
+      dbLogger.success('Supabase insert completed', { table, hasResult: !!result })
       return result as unknown as TableRow<T>
     },
     
@@ -218,6 +234,7 @@ export function useSupabaseUpdate<T extends TableNames>(
   return useMutation({
     mutationFn: async (params: { id: string } & TableUpdate<T>) => {
       const { id, ...data } = params
+      dbLogger.start('Supabase update', { table, id })
       const supabase = createClient()
       const { data: result, error } = await supabase
         .from(table)
@@ -226,7 +243,11 @@ export function useSupabaseUpdate<T extends TableNames>(
         .select()
         .single()
         
-      if (error) throw error
+      if (error) {
+        dbLogger.error('Supabase update failed', { table, id, error: error.message })
+        throw error
+      }
+      dbLogger.success('Supabase update completed', { table, id })
       return result as unknown as TableRow<T>
     },
     
@@ -312,10 +333,15 @@ export function useSupabaseDelete<T extends TableNames>(
   
   return useMutation({
     mutationFn: async (id: string) => {
+      dbLogger.start('Supabase delete', { table, id })
       const supabase = createClient()
       const { error } = await supabase.from(table).delete().eq('id', id as any)
       
-      if (error) throw error
+      if (error) {
+        dbLogger.error('Supabase delete failed', { table, id, error: error.message })
+        throw error
+      }
+      dbLogger.success('Supabase delete completed', { table, id })
     },
     
     onMutate: async (id) => {

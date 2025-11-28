@@ -18,7 +18,6 @@ function safeStringify(obj: any): string {
     
     // Check for Promise objects that need to be unwrapped with React.use()
     if (obj instanceof Promise || (obj && typeof obj.then === 'function')) {
-      console.warn('[DEBUG] safeStringify - Detected Promise object, returning [Promise] placeholder');
       return '[Promise]';
     }
     
@@ -33,7 +32,6 @@ function safeStringify(obj: any): string {
         });
         return JSON.stringify(paramsObj);
       } catch (e) {
-        console.warn('[DEBUG] safeStringify - Failed to convert URLSearchParams, returning placeholder');
         return '[URLSearchParams]';
       }
     }
@@ -41,7 +39,6 @@ function safeStringify(obj: any): string {
     // Check for objects that might be React.use() wrapped
     if (obj.constructor?.name?.includes('Usable') ||
         (obj && typeof obj.unwrapped === 'function')) {
-      console.warn('[DEBUG] safeStringify - Detected React.use() wrapped object, returning placeholder');
       return '[ReactUsable]';
     }
     
@@ -317,7 +314,6 @@ export const performanceMonitor = {
     const start = performance.now();
     const result = fn();
     const end = performance.now();
-    console.debug(`[Performance] ${name}: ${end - start}ms`);
     return result;
   },
 
@@ -325,7 +321,6 @@ export const performanceMonitor = {
     const start = performance.now();
     const result = await fn();
     const end = performance.now();
-    console.debug(`[Performance] ${name}: ${end - start}ms`);
     return result;
   },
 
@@ -334,7 +329,6 @@ export const performanceMonitor = {
     return {
       end: () => {
         const end = performance.now();
-        console.debug(`[Performance] ${name}: ${end - start}ms`);
         return end - start;
       }
     };

@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useAuthStore, authSelectors } from '@/stores/auth_store'
+import { authLogger } from '@/services/logger'
 
 // ✅ FIX: Use individual selectors instead of creating object
 // This prevents unnecessary re-renders
@@ -172,10 +173,12 @@ export function useAuthInit() {
 
         const initializeAuth = async () => {
             try {
+                authLogger.start('Auth initialization')
                 useAuthStore.getState().clearError()
                 await useAuthStore.getState().refreshSession()
+                authLogger.success('Auth initialization completed')
             } catch (error) {
-                console.error('Auth initialization failed:', error)
+                authLogger.error('Auth initialization failed', { error: error instanceof Error ? error.message : 'Unknown error' })
             } finally {
                 if (mounted) {
                     useAuthStore.getState().setInitialized(true)
@@ -204,9 +207,10 @@ export function useAuthSessionMonitor() {
         // Set up session refresh interval
         const interval = setInterval(async () => {
             try {
+                authLogger.start('Periodic session refresh')
                 await useAuthStore.getState().refreshSession()
             } catch (error) {
-                console.error('Session refresh failed:', error)
+                authLogger.error('Session refresh failed', { error: error instanceof Error ? error.message : 'Unknown error' })
                 useAuthStore.getState().clearAuth()
             }
         }, 5 * 60 * 1000) // Refresh every 5 minutes
@@ -220,7 +224,10 @@ export function useAuthSessionMonitor() {
     useEffect(() => {
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible' && isAuthenticated) {
-                useAuthStore.getState().refreshSession().catch(console.error)
+                authLogger.start('Session refresh on visibility change')
+                useAuthStore.getState().refreshSession().catch((error) => {
+                    authLogger.error('Visibility change session refresh failed', { error: error instanceof Error ? error.message : 'Unknown error' })
+                })
             }
         }
 

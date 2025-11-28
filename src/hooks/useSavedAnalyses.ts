@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-keys';
 import { useSupabase } from '@/components/providers/supabase-provider';
+import { clientLogger } from '@/services/logger';
 
 type AnalysisType = 'word' | 'sentence' | 'paragraph' | 'all';
 
@@ -88,7 +89,7 @@ export function useSavedAnalyses(
   } = useQuery({
     queryKey,
     queryFn: async () => {
-      console.log('🔍 [DEBUG] useSavedAnalyses - Fetching analyses', {
+      clientLogger.info('Fetching saved analyses', {
         type,
         session_id,
         page,
@@ -139,14 +140,19 @@ export function useSavedAnalyses(
 
         const result: SavedAnalysesResponse = await response.json();
         
-        console.log('🔍 [DEBUG] useSavedAnalyses - Fetch successful', {
-          analysesCount: result.analyses?.length || 0,
-          pagination: result.pagination,
+        clientLogger.success('Saved analyses fetched successfully', {
+          count: result.analyses?.length || 0,
+          page,
+          totalPages: result.pagination?.totalPages,
         });
 
         return result;
       } catch (error) {
-        console.error('🔍 [DEBUG] useSavedAnalyses - Fetch failed', error);
+        clientLogger.error('Failed to fetch saved analyses', {
+          type,
+          session_id,
+          error: error instanceof Error ? error.message : String(error),
+        });
         throw error instanceof Error ? error : new Error('Failed to fetch analyses');
       }
     },
@@ -159,7 +165,7 @@ export function useSavedAnalyses(
   const queryClient = useQueryClient();
   
   const invalidateCache = () => {
-    console.log('🔍 [DEBUG] useSavedAnalyses - Invalidating cache');
+    clientLogger.debug('Invalidating saved analyses cache');
     queryClient.invalidateQueries({
       queryKey: queryKeys.api.endpoint('/api/analyses/list'),
     });
@@ -167,7 +173,7 @@ export function useSavedAnalyses(
 
   const prefetchNextPage = async () => {
     if (data?.pagination && page < data.pagination.totalPages) {
-      console.log('🔍 [DEBUG] useSavedAnalyses - Prefetching next page', {
+      clientLogger.info('Prefetching next page of saved analyses', {
         currentPage: page,
         nextPage: page + 1,
       });

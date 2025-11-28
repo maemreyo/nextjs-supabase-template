@@ -39,7 +39,6 @@ export function sanitizeHTML(content: string, config?: Partial<typeof DEFAULT_CO
     const sanitizeConfig = { ...DEFAULT_CONFIG, ...config };
     return DOMPurify.sanitize(content, sanitizeConfig);
   } catch (error) {
-    console.error('Error sanitizing HTML content:', error);
     // Return empty string if sanitization fails
     return '';
   }
@@ -63,7 +62,6 @@ export function sanitizeText(content: string): string {
       .replace(/[\uFFFE\uFFFF]/g, '') // Invalid Unicode characters
       .trim();
   } catch (error) {
-    console.error('Error sanitizing text content:', error);
     return '';
   }
 }
@@ -94,7 +92,6 @@ export function sanitizeURL(url: string): string {
       .replace(/data:/gi, '')
       .replace(/vbscript:/gi, '');
   } catch (error) {
-    console.error('Error sanitizing URL:', error);
     return '';
   }
 }
@@ -114,7 +111,6 @@ export function sanitizeJSON(content: string): string | null {
     const parsed = JSON.parse(content);
     return JSON.stringify(parsed);
   } catch (error) {
-    console.error('Error sanitizing JSON content:', error);
     return null;
   }
 }
@@ -146,7 +142,6 @@ export function sanitizeTipTapContent(content: string): string {
 
     return DOMPurify.sanitize(content, tipTapConfig);
   } catch (error) {
-    console.error('Error sanitizing TipTap content:', error);
     return '';
   }
 }

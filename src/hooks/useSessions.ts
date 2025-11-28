@@ -3,6 +3,7 @@ import { useRef } from 'react';
 import { queryKeys } from '@/lib/query-keys';
 import { api } from '@/lib/api-client-client';
 import type { AnalysisSession, SessionAnalysis, SessionSettings } from '@/types/sessions';
+import { clientLogger } from '@/services/logger';
 
 interface ListSessionsParams {
   status?: 'all' | 'active' | 'archived' | 'deleted';
@@ -241,7 +242,7 @@ export function useCreateSession() {
           throw new Error(result.error || 'Failed to create session');
         }
 
-        console.log('🔍 [DEBUG] useCreateSession - Create successful', result.data);
+        clientLogger.success('Session created successfully', { sessionId: result.data.id, title: result.data.title })
         return result.data;
       } catch (error) {
         console.error('🔍 [DEBUG] useCreateSession - Create failed', error);
@@ -249,7 +250,7 @@ export function useCreateSession() {
       }
     },
     onSuccess: (newSession) => {
-      console.log('🔍 [DEBUG] useCreateSession - Invalidating sessions cache');
+      clientLogger.info('Invalidating sessions cache after creating new session')
       // Invalidate sessions list cache
       queryClient.invalidateQueries({
         queryKey: queryKeys.api.endpoint('/api/sessions/list'),

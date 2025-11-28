@@ -25,12 +25,15 @@ import {
   validateSessionAnalysisOptions,
   SessionAnalysisOptions
 } from '@/lib/session-analysis-utils'
+import { dbLogger } from '@/services/logger'
+import * as PromptUtils from './prompt-utils'
 
 // Server-side AI service with database integration
 export class AIServiceServer {
   private aiService = createAIService()
 
   async generateText(userId: string, params: GenerateTextParams): Promise<GenerateTextResponse> {
+    dbLogger.start('AI text generation', { userId, operation: 'text-generation' })
     // Check user permissions and usage limits
     await this.checkUserLimits(userId, 'text-generation')
 
@@ -50,6 +53,7 @@ export class AIServiceServer {
         metadata: params.metadata
       })
 
+      dbLogger.success('AI text generation completed', { userId, provider: response.provider, model: response.model })
       return response
     } catch (error) {
       // Log failed usage
@@ -66,11 +70,13 @@ export class AIServiceServer {
         metadata: params.metadata
       })
 
+      dbLogger.error('AI text generation failed', { userId, error: error instanceof Error ? error.message : 'Unknown error' })
       throw error
     }
   }
 
   async generateEmbedding(userId: string, params: GenerateEmbeddingParams): Promise<GenerateEmbeddingResponse> {
+    dbLogger.start('AI embedding generation', { userId, operation: 'embedding' })
     // Check user permissions and usage limits
     await this.checkUserLimits(userId, 'embedding')
 
@@ -90,6 +96,7 @@ export class AIServiceServer {
         metadata: params.metadata
       })
 
+      dbLogger.success('AI embedding generation completed', { userId, provider: response.provider, model: response.model })
       return response
     } catch (error) {
       // Log failed usage
@@ -106,11 +113,13 @@ export class AIServiceServer {
         metadata: params.metadata
       })
 
+      dbLogger.error('AI embedding generation failed', { userId, error: error instanceof Error ? error.message : 'Unknown error' })
       throw error
     }
   }
 
   async checkUsage(userId: string): Promise<UsageCheckResponse> {
+    dbLogger.start('Checking AI usage', { userId })
     const supabase = await createClient()
     
     try {
@@ -134,6 +143,7 @@ export class AIServiceServer {
 
       const stats = this.calculateUsageStats(usageData || [])
 
+      dbLogger.success('AI usage check completed', { userId, canUseAI: this.canUseAI(stats, tier), remainingRequests: Math.max(0, tier.maxRequestsPerDay - stats.totalRequests) })
       return {
         canUseAI: this.canUseAI(stats, tier),
         remainingRequests: Math.max(0, tier.maxRequestsPerDay - stats.totalRequests),
@@ -144,7 +154,7 @@ export class AIServiceServer {
         usage: stats
       }
     } catch (error) {
-      console.error('Failed to check usage:', error)
+      dbLogger.error('AI usage check failed', { userId, error: error instanceof Error ? error.message : 'Unknown error' })
       
       // Return default tier on error
       const defaultTier = this.getDefaultTier()
@@ -206,7 +216,6 @@ export class AIServiceServer {
         timestamp: new Date().toISOString()
       })
     } catch (error) {
-      console.error('Failed to log usage:', error)
       // Don't throw here to avoid breaking main flow
     }
   }
@@ -304,7 +313,6 @@ export class AIServiceServer {
 
       return userTier?.tiers ? this.convertTierFromDB(userTier.tiers) : this.getDefaultTier()
     } catch (error) {
-      console.error('Failed to get user tier:', error)
       return this.getDefaultTier()
     }
   }
@@ -335,7 +343,6 @@ export class AIServiceServer {
           updated_at: new Date().toISOString()
         })
     } catch (error) {
-      console.error('Failed to update user tier:', error)
       throw new Error('Failed to update user tier')
     }
   }
@@ -344,12 +351,13 @@ export class AIServiceServer {
   async analyzeWord(userId: string, request: AnalyzeWordRequest): Promise<AnalysisResponse<WordAnalysis>> {
     const startTime = Date.now()
     
-    try {
-      // Check user permissions and usage limits
-      await this.checkUserLimits(userId, 'word-analysis')
+    dbLogger.start('Word analysis', { userId, word: request.word })
+    // Check user permissions and usage limits
+    await this.checkUserLimits(userId, 'word-analysis')
       
+    try {
       // Get the AI response to extract provider and model info
-      const prompt = require('./prompt-utils').buildWordAnalysisPrompt(request)
+      const prompt = PromptUtils.buildWordAnalysisPrompt(request)
       const aiResponse = await this.aiService.generateText({
         prompt,
         temperature: 0.3,
@@ -364,21 +372,15 @@ export class AIServiceServer {
       // Parse and validate response with error handling
       let analysisResult;
       try {
-        console.log('DEBUG: AI response text length:', aiResponse.text.length)
-        console.log('DEBUG: AI response preview:', aiResponse.text.substring(0, 200))
         analysisResult = JSON.parse(aiResponse.text)
       } catch (parseError) {
-        console.error('DEBUG: Failed to parse AI response as JSON:', parseError)
-        console.error('DEBUG: Raw AI response:', aiResponse.text)
         throw new Error('Invalid JSON response from AI service')
       }
       
       let analysis;
       try {
-        analysis = require('./prompt-utils').validateWordAnalysis(analysisResult)
+        analysis = PromptUtils.validateWordAnalysis(analysisResult)
       } catch (validateError) {
-        console.error('DEBUG: Failed to validate word analysis:', validateError)
-        console.error('DEBUG: Analysis result:', analysisResult)
         throw new Error('Invalid word analysis structure from AI service')
       }
       
@@ -401,13 +403,14 @@ export class AIServiceServer {
         if (validationErrors.length === 0) {
           const sessionResult = await addAnalysisToSession(sessionOptions)
           if (!sessionResult.success) {
-            console.warn('Failed to add word analysis to session:', sessionResult.error)
+            // Failed to add word analysis to session
           }
         } else {
-          console.warn('Session analysis validation errors:', validationErrors)
+          // Session analysis validation errors
         }
       }
       
+      dbLogger.success('Word analysis completed', { userId, word: request.word, duration: Date.now() - startTime })
       return {
         success: true,
         data: analysis,
@@ -421,7 +424,7 @@ export class AIServiceServer {
         }
       }
     } catch (error) {
-      console.error('Error analyzing word:', error)
+      dbLogger.error('Word analysis failed', { userId, word: request.word, error: error instanceof Error ? error.message : 'Unknown error' })
       
       return {
         success: false,
@@ -434,12 +437,13 @@ export class AIServiceServer {
   async analyzeSentence(userId: string, request: AnalyzeSentenceRequest): Promise<AnalysisResponse<SentenceAnalysis>> {
     const startTime = Date.now()
     
-    try {
-      // Check user permissions and usage limits
-      await this.checkUserLimits(userId, 'sentence-analysis')
+    dbLogger.start('Sentence analysis', { userId, sentenceLength: request.sentence.length })
+    // Check user permissions and usage limits
+    await this.checkUserLimits(userId, 'sentence-analysis')
       
+    try {
       // Get the AI response to extract provider and model info
-      const prompt = require('./prompt-utils').buildSentenceAnalysisPrompt(request)
+      const prompt = PromptUtils.buildSentenceAnalysisPrompt(request)
       const aiResponse = await this.aiService.generateText({
         prompt,
         temperature: 0.3,
@@ -453,21 +457,15 @@ export class AIServiceServer {
       // Parse and validate response with error handling
       let analysisResult;
       try {
-        console.log('DEBUG: Sentence AI response text length:', aiResponse.text.length)
-        console.log('DEBUG: Sentence AI response preview:', aiResponse.text.substring(0, 200))
         analysisResult = JSON.parse(aiResponse.text)
       } catch (parseError) {
-        console.error('DEBUG: Failed to parse sentence AI response as JSON:', parseError)
-        console.error('DEBUG: Raw sentence AI response:', aiResponse.text)
         throw new Error('Invalid JSON response from AI service')
       }
       
       let analysis;
       try {
-        analysis = require('./prompt-utils').validateSentenceAnalysis(analysisResult)
+        analysis = PromptUtils.validateSentenceAnalysis(analysisResult)
       } catch (validateError) {
-        console.error('DEBUG: Failed to validate sentence analysis:', validateError)
-        console.error('DEBUG: Sentence analysis result:', analysisResult)
         throw new Error('Invalid sentence analysis structure from AI service')
       }
       
@@ -490,13 +488,14 @@ export class AIServiceServer {
         if (validationErrors.length === 0) {
           const sessionResult = await addAnalysisToSession(sessionOptions)
           if (!sessionResult.success) {
-            console.warn('Failed to add sentence analysis to session:', sessionResult.error)
+            // Failed to add sentence analysis to session
           }
         } else {
-          console.warn('Session analysis validation errors:', validationErrors)
+          // Session analysis validation errors
         }
       }
       
+      dbLogger.success('Sentence analysis completed', { userId, duration: Date.now() - startTime })
       return {
         success: true,
         data: analysis,
@@ -510,7 +509,7 @@ export class AIServiceServer {
         }
       }
     } catch (error) {
-      console.error('Error analyzing sentence:', error)
+      dbLogger.error('Sentence analysis failed', { userId, error: error instanceof Error ? error.message : 'Unknown error' })
       
       return {
         success: false,
@@ -523,12 +522,13 @@ export class AIServiceServer {
   async analyzeParagraph(userId: string, request: AnalyzeParagraphRequest): Promise<AnalysisResponse<ParagraphAnalysis>> {
     const startTime = Date.now()
     
-    try {
-      // Check user permissions and usage limits
-      await this.checkUserLimits(userId, 'paragraph-analysis')
+    dbLogger.start('Paragraph analysis', { userId, paragraphLength: request.paragraph.length })
+    // Check user permissions and usage limits
+    await this.checkUserLimits(userId, 'paragraph-analysis')
       
+    try {
       // Get the AI response to extract provider and model info
-      const prompt = require('./prompt-utils').buildParagraphAnalysisPrompt(request)
+      const prompt = PromptUtils.buildParagraphAnalysisPrompt(request)
       const aiResponse = await this.aiService.generateText({
         prompt,
         temperature: 0.3,
@@ -542,21 +542,15 @@ export class AIServiceServer {
       // Parse and validate response with error handling
       let analysisResult;
       try {
-        console.log('DEBUG: Paragraph AI response text length:', aiResponse.text.length)
-        console.log('DEBUG: Paragraph AI response preview:', aiResponse.text.substring(0, 200))
         analysisResult = JSON.parse(aiResponse.text)
       } catch (parseError) {
-        console.error('DEBUG: Failed to parse paragraph AI response as JSON:', parseError)
-        console.error('DEBUG: Raw paragraph AI response:', aiResponse.text)
         throw new Error('Invalid JSON response from AI service')
       }
       
       let analysis;
       try {
-        analysis = require('./prompt-utils').validateParagraphAnalysis(analysisResult)
+        analysis = PromptUtils.validateParagraphAnalysis(analysisResult)
       } catch (validateError) {
-        console.error('DEBUG: Failed to validate paragraph analysis:', validateError)
-        console.error('DEBUG: Paragraph analysis result:', analysisResult)
         throw new Error('Invalid paragraph analysis structure from AI service')
       }
       
@@ -579,13 +573,14 @@ export class AIServiceServer {
         if (validationErrors.length === 0) {
           const sessionResult = await addAnalysisToSession(sessionOptions)
           if (!sessionResult.success) {
-            console.warn('Failed to add paragraph analysis to session:', sessionResult.error)
+            // Failed to add paragraph analysis to session
           }
         } else {
-          console.warn('Session analysis validation errors:', validationErrors)
+          // Session analysis validation errors
         }
       }
       
+      dbLogger.success('Paragraph analysis completed', { userId, duration: Date.now() - startTime })
       return {
         success: true,
         data: analysis,
@@ -599,7 +594,7 @@ export class AIServiceServer {
         }
       }
     } catch (error) {
-      console.error('Error analyzing paragraph:', error)
+      dbLogger.error('Paragraph analysis failed', { userId, error: error instanceof Error ? error.message : 'Unknown error' })
       
       return {
         success: false,
@@ -612,12 +607,13 @@ export class AIServiceServer {
   async analyzePhrase(userId: string, request: AnalyzePhraseRequest): Promise<AnalysisResponse<PhraseAnalysis>> {
     const startTime = Date.now()
     
-    try {
-      // Check user permissions and usage limits
-      await this.checkUserLimits(userId, 'phrase-analysis')
+    dbLogger.start('Phrase analysis', { userId, phrase: request.phrase })
+    // Check user permissions and usage limits
+    await this.checkUserLimits(userId, 'phrase-analysis')
       
+    try {
       // Get AI response to extract provider and model info
-      const prompt = require('./prompt-utils').buildPhraseAnalysisPrompt(request)
+      const prompt = PromptUtils.buildPhraseAnalysisPrompt(request)
       const aiResponse = await this.aiService.generateText({
         prompt,
         temperature: 0.3,
@@ -632,21 +628,15 @@ export class AIServiceServer {
       // Parse and validate response with error handling
       let analysisResult;
       try {
-        console.log('DEBUG: Phrase AI response text length:', aiResponse.text.length)
-        console.log('DEBUG: Phrase AI response preview:', aiResponse.text.substring(0, 200))
         analysisResult = JSON.parse(aiResponse.text)
       } catch (parseError) {
-        console.error('DEBUG: Failed to parse phrase AI response as JSON:', parseError)
-        console.error('DEBUG: Raw phrase AI response:', aiResponse.text)
         throw new Error('Invalid JSON response from AI service')
       }
       
       let analysis;
       try {
-        analysis = require('./prompt-utils').validatePhraseAnalysis(analysisResult)
+        analysis = PromptUtils.validatePhraseAnalysis(analysisResult)
       } catch (validateError) {
-        console.error('DEBUG: Failed to validate phrase analysis:', validateError)
-        console.error('DEBUG: Phrase analysis result:', analysisResult)
         throw new Error('Invalid phrase analysis structure from AI service')
       }
       
@@ -669,13 +659,14 @@ export class AIServiceServer {
         if (validationErrors.length === 0) {
           const sessionResult = await addAnalysisToSession(sessionOptions)
           if (!sessionResult.success) {
-            console.warn('Failed to add phrase analysis to session:', sessionResult.error)
+            // Failed to add phrase analysis to session
           }
         } else {
-          console.warn('Session analysis validation errors:', validationErrors)
+          // Session analysis validation errors
         }
       }
       
+      dbLogger.success('Phrase analysis completed', { userId, duration: Date.now() - startTime })
       return {
         success: true,
         data: analysis,
@@ -689,7 +680,7 @@ export class AIServiceServer {
         }
       }
     } catch (error) {
-      console.error('Error analyzing phrase:', error)
+      dbLogger.error('Phrase analysis failed', { userId, error: error instanceof Error ? error.message : 'Unknown error' })
       
       return {
         success: false,
@@ -700,15 +691,10 @@ export class AIServiceServer {
 
   // Database save methods
   private async saveWordAnalysis(userId: string, request: AnalyzeWordRequest, analysis: WordAnalysis): Promise<string | null> {
-    console.log('DEBUG: Starting saveWordAnalysis for word:', analysis.meta.word)
-    console.log('DEBUG: sessionId in request:', request.sessionId)
     const supabase = await createClient()
     let wordAnalysisId: string | null = null
     
     try {
-      console.log('DEBUG: Attempting to save main word analysis to database')
-      console.log('DEBUG: Will save with document_id:', request.sessionId || null)
-      
       // Save main word analysis using upsert with proper constraint handling
       // Sử dụng constraint name thay vì column list để tránh lỗi 42P10
       const { data, error } = await supabase
@@ -731,22 +717,19 @@ export class AIServiceServer {
           example_translation: analysis.usage.example_translation,
           document_id: request.sessionId || null // Đảm bảo null thay vì rỗng
         }, {
-          onConflict: 'user_id,word,sentence_context,document_id' // Sử dụng array cột thay vì constraint name
+          onConflict: 'user_id,word,sentence_context,document_id' // Sử dụng chuỗi cột thay vì array
         })
         .select()
         .single();
 
       if (error) {
-        console.error('DEBUG: Database error when saving word analysis:', error)
         throw new Error('Failed to save word analysis')
       }
 
       wordAnalysisId = data.id;
-      console.log('DEBUG: Successfully saved word analysis with ID:', wordAnalysisId)
 
       // Save synonyms
       if (analysis.relations.synonyms.length > 0) {
-        console.log('DEBUG: Saving', analysis.relations.synonyms.length, 'synonyms')
         const synonymsToInsert = analysis.relations.synonyms.map(synonym => ({
           word_analysis_id: wordAnalysisId,
           synonym_word: synonym.word,
@@ -760,7 +743,6 @@ export class AIServiceServer {
 
       // Save antonyms
       if (analysis.relations.antonyms.length > 0) {
-        console.log('DEBUG: Saving', analysis.relations.antonyms.length, 'antonyms')
         const antonymsToInsert = analysis.relations.antonyms.map(antonym => ({
           word_analysis_id: wordAnalysisId,
           antonym_word: antonym.word,
@@ -774,7 +756,6 @@ export class AIServiceServer {
 
       // Save collocations
       if (analysis.usage.collocations.length > 0) {
-        console.log('DEBUG: Saving', analysis.usage.collocations.length, 'collocations')
         const collocationsToInsert = analysis.usage.collocations.map(collocation => ({
           word_analysis_id: wordAnalysisId,
           phrase: collocation.phrase,
@@ -786,24 +767,18 @@ export class AIServiceServer {
         await supabase.from('word_collocations').insert(collocationsToInsert)
       }
       
-      console.log('DEBUG: Successfully completed saveWordAnalysis, returning ID:', wordAnalysisId)
     } catch (error) {
-      console.error('DEBUG: Failed to save word analysis:', error)
-      console.error('DEBUG: wordAnalysisId at error time:', wordAnalysisId)
       throw error
     }
 
-    console.log('DEBUG: Final return statement, wordAnalysisId:', wordAnalysisId)
     return wordAnalysisId
   }
 
   private async saveSentenceAnalysis(userId: string, request: AnalyzeSentenceRequest, analysis: SentenceAnalysis): Promise<string | null> {
-    console.log('DEBUG: Starting saveSentenceAnalysis for sentence:', analysis.meta.sentence)
     const supabase = await createClient()
     let sentenceAnalysisId: string | null = null
     
     try {
-      console.log('DEBUG: Attempting to save main sentence analysis to database')
       // Save main sentence analysis using upsert with proper constraint handling
       // Sử dụng constraint name thay vì column list để tránh lỗi 42P10
       const { data, error } = await supabase
@@ -827,23 +802,20 @@ export class AIServiceServer {
           paragraph_context: request.paragraphContext,
           document_id: request.sessionId || null // Đảm bảo null thay vì rỗng
         }, {
-          onConflict: 'user_id,sentence,document_id' // Sử dụng array cột thay vì constraint name
+          onConflict: 'user_id,sentence,document_id' // Sử dụng chuỗi cột thay vì array
         })
         .select()
         .single();
 
       if (error) {
-        console.error('DEBUG: Database error when saving sentence analysis:', error)
         throw new Error('Failed to save sentence analysis')
       }
 
       sentenceAnalysisId = data.id;
       
-      console.log('DEBUG: Successfully saved sentence analysis with ID:', sentenceAnalysisId)
 
       // Save key components
       if (analysis.key_components.length > 0) {
-        console.log('DEBUG: Saving', analysis.key_components.length, 'key components')
         const componentsToInsert = analysis.key_components.map(component => ({
           sentence_analysis_id: sentenceAnalysisId,
           phrase: component.phrase,
@@ -857,7 +829,6 @@ export class AIServiceServer {
 
       // Save rewrite suggestions
       if (analysis.rewrite_suggestions.length > 0) {
-        console.log('DEBUG: Saving', analysis.rewrite_suggestions.length, 'rewrite suggestions')
         const suggestionsToInsert = analysis.rewrite_suggestions.map(suggestion => ({
           sentence_analysis_id: sentenceAnalysisId,
           style: suggestion.style,
@@ -868,24 +839,18 @@ export class AIServiceServer {
         await supabase.from('sentence_rewrite_suggestions').insert(suggestionsToInsert)
       }
       
-      console.log('DEBUG: Successfully completed saveSentenceAnalysis, returning ID:', sentenceAnalysisId)
     } catch (error) {
-      console.error('DEBUG: Failed to save sentence analysis:', error)
-      console.error('DEBUG: sentenceAnalysisId at error time:', sentenceAnalysisId)
       throw error
     }
 
-    console.log('DEBUG: Final return statement, sentenceAnalysisId:', sentenceAnalysisId)
     return sentenceAnalysisId
   }
 
   private async saveParagraphAnalysis(userId: string, request: AnalyzeParagraphRequest, analysis: ParagraphAnalysis): Promise<string | null> {
-    console.log('DEBUG: Starting saveParagraphAnalysis for paragraph length:', request.paragraph.length)
     const supabase = await createClient()
     let paragraphAnalysisId: string | null = null
     
     try {
-      console.log('DEBUG: Attempting to save main paragraph analysis to database')
       // Save main paragraph analysis using upsert with proper constraint handling
       // Sử dụng constraint name thay vì column list để tránh lỗi 42P10
       const { data, error } = await supabase
@@ -910,23 +875,20 @@ export class AIServiceServer {
           better_version: analysis.constructive_feedback.better_version,
           document_id: request.sessionId || null // Đảm bảo null thay vì rỗng
         }, {
-          onConflict: 'user_id,paragraph,document_id' // Sử dụng array cột thay vì constraint name
+          onConflict: 'user_id,paragraph,document_id' // Sử dụng chuỗi cột thay vì array
         })
         .select()
         .single();
 
       if (error) {
-        console.error('DEBUG: Database error when saving paragraph analysis:', error)
         throw new Error('Failed to save paragraph analysis')
       }
 
       paragraphAnalysisId = data.id;
       
-      console.log('DEBUG: Successfully saved paragraph analysis with ID:', paragraphAnalysisId)
 
       // Save structure breakdown
       if (analysis.structure_breakdown.length > 0) {
-        console.log('DEBUG: Saving', analysis.structure_breakdown.length, 'structure breakdown items')
         const structureToInsert = analysis.structure_breakdown.map(item => ({
           paragraph_analysis_id: paragraphAnalysisId,
           sentence_index: item.sentence_index,
@@ -940,7 +902,6 @@ export class AIServiceServer {
 
       // Save constructive feedback
       if (analysis.constructive_feedback.critiques.length > 0) {
-        console.log('DEBUG: Saving', analysis.constructive_feedback.critiques.length, 'critiques')
         const feedbackToInsert = analysis.constructive_feedback.critiques.map(critique => ({
           paragraph_analysis_id: paragraphAnalysisId,
           issue_type: critique.issue_type,
@@ -951,27 +912,18 @@ export class AIServiceServer {
         await supabase.from('paragraph_constructive_feedback').insert(feedbackToInsert)
       }
       
-      console.log('DEBUG: Successfully completed saveParagraphAnalysis, returning ID:', paragraphAnalysisId)
     } catch (error) {
-      console.error('DEBUG: Failed to save paragraph analysis:', error)
-      console.error('DEBUG: paragraphAnalysisId at error time:', paragraphAnalysisId)
       throw error
     }
 
-    console.log('DEBUG: Final return statement, paragraphAnalysisId:', paragraphAnalysisId)
     return paragraphAnalysisId
   }
 
   private async savePhraseAnalysis(userId: string, request: AnalyzePhraseRequest, analysis: PhraseAnalysis): Promise<string | null> {
-    console.log('DEBUG: Starting savePhraseAnalysis for phrase:', analysis.meta.phrase)
-    console.log('DEBUG: sessionId in request:', request.sessionId)
     const supabase = await createClient()
     let phraseAnalysisId: string | null = null
     
     try {
-      console.log('DEBUG: Attempting to save main phrase analysis to database')
-      console.log('DEBUG: Will save with document_id:', request.sessionId || null)
-      
       // Map complexity level from CEFR
       const complexityLevel = analysis.meta.cefr === 'A1' || analysis.meta.cefr === 'A2' ? 'Basic' :
                             analysis.meta.cefr === 'B1' || analysis.meta.cefr === 'B2' ? 'Intermediate' : 'Advanced'
@@ -1023,21 +975,16 @@ export class AIServiceServer {
         .single()
 
       if (phraseError || !phraseAnalysisData) {
-        console.error('DEBUG: Database error when saving phrase analysis:', phraseError)
         throw new Error('Failed to save phrase analysis')
       }
 
       phraseAnalysisId = phraseAnalysisData.id
-      console.log('DEBUG: Successfully saved phrase analysis with ID:', phraseAnalysisId)
       
-      console.log('DEBUG: Successfully completed savePhraseAnalysis, returning ID:', phraseAnalysisId)
+      dbLogger.success('Phrase analysis saved', { analysisId: phraseAnalysisId })
     } catch (error) {
-      console.error('DEBUG: Failed to save phrase analysis:', error)
-      console.error('DEBUG: phraseAnalysisId at error time:', phraseAnalysisId)
       throw error
     }
 
-    console.log('DEBUG: Final return statement, phraseAnalysisId:', phraseAnalysisId)
     return phraseAnalysisId
   }
 

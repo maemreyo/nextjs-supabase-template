@@ -114,7 +114,6 @@ export function createSession(
       sessionId
     };
   } catch (error) {
-    console.error('Error creating session:', error);
     return {
       success: false,
       error: 'Failed to create session'
@@ -188,7 +187,6 @@ export function validateSession(sessionId: string): {
       session
     };
   } catch (error) {
-    console.error('Error validating session:', error);
     return {
       isValid: false,
       error: 'Failed to validate session'
@@ -249,7 +247,6 @@ export function authorizeSessionAccess(
       isAuthorized: true
     };
   } catch (error) {
-    console.error('Error authorizing session access:', error);
     return {
       isAuthorized: false,
       error: 'Failed to authorize access'
@@ -287,7 +284,6 @@ export function updateSessionMetadata(
       success: true
     };
   } catch (error) {
-    console.error('Error updating session metadata:', error);
     return {
       success: false,
       error: 'Failed to update session metadata'
@@ -323,7 +319,6 @@ export function destroySession(sessionId: string): {
       success: true
     };
   } catch (error) {
-    console.error('Error destroying session:', error);
     return {
       success: false,
       error: 'Failed to destroy session'
@@ -382,7 +377,6 @@ export function checkRateLimit(sessionId: string): {
       resetTime: rateLimitData.windowStart + SESSION_CONFIG.RATE_LIMIT_WINDOW
     };
   } catch (error) {
-    console.error('Error checking rate limit:', error);
     return {
       allowed: false,
       remainingRequests: 0,
@@ -410,7 +404,6 @@ export function getUserSessions(userId: string): {
       sessions
     };
   } catch (error) {
-    console.error('Error getting user sessions:', error);
     return {
       sessions: [],
       error: 'Failed to get user sessions'
@@ -446,7 +439,6 @@ export function cleanupExpiredSessions(): {
       cleanedSessions
     };
   } catch (error) {
-    console.error('Error cleaning up expired sessions:', error);
     return {
       cleanedSessions: 0,
       error: 'Failed to cleanup expired sessions'
@@ -481,7 +473,6 @@ export function getSessionStats(): {
       averageSessionAge
     };
   } catch (error) {
-    console.error('Error getting session stats:', error);
     return {
       totalSessions: 0,
       activeSessions: 0,

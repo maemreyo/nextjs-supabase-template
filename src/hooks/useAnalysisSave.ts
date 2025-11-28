@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-keys';
 import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis, PhraseAnalysis } from '@/lib/ai/types';
 import { useSupabase } from '@/components/providers/supabase-provider';
+import { clientLogger } from '@/services/logger';
 
 type AnalysisType = 'word' | 'sentence' | 'paragraph' | 'phrase';
 type AnalysisData = WordAnalysis | SentenceAnalysis | ParagraphAnalysis | PhraseAnalysis;
@@ -39,21 +40,16 @@ export function useAnalysisSave(options: UseAnalysisSaveOptions = {}) {
 
   const saveAnalysisMutation = useMutation<SaveAnalysisResponse, Error, SaveAnalysisParams>({
     mutationFn: async (params: SaveAnalysisParams) => {
-      console.log('🔍 [DEBUG] useAnalysisSave - Starting save analysis', {
-        type: params.type,
-        textLength: params.text.length,
-        hasSessionId: !!params.sessionId,
-        hasDocumentId: !!params.documentId,
-      });
+      clientLogger.start('Analysis save', { type: params.type })
 
       try {
         // Get access token for authentication
         const token = await getAccessToken();
-        
+
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
         };
-        
+
         // Add authorization header if token is available
         if (token) {
           headers['Authorization'] = `Bearer ${token}`;
@@ -73,16 +69,12 @@ export function useAnalysisSave(options: UseAnalysisSaveOptions = {}) {
         }
 
         const result: SaveAnalysisResponse = await response.json();
-        
-        console.log('🔍 [DEBUG] useAnalysisSave - Save successful', {
-          analysisId: result.data.analysisId,
-          sessionAnalysisId: result.data.sessionAnalysisId,
-          type: result.data.type,
-        });
+
+        clientLogger.success('Analysis saved successfully', { analysisId: result.data.analysisId, type: result.data.type })
 
         return result;
       } catch (error) {
-        console.error('🔍 [DEBUG] useAnalysisSave - Save failed', error);
+        clientLogger.error('Analysis save failed', { type: params.type })
         throw error instanceof Error ? error : new Error('Failed to save analysis');
       }
     },
