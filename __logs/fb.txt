@@ -1,0 +1,607 @@
+Phân tích lỗi, tôi thấy có **2 vấn đề chính**:
+
+## 1. Lỗi "Maximum update depth exceeded"
+
+**Nguyên nhân**: Trong `auth_store.ts`, hàm `devtools()` có cấu hình sai:
+
+```typescript
+devtools(
+  subscribeWithSelector((set, get) => ({...})),
+  {
+    name: 'auth-store',
+    getServerSnapshot: () => initialState,  // ❌ Tạo object mới mỗi lần
+  }
+)
+```
+
+Mỗi lần `getServerSnapshot` được gọi, nó tạo ra một object `initialState` mới, gây ra infinite loop trong React.
+
+## 2. Lỗi "getServerSnapshot should be cached"
+
+**Nguyên nhân**: Hook `useAuth()` tạo object selector mới mỗi lần render:
+
+```typescript
+export function useAuth() {
+    return useAuthStore((state) => {
+        return {  // ❌ Object mới mỗi lần
+            user: authSelectors.user(state),
+            // ...
+        }
+    })
+}
+```
+
+Mỗi lần component render, selector trả về object mới → gây re-render vô hạn.
+
+---
+
+## Giải pháp---
+
+## Tóm tắt các thay đổi:
+
+### 1. **auth_store.ts**
+- ✅ Tạo `getServerSnapshot` function **bên ngoài** và cache nó
+- ✅ Truyền reference của cached function vào `devtools()`
+
+### 2. **use-auth-store.ts**  
+- ✅ Thay đổi `useAuth()` từ object selector → individual selectors
+- ✅ Mỗi field subscribe riêng biệt → tránh re-render không cần thiết
+- ✅ Xóa `useCallback()` không cần thiết trong các hook khác
+- ✅ Subscribe trực tiếp vào từng selector thay vì tạo object mới
+
+### Tại sao fix này hiệu quả?
+
+**Trước:**
+```typescript
+useAuthStore((state) => ({
+  user: state.user,  // Object mới mỗi lần → re-render
+}))
+```
+
+**Sau:**
+```typescript
+const user = useAuthStore(state => state.user)  // Primitive value → chỉ re-render khi thay đổi
+const profile = useAuthStore(state => state.profile)  // Separate subscription
+```
+
+Với cách này:
+- Mỗi field có subscription riêng
+- Component chỉ re-render khi field nó sử dụng thay đổi
+- Không tạo object mới mỗi lần render
+- `getServerSnapshot` trả về cùng 1 reference
+
+=========
+auth store:
+
+import { create } from 'zustand'
+import { devtools, subscribeWithSelector } from 'zustand/middleware'
+import type { User, Session } from '@supabase/supabase-js'
+
+// User profile interface
+export interface UserProfile {
+  id: string
+  username?: string
+  full_name?: string
+  avatar_url?: string
+  website?: string
+  bio?: string
+  email?: string
+  phone?: string
+  updated_at?: string
+  [key: string]: unknown
+}
+
+// Auth state interface
+export interface AuthState {
+  user: User | null
+  profile: UserProfile | null
+  isAuthenticated: boolean
+  userDisplayName: string | null
+  userAvatar: string | null
+  userEmail: string | null
+  userId: string | null
+  isLoading: boolean
+  isInitialized: boolean
+  error: string | null
+  canEditProfile: boolean
+  isEmailVerified: boolean
+}
+
+// Auth actions interface
+export interface AuthActions {
+  setUser: (user: User | null) => void
+  setProfile: (profile: UserProfile | null) => void
+  updateUserProfile: (updates: Partial<UserProfile>) => void
+  setSession: (session: Session | null) => void
+  setTokens: (accessToken: string | null, refreshToken: string | null) => void
+  setLoading: (loading: boolean) => void
+  setError: (error: string | null) => void
+  clearError: () => void
+  setInitialized: (initialized: boolean) => void
+  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
+  signUp: (email: string, password: string, metadata?: Record<string, unknown>) => Promise<{ success: boolean; error?: string }>
+  signOut: () => Promise<void>
+  resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>
+  updatePassword: (newPassword: string) => Promise<{ success: boolean; error?: string }>
+  fetchProfile: () => Promise<void>
+  updateProfile: (updates: Partial<UserProfile>) => Promise<{ success: boolean; error?: string }>
+  uploadAvatar: (file: File) => Promise<{ success: boolean; url?: string; error?: string }>
+  refreshSession: () => Promise<void>
+  clearAuth: () => void
+}
+
+export type AuthStore = AuthState & AuthActions
+
+// Initial state - ✅ CACHED outside to prevent recreation
+const initialState: AuthState = {
+  user: null,
+  profile: null,
+  isAuthenticated: false,
+  userDisplayName: null,
+  userAvatar: null,
+  userEmail: null,
+  userId: null,
+  isLoading: false,
+  isInitialized: false,
+  error: null,
+  canEditProfile: false,
+  isEmailVerified: false,
+}
+
+// Auth selectors
+export const authSelectors = {
+  user: (state: AuthStore) => state.user,
+  profile: (state: AuthStore) => state.profile,
+  isAuthenticated: (state: AuthStore) => state.isAuthenticated,
+  userDisplayName: (state: AuthStore) => state.userDisplayName,
+  userAvatar: (state: AuthStore) => state.userAvatar,
+  userEmail: (state: AuthStore) => state.userEmail,
+  userId: (state: AuthStore) => state.userId,
+  isLoading: (state: AuthStore) => state.isLoading,
+  isInitialized: (state: AuthStore) => state.isInitialized,
+  error: (state: AuthStore) => state.error,
+  canEditProfile: (state: AuthStore) => state.canEditProfile,
+  isEmailVerified: (state: AuthStore) => state.isEmailVerified,
+}
+
+// ✅ FIX: Create getServerSnapshot outside, cached
+const getServerSnapshot = () => initialState
+
+// Create auth store
+export const useAuthStore = create<AuthStore>()(
+  devtools(
+    subscribeWithSelector((set, get) => ({
+      ...initialState,
+      
+      setUser: (user) => {
+        set(
+          {
+            user,
+            isAuthenticated: !!user,
+            userId: user?.id || null,
+            userEmail: user?.email || null,
+            userDisplayName: user?.user_metadata?.display_name || user?.email || null,
+            userAvatar: user?.user_metadata?.avatar_url || null,
+            isEmailVerified: !!user?.email_confirmed_at,
+          },
+          false,
+          'setUser'
+        )
+      },
+      
+      setProfile: (profile) => set({ profile }, false, 'setProfile'),
+      
+      updateUserProfile: (updates) => {
+        const currentProfile = get().profile
+        const newProfile = currentProfile ? { ...currentProfile, ...updates } : { id: '', ...updates }
+        set({ profile: newProfile }, false, 'updateUserProfile')
+      },
+      
+      setSession: (session) => {
+        set(
+          {
+            user: session?.user || null,
+            isAuthenticated: !!session?.user,
+            userId: session?.user?.id || null,
+            userEmail: session?.user?.email || null,
+            userDisplayName: session?.user?.user_metadata?.display_name || session?.user?.email || null,
+            userAvatar: session?.user?.user_metadata?.avatar_url || null,
+            isEmailVerified: !!session?.user?.email_confirmed_at,
+          },
+          false,
+          'setSession'
+        )
+      },
+      
+      setTokens: (accessToken, refreshToken) => {
+        console.log('Tokens set:', { accessToken: !!accessToken, refreshToken: !!refreshToken })
+      },
+      
+      setLoading: (isLoading) => set({ isLoading }, false, 'setLoading'),
+      setError: (error) => set({ error }, false, 'setError'),
+      clearError: () => set({ error: null }, false, 'clearError'),
+      setInitialized: (isInitialized) => set({ isInitialized }, false, 'setInitialized'),
+      
+      signIn: async (email, password) => {
+        set({ isLoading: true, error: null })
+        try {
+          console.log('Sign in:', { email })
+          return { success: true }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Sign in failed'
+          set({ error: errorMessage })
+          return { success: false, error: errorMessage }
+        } finally {
+          set({ isLoading: false })
+        }
+      },
+      
+      signUp: async (email, password, metadata) => {
+        set({ isLoading: true, error: null })
+        try {
+          console.log('Sign up:', { email, metadata })
+          return { success: true }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Sign up failed'
+          set({ error: errorMessage })
+          return { success: false, error: errorMessage }
+        } finally {
+          set({ isLoading: false })
+        }
+      },
+      
+      signOut: async () => {
+        set({ isLoading: true })
+        try {
+          console.log('Sign out')
+          set({
+            user: null,
+            profile: null,
+            isAuthenticated: false,
+            userDisplayName: null,
+            userAvatar: null,
+            userEmail: null,
+            userId: null,
+            isEmailVerified: false,
+            canEditProfile: false,
+          })
+        } catch (error) {
+          console.error('Sign out error:', error)
+        } finally {
+          set({ isLoading: false })
+        }
+      },
+      
+      resetPassword: async (email) => {
+        try {
+          console.log('Reset password:', { email })
+          return { success: true }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Password reset failed'
+          return { success: false, error: errorMessage }
+        }
+      },
+      
+      updatePassword: async (newPassword) => {
+        set({ isLoading: true, error: null })
+        try {
+          console.log('Update password')
+          return { success: true }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Password update failed'
+          set({ error: errorMessage })
+          return { success: false, error: errorMessage }
+        } finally {
+          set({ isLoading: false })
+        }
+      },
+      
+      fetchProfile: async () => {
+        const user = get().user
+        if (!user) return
+        
+        try {
+          console.log('Fetch profile for user:', user.id)
+        } catch (error) {
+          console.error('Fetch profile error:', error)
+        }
+      },
+      
+      updateProfile: async (updates) => {
+        set({ isLoading: true, error: null })
+        try {
+          console.log('Update profile:', updates)
+          get().updateUserProfile(updates)
+          return { success: true }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Profile update failed'
+          set({ error: errorMessage })
+          return { success: false, error: errorMessage }
+        } finally {
+          set({ isLoading: false })
+        }
+      },
+      
+      uploadAvatar: async (file) => {
+        set({ isLoading: true, error: null })
+        try {
+          console.log('Upload avatar:', file.name)
+          const url = 'https://placeholder-avatar-url.com'
+          get().updateUserProfile({ avatar_url: url })
+          return { success: true, url }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Avatar upload failed'
+          set({ error: errorMessage })
+          return { success: false, error: errorMessage }
+        } finally {
+          set({ isLoading: false })
+        }
+      },
+      
+      refreshSession: async () => {
+        try {
+          console.log('Refresh session')
+        } catch (error) {
+          console.error('Refresh session error:', error)
+          set({ error: 'Session refresh failed' })
+        }
+      },
+      
+      clearAuth: () => {
+        set({
+          user: null,
+          profile: null,
+          isAuthenticated: false,
+          userDisplayName: null,
+          userAvatar: null,
+          userEmail: null,
+          userId: null,
+          isEmailVerified: false,
+          canEditProfile: false,
+          error: null,
+        })
+      },
+    })),
+    {
+      name: 'auth-store',
+      // ✅ FIX: Use cached function reference
+      getServerSnapshot,
+    }
+  )
+)
+
+========
+use auth store
+
+import { useCallback, useEffect } from 'react'
+import { useAuthStore, authSelectors } from '@/stores/auth_store'
+
+// ✅ FIX: Use individual selectors instead of creating object
+// This prevents unnecessary re-renders
+export function useAuth() {
+    const user = useAuthStore(authSelectors.user)
+    const profile = useAuthStore(authSelectors.profile)
+    const isAuthenticated = useAuthStore(authSelectors.isAuthenticated)
+    const userDisplayName = useAuthStore(authSelectors.userDisplayName)
+    const userAvatar = useAuthStore(authSelectors.userAvatar)
+    const userEmail = useAuthStore(authSelectors.userEmail)
+    const userId = useAuthStore(authSelectors.userId)
+    const isLoading = useAuthStore(authSelectors.isLoading)
+    const isInitialized = useAuthStore(authSelectors.isInitialized)
+    const error = useAuthStore(authSelectors.error)
+    const canEditProfile = useAuthStore(authSelectors.canEditProfile)
+    const isEmailVerified = useAuthStore(authSelectors.isEmailVerified)
+
+    // Get actions separately (these are stable references)
+    const setUser = useAuthStore(state => state.setUser)
+    const setProfile = useAuthStore(state => state.setProfile)
+    const updateUserProfile = useAuthStore(state => state.updateUserProfile)
+    const setSession = useAuthStore(state => state.setSession)
+    const setTokens = useAuthStore(state => state.setTokens)
+    const setLoading = useAuthStore(state => state.setLoading)
+    const setError = useAuthStore(state => state.setError)
+    const clearError = useAuthStore(state => state.clearError)
+    const setInitialized = useAuthStore(state => state.setInitialized)
+    const signIn = useAuthStore(state => state.signIn)
+    const signUp = useAuthStore(state => state.signUp)
+    const signOut = useAuthStore(state => state.signOut)
+    const resetPassword = useAuthStore(state => state.resetPassword)
+    const updatePassword = useAuthStore(state => state.updatePassword)
+    const fetchProfile = useAuthStore(state => state.fetchProfile)
+    const updateProfile = useAuthStore(state => state.updateProfile)
+    const uploadAvatar = useAuthStore(state => state.uploadAvatar)
+    const refreshSession = useAuthStore(state => state.refreshSession)
+    const clearAuth = useAuthStore(state => state.clearAuth)
+
+    return {
+        user,
+        profile,
+        isAuthenticated,
+        userDisplayName,
+        userAvatar,
+        userEmail,
+        userId,
+        isLoading,
+        isInitialized,
+        error,
+        canEditProfile,
+        isEmailVerified,
+        setUser,
+        setProfile,
+        updateUserProfile,
+        setSession,
+        setTokens,
+        setLoading,
+        setError,
+        clearError,
+        setInitialized,
+        signIn,
+        signUp,
+        signOut,
+        resetPassword,
+        updatePassword,
+        fetchProfile,
+        updateProfile,
+        uploadAvatar,
+        refreshSession,
+        clearAuth,
+    }
+}
+
+export function useAuthUser() {
+    return useAuthStore(authSelectors.user)
+}
+
+export function useAuthProfile() {
+    return useAuthStore(authSelectors.profile)
+}
+
+// ✅ Optimized: Only subscribe to specific fields
+export function useAuthState() {
+    const isAuthenticated = useAuthStore(authSelectors.isAuthenticated)
+    const isLoading = useAuthStore(authSelectors.isLoading)
+    const isInitialized = useAuthStore(authSelectors.isInitialized)
+    const error = useAuthStore(authSelectors.error)
+    const user = useAuthStore(authSelectors.user)
+
+    return {
+        isAuthenticated,
+        isLoading,
+        isInitialized,
+        error,
+        user,
+    }
+}
+
+export function useAuthActions() {
+    const signIn = useAuthStore(state => state.signIn)
+    const signUp = useAuthStore(state => state.signUp)
+    const signOut = useAuthStore(state => state.signOut)
+    const resetPassword = useAuthStore(state => state.resetPassword)
+    const updatePassword = useAuthStore(state => state.updatePassword)
+    const fetchProfile = useAuthStore(state => state.fetchProfile)
+    const updateProfile = useAuthStore(state => state.updateProfile)
+    const uploadAvatar = useAuthStore(state => state.uploadAvatar)
+    const refreshSession = useAuthStore(state => state.refreshSession)
+    const clearAuth = useAuthStore(state => state.clearAuth)
+    const setLoading = useAuthStore(state => state.setLoading)
+    const setError = useAuthStore(state => state.setError)
+    const clearError = useAuthStore(state => state.clearError)
+    const setInitialized = useAuthStore(state => state.setInitialized)
+
+    return {
+        signIn,
+        signUp,
+        signOut,
+        resetPassword,
+        updatePassword,
+        fetchProfile,
+        updateProfile,
+        uploadAvatar,
+        refreshSession,
+        clearAuth,
+        setLoading,
+        setError,
+        clearError,
+        setInitialized,
+    }
+}
+
+export function useUserInfo() {
+    const displayName = useAuthStore(authSelectors.userDisplayName)
+    const avatar = useAuthStore(authSelectors.userAvatar)
+    const email = useAuthStore(authSelectors.userEmail)
+    const id = useAuthStore(authSelectors.userId)
+    const isEmailVerified = useAuthStore(authSelectors.isEmailVerified)
+
+    return {
+        displayName,
+        avatar,
+        email,
+        id,
+        isEmailVerified,
+    }
+}
+
+export function useAuthPermissions() {
+    const canEditProfile = useAuthStore(authSelectors.canEditProfile)
+    const isEmailVerified = useAuthStore(authSelectors.isEmailVerified)
+
+    return {
+        canEditProfile,
+        isEmailVerified,
+    }
+}
+
+// Hook for auth initialization
+export function useAuthInit() {
+    const isInitialized = useAuthStore(state => state.isInitialized)
+
+    useEffect(() => {
+        // Skip if already initialized
+        if (isInitialized) {
+            return
+        }
+
+        let mounted = true
+
+        const initializeAuth = async () => {
+            try {
+                useAuthStore.getState().clearError()
+                await useAuthStore.getState().refreshSession()
+            } catch (error) {
+                console.error('Auth initialization failed:', error)
+            } finally {
+                if (mounted) {
+                    useAuthStore.getState().setInitialized(true)
+                }
+            }
+        }
+
+        initializeAuth()
+
+        return () => {
+            mounted = false
+        }
+    }, [isInitialized])
+}
+
+// Hook for auth session monitoring
+export function useAuthSessionMonitor() {
+    const isAuthenticated = useAuthStore(authSelectors.isAuthenticated)
+    const user = useAuthStore(authSelectors.user)
+
+    useEffect(() => {
+        if (!isAuthenticated || !user) {
+            return
+        }
+
+        // Set up session refresh interval
+        const interval = setInterval(async () => {
+            try {
+                await useAuthStore.getState().refreshSession()
+            } catch (error) {
+                console.error('Session refresh failed:', error)
+                useAuthStore.getState().clearAuth()
+            }
+        }, 5 * 60 * 1000) // Refresh every 5 minutes
+
+        return () => {
+            clearInterval(interval)
+        }
+    }, [isAuthenticated, user])
+
+    // Monitor visibility change to refresh session when tab becomes active
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible' && isAuthenticated) {
+                useAuthStore.getState().refreshSession().catch(console.error)
+            }
+        }
+
+        document.addEventListener('visibilitychange', handleVisibilityChange)
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange)
+        }
+    }, [isAuthenticated])
+}

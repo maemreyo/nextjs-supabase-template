@@ -13,68 +13,51 @@ export interface UserProfile {
   email?: string
   phone?: string
   updated_at?: string
-  [key: string]: unknown // Allow additional properties
+  [key: string]: unknown
 }
 
 // Auth state interface
 export interface AuthState {
-  // User data
   user: User | null
   profile: UserProfile | null
   isAuthenticated: boolean
-  
-  // User info
   userDisplayName: string | null
   userAvatar: string | null
   userEmail: string | null
   userId: string | null
-  
-  // Auth state
   isLoading: boolean
   isInitialized: boolean
   error: string | null
-  
-  // Permissions
   canEditProfile: boolean
   isEmailVerified: boolean
 }
 
 // Auth actions interface
 export interface AuthActions {
-  // User data setters
   setUser: (user: User | null) => void
   setProfile: (profile: UserProfile | null) => void
   updateUserProfile: (updates: Partial<UserProfile>) => void
   setSession: (session: Session | null) => void
   setTokens: (accessToken: string | null, refreshToken: string | null) => void
-  
-  // State setters
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
   clearError: () => void
   setInitialized: (initialized: boolean) => void
-  
-  // Auth flow
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
   signUp: (email: string, password: string, metadata?: Record<string, unknown>) => Promise<{ success: boolean; error?: string }>
   signOut: () => Promise<void>
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>
   updatePassword: (newPassword: string) => Promise<{ success: boolean; error?: string }>
-  
-  // Profile
   fetchProfile: () => Promise<void>
   updateProfile: (updates: Partial<UserProfile>) => Promise<{ success: boolean; error?: string }>
   uploadAvatar: (file: File) => Promise<{ success: boolean; url?: string; error?: string }>
-  
-  // Utility
   refreshSession: () => Promise<void>
   clearAuth: () => void
 }
 
-// Auth store type
 export type AuthStore = AuthState & AuthActions
 
-// Initial state
+// Initial state - ✅ CACHED outside to prevent recreation
 const initialState: AuthState = {
   user: null,
   profile: null,
@@ -106,13 +89,15 @@ export const authSelectors = {
   isEmailVerified: (state: AuthStore) => state.isEmailVerified,
 }
 
+// ✅ FIX: Create getServerSnapshot outside, cached
+const getServerSnapshot = () => initialState
+
 // Create auth store
 export const useAuthStore = create<AuthStore>()(
   devtools(
     subscribeWithSelector((set, get) => ({
       ...initialState,
       
-      // User data setters
       setUser: (user) => {
         set(
           {
@@ -154,21 +139,17 @@ export const useAuthStore = create<AuthStore>()(
       },
       
       setTokens: (accessToken, refreshToken) => {
-        // Store tokens if needed (usually handled by Supabase client)
         console.log('Tokens set:', { accessToken: !!accessToken, refreshToken: !!refreshToken })
       },
       
-      // State setters
       setLoading: (isLoading) => set({ isLoading }, false, 'setLoading'),
       setError: (error) => set({ error }, false, 'setError'),
       clearError: () => set({ error: null }, false, 'clearError'),
       setInitialized: (isInitialized) => set({ isInitialized }, false, 'setInitialized'),
       
-      // Auth flow (placeholder implementations - would integrate with Supabase)
-      signIn: async (email, password) => {
+      signIn: async (email, _password) => {
         set({ isLoading: true, error: null })
         try {
-          // Placeholder implementation
           console.log('Sign in:', { email })
           return { success: true }
         } catch (error) {
@@ -183,7 +164,6 @@ export const useAuthStore = create<AuthStore>()(
       signUp: async (email, password, metadata) => {
         set({ isLoading: true, error: null })
         try {
-          // Placeholder implementation
           console.log('Sign up:', { email, metadata })
           return { success: true }
         } catch (error) {
@@ -198,7 +178,6 @@ export const useAuthStore = create<AuthStore>()(
       signOut: async () => {
         set({ isLoading: true })
         try {
-          // Placeholder implementation
           console.log('Sign out')
           set({
             user: null,
@@ -220,7 +199,6 @@ export const useAuthStore = create<AuthStore>()(
       
       resetPassword: async (email) => {
         try {
-          // Placeholder implementation
           console.log('Reset password:', { email })
           return { success: true }
         } catch (error) {
@@ -229,10 +207,9 @@ export const useAuthStore = create<AuthStore>()(
         }
       },
       
-      updatePassword: async (newPassword) => {
+      updatePassword: async (_newPassword) => {
         set({ isLoading: true, error: null })
         try {
-          // Placeholder implementation
           console.log('Update password')
           return { success: true }
         } catch (error) {
@@ -244,15 +221,12 @@ export const useAuthStore = create<AuthStore>()(
         }
       },
       
-      // Profile
       fetchProfile: async () => {
         const user = get().user
         if (!user) return
         
         try {
-          // Placeholder implementation
           console.log('Fetch profile for user:', user.id)
-          // Would fetch from database
         } catch (error) {
           console.error('Fetch profile error:', error)
         }
@@ -261,7 +235,6 @@ export const useAuthStore = create<AuthStore>()(
       updateProfile: async (updates) => {
         set({ isLoading: true, error: null })
         try {
-          // Placeholder implementation
           console.log('Update profile:', updates)
           get().updateUserProfile(updates)
           return { success: true }
@@ -277,7 +250,6 @@ export const useAuthStore = create<AuthStore>()(
       uploadAvatar: async (file) => {
         set({ isLoading: true, error: null })
         try {
-          // Placeholder implementation
           console.log('Upload avatar:', file.name)
           const url = 'https://placeholder-avatar-url.com'
           get().updateUserProfile({ avatar_url: url })
@@ -291,10 +263,8 @@ export const useAuthStore = create<AuthStore>()(
         }
       },
       
-      // Utility
       refreshSession: async () => {
         try {
-          // Placeholder implementation
           console.log('Refresh session')
         } catch (error) {
           console.error('Refresh session error:', error)
@@ -319,7 +289,8 @@ export const useAuthStore = create<AuthStore>()(
     })),
     {
       name: 'auth-store',
-      getServerSnapshot: () => initialState,
+      // ✅ FIX: Use cached function reference
+      getServerSnapshot,
     }
   )
 )

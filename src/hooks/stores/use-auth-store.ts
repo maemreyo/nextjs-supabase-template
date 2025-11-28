@@ -1,62 +1,76 @@
-import { useCallback, useEffect, useRef } from 'react'
-import { shallow } from 'zustand/shallow'
+import { useEffect } from 'react'
 import { useAuthStore, authSelectors } from '@/stores/auth_store'
 
-// Auth hook with optimized selectors
+// ✅ FIX: Use individual selectors instead of creating object
+// This prevents unnecessary re-renders
 export function useAuth() {
-    console.log('🔍 [DEBUG] useAuth() called - creating new object selector')
-    return useAuthStore(
-        (state) => {
-            return {
-                // User data
-                user: authSelectors.user(state),
-                profile: authSelectors.profile(state),
-                isAuthenticated: authSelectors.isAuthenticated(state),
+    const user = useAuthStore(authSelectors.user)
+    const profile = useAuthStore(authSelectors.profile)
+    const isAuthenticated = useAuthStore(authSelectors.isAuthenticated)
+    const userDisplayName = useAuthStore(authSelectors.userDisplayName)
+    const userAvatar = useAuthStore(authSelectors.userAvatar)
+    const userEmail = useAuthStore(authSelectors.userEmail)
+    const userId = useAuthStore(authSelectors.userId)
+    const isLoading = useAuthStore(authSelectors.isLoading)
+    const isInitialized = useAuthStore(authSelectors.isInitialized)
+    const error = useAuthStore(authSelectors.error)
+    const canEditProfile = useAuthStore(authSelectors.canEditProfile)
+    const isEmailVerified = useAuthStore(authSelectors.isEmailVerified)
 
-                // User info
-                userDisplayName: authSelectors.userDisplayName(state),
-                userAvatar: authSelectors.userAvatar(state),
-                userEmail: authSelectors.userEmail(state),
-                userId: authSelectors.userId(state),
+    // Get actions separately (these are stable references)
+    const setUser = useAuthStore(state => state.setUser)
+    const setProfile = useAuthStore(state => state.setProfile)
+    const updateUserProfile = useAuthStore(state => state.updateUserProfile)
+    const setSession = useAuthStore(state => state.setSession)
+    const setTokens = useAuthStore(state => state.setTokens)
+    const setLoading = useAuthStore(state => state.setLoading)
+    const setError = useAuthStore(state => state.setError)
+    const clearError = useAuthStore(state => state.clearError)
+    const setInitialized = useAuthStore(state => state.setInitialized)
+    const signIn = useAuthStore(state => state.signIn)
+    const signUp = useAuthStore(state => state.signUp)
+    const signOut = useAuthStore(state => state.signOut)
+    const resetPassword = useAuthStore(state => state.resetPassword)
+    const updatePassword = useAuthStore(state => state.updatePassword)
+    const fetchProfile = useAuthStore(state => state.fetchProfile)
+    const updateProfile = useAuthStore(state => state.updateProfile)
+    const uploadAvatar = useAuthStore(state => state.uploadAvatar)
+    const refreshSession = useAuthStore(state => state.refreshSession)
+    const clearAuth = useAuthStore(state => state.clearAuth)
 
-                // Auth state
-                isLoading: authSelectors.isLoading(state),
-                isInitialized: authSelectors.isInitialized(state),
-                error: authSelectors.error(state),
-
-                // Permissions
-                canEditProfile: authSelectors.canEditProfile(state),
-                isEmailVerified: authSelectors.isEmailVerified(state),
-
-                // Actions
-                setUser: state.setUser,
-                setProfile: state.setProfile,
-                updateUserProfile: state.updateUserProfile,
-                setSession: state.setSession,
-                setTokens: state.setTokens,
-                setLoading: state.setLoading,
-                setError: state.setError,
-                clearError: state.clearError,
-                setInitialized: state.setInitialized,
-
-                // Auth flow
-                signIn: state.signIn,
-                signUp: state.signUp,
-                signOut: state.signOut,
-                resetPassword: state.resetPassword,
-                updatePassword: state.updatePassword,
-
-                // Profile
-                fetchProfile: state.fetchProfile,
-                updateProfile: state.updateProfile,
-                uploadAvatar: state.uploadAvatar,
-
-                // Utility
-                refreshSession: state.refreshSession,
-                clearAuth: state.clearAuth,
-            }
-        },
-    )
+    return {
+        user,
+        profile,
+        isAuthenticated,
+        userDisplayName,
+        userAvatar,
+        userEmail,
+        userId,
+        isLoading,
+        isInitialized,
+        error,
+        canEditProfile,
+        isEmailVerified,
+        setUser,
+        setProfile,
+        updateUserProfile,
+        setSession,
+        setTokens,
+        setLoading,
+        setError,
+        clearError,
+        setInitialized,
+        signIn,
+        signUp,
+        signOut,
+        resetPassword,
+        updatePassword,
+        fetchProfile,
+        updateProfile,
+        uploadAvatar,
+        refreshSession,
+        clearAuth,
+    }
 }
 
 export function useAuthUser() {
@@ -67,101 +81,103 @@ export function useAuthProfile() {
     return useAuthStore(authSelectors.profile)
 }
 
+// ✅ Optimized: Only subscribe to specific fields
 export function useAuthState() {
-    return useAuthStore(
-        useCallback(
-            (state) => ({
-                isAuthenticated: authSelectors.isAuthenticated(state),
-                isLoading: authSelectors.isLoading(state),
-                isInitialized: authSelectors.isInitialized(state),
-                error: authSelectors.error(state),
-                user: authSelectors.user(state),
-            }),
-            []
-        ),
-    )
+    const isAuthenticated = useAuthStore(authSelectors.isAuthenticated)
+    const isLoading = useAuthStore(authSelectors.isLoading)
+    const isInitialized = useAuthStore(authSelectors.isInitialized)
+    const error = useAuthStore(authSelectors.error)
+    const user = useAuthStore(authSelectors.user)
+
+    return {
+        isAuthenticated,
+        isLoading,
+        isInitialized,
+        error,
+        user,
+    }
 }
 
 export function useAuthActions() {
-    return useAuthStore(
-        useCallback(
-            (state) => ({
-                signIn: state.signIn,
-                signUp: state.signUp,
-                signOut: state.signOut,
-                resetPassword: state.resetPassword,
-                updatePassword: state.updatePassword,
-                fetchProfile: state.fetchProfile,
-                updateProfile: state.updateProfile,
-                uploadAvatar: state.uploadAvatar,
-                refreshSession: state.refreshSession,
-                clearAuth: state.clearAuth,
-                setLoading: state.setLoading,
-                setError: state.setError,
-                clearError: state.clearError,
-                setInitialized: state.setInitialized,
-            }),
-            []
-        )
-    )
+    const signIn = useAuthStore(state => state.signIn)
+    const signUp = useAuthStore(state => state.signUp)
+    const signOut = useAuthStore(state => state.signOut)
+    const resetPassword = useAuthStore(state => state.resetPassword)
+    const updatePassword = useAuthStore(state => state.updatePassword)
+    const fetchProfile = useAuthStore(state => state.fetchProfile)
+    const updateProfile = useAuthStore(state => state.updateProfile)
+    const uploadAvatar = useAuthStore(state => state.uploadAvatar)
+    const refreshSession = useAuthStore(state => state.refreshSession)
+    const clearAuth = useAuthStore(state => state.clearAuth)
+    const setLoading = useAuthStore(state => state.setLoading)
+    const setError = useAuthStore(state => state.setError)
+    const clearError = useAuthStore(state => state.clearError)
+    const setInitialized = useAuthStore(state => state.setInitialized)
+
+    return {
+        signIn,
+        signUp,
+        signOut,
+        resetPassword,
+        updatePassword,
+        fetchProfile,
+        updateProfile,
+        uploadAvatar,
+        refreshSession,
+        clearAuth,
+        setLoading,
+        setError,
+        clearError,
+        setInitialized,
+    }
 }
 
 export function useUserInfo() {
-    return useAuthStore(
-        useCallback(
-            (state) => ({
-                displayName: authSelectors.userDisplayName(state),
-                avatar: authSelectors.userAvatar(state),
-                email: authSelectors.userEmail(state),
-                id: authSelectors.userId(state),
-                isEmailVerified: authSelectors.isEmailVerified(state),
-            }),
-            []
-        )
-    )
+    const displayName = useAuthStore(authSelectors.userDisplayName)
+    const avatar = useAuthStore(authSelectors.userAvatar)
+    const email = useAuthStore(authSelectors.userEmail)
+    const id = useAuthStore(authSelectors.userId)
+    const isEmailVerified = useAuthStore(authSelectors.isEmailVerified)
+
+    return {
+        displayName,
+        avatar,
+        email,
+        id,
+        isEmailVerified,
+    }
 }
 
 export function useAuthPermissions() {
-    return useAuthStore(
-        useCallback(
-            (state) => ({
-                canEditProfile: authSelectors.canEditProfile(state),
-                isEmailVerified: authSelectors.isEmailVerified(state),
-            }),
-            []
-        )
-    )
+    const canEditProfile = useAuthStore(authSelectors.canEditProfile)
+    const isEmailVerified = useAuthStore(authSelectors.isEmailVerified)
+
+    return {
+        canEditProfile,
+        isEmailVerified,
+    }
 }
 
 // Hook for auth initialization
 export function useAuthInit() {
-    console.log('🔍 [DEBUG] useAuthInit() called')
-
-    // Get isInitialized state directly with shallow comparison
     const isInitialized = useAuthStore(state => state.isInitialized)
 
     useEffect(() => {
-        console.log('🔍 [DEBUG] useAuthInit() main useEffect triggered, isInitialized:', isInitialized)
         // Skip if already initialized
         if (isInitialized) {
-            console.log('🔍 [DEBUG] useAuthInit() already initialized, skipping')
             return
         }
 
         let mounted = true
 
         const initializeAuth = async () => {
-            console.log('🔍 [DEBUG] useAuthInit() initializeAuth() starting')
             try {
-                // Use getState() directly to avoid function recreation
                 useAuthStore.getState().clearError()
                 await useAuthStore.getState().refreshSession()
-                console.log('🔍 [DEBUG] useAuthInit() refreshSession completed')
             } catch (error) {
                 console.error('Auth initialization failed:', error)
             } finally {
                 if (mounted) {
-                    console.log('🔍 [DEBUG] useAuthInit() setting initialized to true')
                     useAuthStore.getState().setInitialized(true)
                 }
             }
@@ -172,12 +188,13 @@ export function useAuthInit() {
         return () => {
             mounted = false
         }
-    }, [isInitialized]) // Only depend on isInitialized
+    }, [isInitialized])
 }
 
 // Hook for auth session monitoring
 export function useAuthSessionMonitor() {
-    const { isAuthenticated, user } = useAuthState()
+    const isAuthenticated = useAuthStore(authSelectors.isAuthenticated)
+    const user = useAuthStore(authSelectors.user)
 
     useEffect(() => {
         if (!isAuthenticated || !user) {
@@ -187,7 +204,6 @@ export function useAuthSessionMonitor() {
         // Set up session refresh interval
         const interval = setInterval(async () => {
             try {
-                // Use getState() directly to avoid function recreation
                 await useAuthStore.getState().refreshSession()
             } catch (error) {
                 console.error('Session refresh failed:', error)
@@ -198,7 +214,7 @@ export function useAuthSessionMonitor() {
         return () => {
             clearInterval(interval)
         }
-    }, [isAuthenticated, user]) // Only depend on state values
+    }, [isAuthenticated, user])
 
     // Monitor visibility change to refresh session when tab becomes active
     useEffect(() => {
@@ -212,5 +228,5 @@ export function useAuthSessionMonitor() {
         return () => {
             document.removeEventListener('visibilitychange', handleVisibilityChange)
         }
-    }, [isAuthenticated]) // Only depend on isAuthenticated
+    }, [isAuthenticated])
 }
