@@ -3,8 +3,8 @@ import type { AnalysisSession, AnalysisSessionUpdate } from '@/types/sessions';
 
 // GET /api/sessions/[id] - Get specific session
 export const GET = withAuth(
-  async (request, { user, supabase }, { params }) => {
-    const { id: sessionId } = await params;
+  async (request, { user, supabase, params }) => {
+    const { id: sessionId } = params;
 
     // Get session with analyses and settings
     const { data: session, error: sessionError } = await supabase
@@ -28,8 +28,8 @@ export const GET = withAuth(
 
 // PATCH /api/sessions/[id] - Update specific session
 export const PATCH = withAuth(
-  async (request, { user, supabase }, { params }) => {
-    const { id: sessionId } = await params;
+  async (request, { user, supabase, params }) => {
+    const { id: sessionId } = params;
     const updates: AnalysisSessionUpdate = await request.json();
 
     // Check if user owns the session
@@ -62,8 +62,8 @@ export const PATCH = withAuth(
 
 // DELETE /api/sessions/[id] - Delete specific session
 export const DELETE = withAuth(
-  async (request, { user, supabase }, { params }) => {
-    const { id: sessionId } = await params;
+  async (request, { user, supabase, params }) => {
+    const { id: sessionId } = params;
 
     // Check if user owns the session
     const { data: existingSession, error: checkError } = await supabase

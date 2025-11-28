@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useEffect, useRef } from 'react';
-import { useDialogStore } from '../../../../stores/analysis-dialog-store';
+import { useDialogStore } from '../../../../hooks/stores/analysis-dialog-store';
 import { AnalysisType } from '../types/dialog-types';
 
 /**
@@ -59,25 +59,39 @@ interface UseDialogLoadingReturn {
  * Hook quản lý loading state nhất quán cho dialog
  */
 export const useDialogLoading = (type: AnalysisType): UseDialogLoadingReturn => {
-  const store = useDialogStore();
+  // Get store functions directly to avoid dependency issues
+  const dialogStates = useDialogStore(state => state.dialogStates);
+  const dialogData = useDialogStore(state => state.dialogData);
+  const setDialogLoading = useDialogStore(state => state.setDialogLoading);
+  const setDialogError = useDialogStore(state => state.setDialogError);
   
   // Use ref to maintain stable store reference
-  const storeRef = useRef(store);
-  storeRef.current = store;
+  const storeRef = useRef({
+    dialogStates,
+    dialogData,
+    setDialogLoading,
+    setDialogError
+  });
+  storeRef.current = {
+    dialogStates,
+    dialogData,
+    setDialogLoading,
+    setDialogError
+  };
   
   // Global loading state
   const isLoading = useMemo(() => 
-    store.dialogStates[type]?.loading || false, 
-    [store.dialogStates, type]
+    dialogStates[type]?.loading || false, 
+    [dialogStates, type]
   );
   
   const error = useMemo(() => 
-    store.dialogStates[type]?.error || null, 
-    [store.dialogStates, type]
+    dialogStates[type]?.error || null, 
+    [dialogStates, type]
   );
   
   const message = useMemo(() => {
-    const state = store.dialogStates[type];
+    const state = dialogStates[type];
     if (!state) return null;
     
     // Determine message based on source and context
@@ -94,7 +108,7 @@ export const useDialogLoading = (type: AnalysisType): UseDialogLoadingReturn => 
     if (state.actions?.edit) return 'Đang chỉnh sửa...';
     
     return null;
-  }, [store.dialogStates, type]);
+  }, [dialogStates, type]);
   
   // Set global loading
   const setGlobalLoading = useCallback((loading: boolean, message?: string) => {
@@ -142,7 +156,7 @@ export const useDialogLoading = (type: AnalysisType): UseDialogLoadingReturn => 
   
   // Computed states
   const hasAnyLoading = useMemo(() => {
-    const state = store.dialogStates[type];
+    const state = dialogStates[type];
     if (!state) return false;
     
     return (
@@ -151,10 +165,10 @@ export const useDialogLoading = (type: AnalysisType): UseDialogLoadingReturn => 
       state.fetching?.relatedData ||
       Object.values(state.actions || {}).some(actionLoading => actionLoading)
     );
-  }, [store.dialogStates, type]);
+  }, [dialogStates, type]);
   
   const primaryLoadingSource = useMemo(() => {
-    const state = store.dialogStates[type];
+    const state = dialogStates[type];
     if (!state) return 'none';
     
     if (state.loading) return 'global';
@@ -166,11 +180,11 @@ export const useDialogLoading = (type: AnalysisType): UseDialogLoadingReturn => 
       .map(([action]) => action);
     
     return activeActions.length > 0 ? `action:${activeActions[0]}` : 'none';
-  }, [store.dialogStates, type]);
+  }, [dialogStates, type]);
   
   // Complete loading state object
   const loadingStates: DialogLoadingState = useMemo(() => {
-    const state = store.dialogStates[type];
+    const state = dialogStates[type];
     return {
       isLoading: state?.loading || false,
       error: state?.error || null,
@@ -193,7 +207,7 @@ export const useDialogLoading = (type: AnalysisType): UseDialogLoadingReturn => 
       source: primaryLoadingSource === 'global' ? 'global' :
               primaryLoadingSource === 'local' ? 'local' : 'action'
     };
-  }, [store.dialogStates, type, primaryLoadingSource]);
+  }, [dialogStates, type, primaryLoadingSource]);
   
   // Auto-clear loading when data is available
   useEffect(() => {
@@ -204,16 +218,14 @@ export const useDialogLoading = (type: AnalysisType): UseDialogLoadingReturn => 
     const hasData = !!storeRef.current.dialogData[type];
     const hasActiveActions = Object.values(state.actions || {}).some(loading => loading);
     
-    
-    
     if (hasData && !hasActiveActions && state.loading) {
       storeRef.current.setDialogLoading(type, false);
     }
-  }, [type, storeRef.current.dialogStates[type]?.loading, storeRef.current.dialogData[type]]); // Fixed dependencies
+  }, [type]); // Removed unstable dependencies
   
   // Auto-clear loading on error
   useEffect(() => {
-    const state = store.dialogStates[type];
+    const state = storeRef.current.dialogStates[type];
     if (state?.error) {
       // Clear all loading states when there's an error
       storeRef.current.setDialogLoading(type, {
@@ -226,7 +238,7 @@ export const useDialogLoading = (type: AnalysisType): UseDialogLoadingReturn => 
         actions: {}
       } as any);
     }
-  }, [type, store.dialogStates[type]?.error]); // Fixed dependencies
+  }, [type]); // Removed unstable dependencies
   
   return {
     isLoading,

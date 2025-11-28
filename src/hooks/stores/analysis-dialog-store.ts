@@ -7,7 +7,7 @@ import {
   DialogSettings,
   AnalysisType,
   AnalysisItem
-} from '../components/analysis/dialogs/types/dialog-types';
+} from '../../components/analysis/dialogs/types/dialog-types';
 
 // Initial dialog states
 const initialDialogStates: Record<AnalysisType, DialogState> = {
@@ -97,7 +97,7 @@ const getDialogOpenState = (openDialogs: Record<AnalysisType, boolean>, type: An
   return openDialogs[type] || false;
 };
 
-// Create the Zustand store
+// Create Zustand store
 export const useDialogStore = create<DialogStore>()(
   persist(
     (set, get) => ({

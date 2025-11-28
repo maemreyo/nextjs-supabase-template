@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAnalysisSave } from '@/hooks/useAnalysisSave';
-import { useSessionStore } from '@/stores/session-store';
+import { useSessionStore } from '@/hooks/stores/use-session-store';
 import { useSessionData } from '@/hooks/useSessionData';
 import { usePathname, useRouter } from 'next/navigation';
 import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis } from '@/lib/ai/types';

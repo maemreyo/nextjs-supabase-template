@@ -137,7 +137,7 @@ function tiptapToPlainText(data: any): string {
 
 // PATCH /api/sessions/[id]/content - Update session content
 export const PATCH = withAuth(
-  async (request, { user, supabase }, { params }) => {
+  async (request, { user, supabase, params }) => {
     // Parse request body
     const body: UpdateSessionContentRequest = await request.json();
     console.log('🔍 [DEBUG] API content route - Request body keys:', Object.keys(body));
@@ -155,7 +155,7 @@ export const PATCH = withAuth(
       return createErrorResponse('Invalid TipTap JSON structure', 400);
     }
 
-    const { id: sessionId } = await params;
+    const { id: sessionId } = params;
 
     if (!sessionId) {
       return createErrorResponse('Session ID is required', 400);
@@ -229,8 +229,8 @@ export const PATCH = withAuth(
 
 // GET /api/sessions/[id]/content - Get session content
 export const GET = withAuth(
-  async (request, { user, supabase }, { params }) => {
-    const { id: sessionId } = await params;
+  async (request, { user, supabase, params }) => {
+    const { id: sessionId } = params;
 
     if (!sessionId) {
       return createErrorResponse('Session ID is required', 400);

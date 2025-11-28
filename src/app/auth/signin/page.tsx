@@ -11,14 +11,14 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { useAuthStore } from '@/stores/auth-store'
+import { useAuth } from '@/hooks/stores/use-auth-store'
 import { EyeIcon, EyeOffIcon, Loader2Icon } from 'lucide-react'
 import { signInSchema, type SignInFormValues } from '@/lib/validations/auth'
 
 function SignInPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { signIn, isLoading, error } = useAuthStore()
+  const { signIn, isLoading, error } = useAuth()
   
   const [showPassword, setShowPassword] = useState(false)
   

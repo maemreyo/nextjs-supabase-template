@@ -7,7 +7,7 @@ import {
   DialogSettings,
   DialogGlobalState
 } from '../types/dialog-types';
-import { dialogStoreUtils } from '../../../../stores/analysis-dialog-store';
+import { dialogStoreUtils } from '@/hooks/stores/analysis-dialog-store';
 import { dialogEventBus } from './dialog-event-bus';
 import { dialogUtils } from './dialog-utilities';
 

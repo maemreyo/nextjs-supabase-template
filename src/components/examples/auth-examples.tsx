@@ -34,8 +34,8 @@ export function AuthStatusExample() {
       <CardHeader>
         <div className="flex items-center space-x-4">
           <Avatar className="h-12 w-12">
-            <AvatarImage src={userAvatar || undefined} alt={userDisplayName} />
-            <AvatarFallback>{userDisplayName.charAt(0).toUpperCase()}</AvatarFallback>
+            <AvatarImage src={userAvatar || undefined} alt={userDisplayName || ''} />
+            <AvatarFallback>{userDisplayName?.charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>
           <div>
             <CardTitle className="text-lg">{userDisplayName}</CardTitle>

@@ -263,16 +263,16 @@ export const WordDialogActions: React.FC<WordDialogActionsProps> = ({
           <Button
             variant="default"
             size="sm"
-            onClick={visiblePrimaryActions[0].onClick}
-            disabled={visiblePrimaryActions[0].disabled}
+            onClick={visiblePrimaryActions[0]?.onClick}
+            disabled={visiblePrimaryActions[0]?.disabled}
             className="flex-1"
           >
-            {visiblePrimaryActions[0].loading ? (
+            {visiblePrimaryActions[0]?.loading ? (
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary border-t-transparent mr-2"></div>
             ) : (
-              visiblePrimaryActions[0].icon
+              visiblePrimaryActions[0]?.icon
             )}
-            {visiblePrimaryActions[0].label}
+            {visiblePrimaryActions[0]?.label}
           </Button>
         )}
         

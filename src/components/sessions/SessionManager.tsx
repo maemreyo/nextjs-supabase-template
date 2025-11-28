@@ -150,8 +150,8 @@ export function SessionManager({
       
       // Show success notification
       success('Tạo session thành công', `Session "${result.title}" đã được tạo thành công.`);
-    } catch (error) {
-      console.error('Failed to create session:', error);
+    } catch (err) {
+      console.error('Failed to create session:', err);
       setTitleError('Không thể tạo session. Vui lòng thử lại.');
       error('Tạo session thất bại');
     } finally {
@@ -180,8 +180,8 @@ export function SessionManager({
       setSettingsError('');
       // Show success notification
       success('Cập nhật cài đặt thành công', 'Cài đặt session đã được cập nhật thành công.');
-    } catch (error) {
-      console.error('Failed to update settings:', error);
+    } catch (err) {
+      console.error('Failed to update settings:', err);
       setSettingsError('Không thể cập nhật cài đặt. Vui lòng thử lại.');
       error('Cập nhật cài đặt thất bại');
     } finally {

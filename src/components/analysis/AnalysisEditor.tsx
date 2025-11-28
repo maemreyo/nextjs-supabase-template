@@ -6,7 +6,7 @@ import type { AnalysisEditorProps, WordAnalysis, SentenceAnalysis, ParagraphAnal
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { useSessionStore } from '@/stores/session-store';
+import { useSessionStore } from '@/hooks/stores/use-session-store';
 import { useAnalysisSave } from '@/hooks/useAnalysisSave';
 import { useSessionData } from '@/hooks/useSessionData';
 import useTipTapEditor from '@/hooks/useTipTapEditor';
@@ -104,8 +104,10 @@ export function AnalysisEditor({
   const analysisInProgressRef = useRef(false);
   const lastAnalysisRequestRef = useRef<string>('');
 
-  // Session store
-  const { sessions, createSession, setCurrentSession } = useSessionStore();
+  // Session store - separate state and actions to avoid dependency issues
+  const sessions = useSessionStore(state => state.sessions);
+  const createSession = useSessionStore(state => state.createSession);
+  const setCurrentSession = useSessionStore(state => state.setCurrentSession);
 
   // Hook for loading session data
   const {
@@ -501,9 +503,10 @@ export function AnalysisEditor({
   useEffect(() => {
     // Set current session in store when session data is loaded
     if (session && !isSessionLoading) {
-      setCurrentSession(session);
+      // Use direct store access to avoid dependency issues
+      useSessionStore.getState().setCurrentSession(session);
     }
-  }, [sessionId, session, isSessionLoading, setCurrentSession]);
+  }, [sessionId, session, isSessionLoading]); // Removed setCurrentSession from deps
 
   // Setup keyboard shortcuts
   useKeyboardShortcuts({

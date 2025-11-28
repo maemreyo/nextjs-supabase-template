@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { useEffect } from 'react'
-import { useAuthStore } from '@/stores/auth-store'
+import { useAuthStore } from '@/stores/auth_store'
 import { useSupabase } from './supabase-provider'
 
 interface AuthSyncProviderProps {
@@ -37,12 +37,14 @@ export function AuthSyncProvider({ children }: AuthSyncProviderProps) {
 
     // If Supabase has user but AuthStore doesn't, sync them
     if (user && !authStoreUser) {
-      console.log('✅ AUTH SYNC: Syncing user from Supabase to AuthStore', user.email)
+      console.log('✅ AUTH SYNC: Syncing user from Supabase to AuthStore', user.email || '')
       setUser(user)
       setSession({
         user,
-        access_token: null, // Will be set by getAccessToken if needed
-        refresh_token: null
+        access_token: '',
+        refresh_token: '',
+        expires_in: 0,
+        token_type: 'bearer'
       })
     }
 
@@ -58,7 +60,7 @@ export function AuthSyncProvider({ children }: AuthSyncProviderProps) {
       console.log('✅ AUTH SYNC: Marking AuthStore as initialized')
       setInitialized(true)
     }
-  }, [user, supabaseLoading, authStoreUser, isAuthenticated, isInitialized, setUser, setSession, setInitialized])
+  }, [user, supabaseLoading, authStoreUser, isAuthenticated, isInitialized]) // Removed store functions from deps
 
   // Listen for auth state changes from Supabase and sync to AuthStore
   useEffect(() => {
@@ -68,21 +70,24 @@ export function AuthSyncProvider({ children }: AuthSyncProviderProps) {
     })
 
     if (!!user !== !!authStoreUser) {
+      const authStore = useAuthStore.getState()
       if (user) {
-        console.log('✅ AUTH SYNC: Secondary - Setting user', user.email)
-        setUser(user)
-        setSession({
+        console.log('✅ AUTH SYNC: Secondary - Setting user', user.email || '')
+        authStore.setUser(user)
+        authStore.setSession({
           user,
-          access_token: null,
-          refresh_token: null
+          access_token: '',
+          refresh_token: '',
+          expires_in: 0,
+          token_type: 'bearer'
         })
       } else {
         console.log('✅ AUTH SYNC: Secondary - Clearing user')
-        setUser(null)
-        setSession(null)
+        authStore.setUser(null)
+        authStore.setSession(null)
       }
     }
-  }, [user, authStoreUser, setUser, setSession])
+  }, [user, authStoreUser]) // Removed store functions from deps
 
   return <>{children}</>
 }

@@ -5,7 +5,7 @@ import {
   DialogError,
   DialogErrorType
 } from '../types/dialog-types';
-import { dialogStoreUtils } from '../../../../stores/analysis-dialog-store';
+import { dialogStoreUtils } from '@/hooks/stores/analysis-dialog-store';
 
 /**
  * Dialog utilities for common operations

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useEffect, useState } from 'react';
-import { useAuthStore } from '@/stores/auth-store';
+import { useAuthStore } from '@/stores/auth_store';
 
 export function AnalysisDebugPanel() {
   const [debugInfo, setDebugInfo] = useState({

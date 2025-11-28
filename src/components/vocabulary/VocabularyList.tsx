@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useVocabularyStore } from '@/stores/vocabulary-store';
+import { useVocabularyStore } from '@/hooks/stores/use-vocabulary-store';
 import type { VocabularyWord } from '@/types/vocabulary';
 import { Search, Plus, Filter, Grid, List, Volume2, BookOpen } from 'lucide-react';
 

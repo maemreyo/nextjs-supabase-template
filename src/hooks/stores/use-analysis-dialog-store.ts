@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { shallow } from 'zustand/shallow'
-import { useDialogStore, dialogSelectors } from '@/stores/analysis-dialog-store'
+import { useDialogStore, dialogSelectors } from './analysis-dialog-store'
 import type { AnalysisType, AnalysisItem, DialogSettings } from '@/components/analysis/dialogs/types/dialog-types'
 
 // Main hook for analysis dialog store

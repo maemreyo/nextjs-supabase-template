@@ -3,7 +3,7 @@
 import React from 'react'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuthStore } from '@/stores/auth-store'
+import { useAuth } from '@/hooks/stores/use-auth-store'
 import { Loader2Icon } from 'lucide-react'
 
 interface AuthGuardProps {
@@ -18,7 +18,7 @@ export default function AuthGuard({
   requireAuth = true
 }: AuthGuardProps) {
   const router = useRouter()
-  const { user, isLoading, isInitialized } = useAuthStore()
+  const { user, isLoading, isInitialized } = useAuth()
 
   useEffect(() => {
     // Skip check while loading or not initialized

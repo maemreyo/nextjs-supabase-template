@@ -83,7 +83,7 @@ export function useVirtualScroll<T>(
     totalHeight,
     scrollTop,
     scrollToIndex,
-    containerRef
+    containerRef: containerRef as React.RefObject<HTMLDivElement>
   };
 }
 

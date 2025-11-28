@@ -11,14 +11,14 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { useAuthStore } from '@/stores/auth-store'
+import { useAuth } from '@/hooks/stores/use-auth-store'
 import { Loader2Icon, MailIcon } from 'lucide-react'
 import { forgotPasswordSchema, type ForgotPasswordFormValues } from '@/lib/validations/auth'
 
 function ForgotPasswordPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { resetPassword, isLoading, error } = useAuthStore()
+  const { resetPassword, isLoading, error } = useAuth()
   
   const [isSubmitted, setIsSubmitted] = useState(false)
 

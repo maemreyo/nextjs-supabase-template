@@ -126,6 +126,14 @@ export function AnalysisDynamicIslandStatusBar({
                 }
             };
         }
+        
+        // Return cleanup function for the case when showGuidePopover is false
+        return () => {
+            if (guideTimerRef.current) {
+                clearTimeout(guideTimerRef.current);
+                guideTimerRef.current = null;
+            }
+        };
     }, [showGuidePopover]);
 
     // Close popover when clicking outside with proper cleanup

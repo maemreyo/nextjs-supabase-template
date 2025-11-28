@@ -31,6 +31,11 @@ export function StatusToast({
       const timer = setTimeout(onClose, duration);
       return () => clearTimeout(timer);
     }
+    
+    // Return cleanup function for the case when duration <= 0 or onClose is undefined
+    return () => {
+      // No timer to clear in this case
+    };
   }, [duration, onClose]);
 
   const typeConfig = {

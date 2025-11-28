@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react'
 import { shallow } from 'zustand/shallow'
-import { useAuthStore, authSelectors } from '@/stores/auth-store'
+import { useAuthStore, authSelectors } from '@/stores/auth_store'
 
 // Auth hook with optimized selectors
 export function useAuth() {

@@ -35,6 +35,228 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
   statusFilter: 'all',
   typeFilter: 'all',
   searchQuery: '',
+  
+  // Tag actions
+  createTag: async (tagData) => {
+    set({ isLoading: true, error: null });
+    
+    try {
+      // Get auth token
+      const { data: { session } } = await createClient().auth.getSession();
+      const token = session?.access_token;
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Add authorization header if token is available
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch('/api/sessions/tags', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(tagData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to create tag: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create tag');
+      }
+
+      const newTag = result.data;
+      
+      set((state) => ({
+        sessionTags: [...state.sessionTags, newTag],
+        isLoading: false,
+      }));
+
+      return newTag;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      set({ error: errorMessage, isLoading: false });
+      throw error;
+    }
+  },
+  
+  updateTag: async (id, updates) => {
+    set({ isLoading: true, error: null });
+    
+    try {
+      // Get auth token
+      const { data: { session } } = await createClient().auth.getSession();
+      const token = session?.access_token;
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Add authorization header if token is available
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`/api/sessions/tags/${id}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify(updates),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to update tag: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update tag');
+      }
+
+      const updatedTag = result.data;
+      
+      set((state) => ({
+        sessionTags: state.sessionTags.map(tag =>
+          tag.id === id ? updatedTag : tag
+        ),
+        isLoading: false,
+      }));
+
+      return updatedTag;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      set({ error: errorMessage, isLoading: false });
+      throw error;
+    }
+  },
+  
+  deleteTag: async (id) => {
+    set({ isLoading: true, error: null });
+    
+    try {
+      // Get auth token
+      const { data: { session } } = await createClient().auth.getSession();
+      const token = session?.access_token;
+      
+      const headers: Record<string, string> = {};
+      
+      // Add authorization header if token is available
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`/api/sessions/tags/${id}`, {
+        method: 'DELETE',
+        headers,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete tag: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to delete tag');
+      }
+
+      set((state) => ({
+        sessionTags: state.sessionTags.filter(tag => tag.id !== id),
+        isLoading: false,
+      }));
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      set({ error: errorMessage, isLoading: false });
+      throw error;
+    }
+  },
+  
+  addTagToSession: async (sessionId, tagId) => {
+    set({ isLoading: true, error: null });
+    
+    try {
+      // Get auth token
+      const { data: { session } } = await createClient().auth.getSession();
+      const token = session?.access_token;
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Add authorization header if token is available
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`/api/sessions/${sessionId}/tags/${tagId}`, {
+        method: 'POST',
+        headers,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to add tag to session: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to add tag to session');
+      }
+
+      set((state) => ({
+        isLoading: false,
+      }));
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      set({ error: errorMessage, isLoading: false });
+      throw error;
+    }
+  },
+  
+  removeTagFromSession: async (sessionId, tagId) => {
+    set({ isLoading: true, error: null });
+    
+    try {
+      // Get auth token
+      const { data: { session } } = await createClient().auth.getSession();
+      const token = session?.access_token;
+      
+      const headers: Record<string, string> = {};
+      
+      // Add authorization header if token is available
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`/api/sessions/${sessionId}/tags/${tagId}`, {
+        method: 'DELETE',
+        headers,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to remove tag from session: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to remove tag from session');
+      }
+
+      set((state) => ({
+        isLoading: false,
+      }));
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      set({ error: errorMessage, isLoading: false });
+      throw error;
+    }
+  },
 
   // Session CRUD actions
   createSession: async (sessionData) => {
@@ -193,7 +415,7 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
   setCurrentSession: (session) => {
     set({ currentSession: session });
     
-    // Load analyses and settings for the selected session
+    // Load analyses and settings for selected session
     if (session) {
       get().loadSessionAnalyses(session.id);
       get().loadSessionSettings(session.id);
@@ -583,232 +805,6 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
     }
   },
 
-  // Session tags actions
-  createTag: async (tag) => {
-    set({ isLoading: true, error: null });
-    
-    try {
-      // Get auth token
-      const { data: { session } } = await createClient().auth.getSession();
-      const token = session?.access_token;
-      
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      
-      // Add authorization header if token is available
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const response = await fetch('/api/sessions/tags', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(tag),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to create tag: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to create tag');
-      }
-
-      const newTag = result.data;
-      
-      set((state) => ({
-        sessionTags: [...state.sessionTags, newTag],
-        isLoading: false,
-      }));
-
-      return newTag;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      set({ error: errorMessage, isLoading: false });
-      throw error;
-    }
-  },
-
-  updateTag: async (id, updates) => {
-    set({ isLoading: true, error: null });
-    
-    try {
-      // Get auth token
-      const { data: { session } } = await createClient().auth.getSession();
-      const token = session?.access_token;
-      
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      
-      // Add authorization header if token is available
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const response = await fetch(`/api/sessions/tags/${id}`, {
-        method: 'PATCH',
-        headers,
-        body: JSON.stringify(updates),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to update tag: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to update tag');
-      }
-
-      const updatedTag = result.data;
-      
-      set((state) => ({
-        sessionTags: state.sessionTags.map(tag => 
-          tag.id === id ? updatedTag : tag
-        ),
-        isLoading: false,
-      }));
-
-      return updatedTag;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      set({ error: errorMessage, isLoading: false });
-      throw error;
-    }
-  },
-
-  deleteTag: async (id) => {
-    set({ isLoading: true, error: null });
-    
-    try {
-      // Get auth token
-      const { data: { session } } = await createClient().auth.getSession();
-      const token = session?.access_token;
-      
-      const headers: Record<string, string> = {};
-      
-      // Add authorization header if token is available
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const response = await fetch(`/api/sessions/tags/${id}`, {
-        method: 'DELETE',
-        headers,
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to delete tag: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to delete tag');
-      }
-
-      set((state) => ({
-        sessionTags: state.sessionTags.filter(tag => tag.id !== id),
-        isLoading: false,
-      }));
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      set({ error: errorMessage, isLoading: false });
-      throw error;
-    }
-  },
-
-  addTagToSession: async (sessionId, tagId) => {
-    set({ isLoading: true, error: null });
-    
-    try {
-      // Get auth token
-      const { data: { session } } = await createClient().auth.getSession();
-      const token = session?.access_token;
-      
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      
-      // Add authorization header if token is available
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const response = await fetch(`/api/sessions/${sessionId}/tags`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ tag_id: tagId }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to add tag to session: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to add tag to session');
-      }
-
-      // Update current session with new tag
-      set((state) => {
-        if (!state.currentSession || state.currentSession.id !== sessionId) {
-          return { isLoading: false };
-        }
-
-        return { isLoading: false };
-      });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      set({ error: errorMessage, isLoading: false });
-      throw error;
-    }
-  },
-
-  removeTagFromSession: async (sessionId, tagId) => {
-    set({ isLoading: true, error: null });
-    
-    try {
-      // Get auth token
-      const { data: { session } } = await createClient().auth.getSession();
-      const token = session?.access_token;
-      
-      const headers: Record<string, string> = {};
-      
-      // Add authorization header if token is available
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const response = await fetch(`/api/sessions/${sessionId}/tags/${tagId}`, {
-        method: 'DELETE',
-        headers,
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to remove tag from session: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to remove tag from session');
-      }
-
-      set({ isLoading: false });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      set({ error: errorMessage, isLoading: false });
-      throw error;
-    }
-  },
-
   loadSessionTags: async () => {
     set({ isLoading: true, error: null });
     
@@ -825,9 +821,10 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
       }
 
       const response = await fetch('/api/sessions/tags', {
+        method: 'GET',
         headers,
       });
-      
+
       if (!response.ok) {
         throw new Error(`Failed to load session tags: ${response.statusText}`);
       }
@@ -870,61 +867,5 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
     searchQuery: '',
   }),
 }));
-
-// Selectors cho dễ dàng truy cập
-export const useSessionSelectors = () => {
-  const store = useSessionStore();
-  
-  return {
-    // Computed selectors
-    filteredSessions: () => {
-      let filtered = store.sessions;
-      
-      // Apply status filter
-      if (store.statusFilter !== 'all') {
-        filtered = filtered.filter(session => session.status === store.statusFilter);
-      }
-      
-      // Apply type filter
-      if (store.typeFilter !== 'all') {
-        filtered = filtered.filter(session => session.session_type === store.typeFilter);
-      }
-      
-      // Apply search filter
-      if (store.searchQuery.trim()) {
-        const query = store.searchQuery.toLowerCase();
-        filtered = filtered.filter(session => 
-          session.title.toLowerCase().includes(query) ||
-          session.description?.toLowerCase().includes(query)
-        );
-      }
-      
-      return filtered;
-    },
-    
-    // Session statistics
-    getSessionStats: () => {
-      const sessions = store.sessions;
-      return {
-        total: sessions.length,
-        active: sessions.filter(s => s.status === 'active').length,
-        archived: sessions.filter(s => s.status === 'archived').length,
-        wordSessions: sessions.filter(s => s.session_type === 'word').length,
-        sentenceSessions: sessions.filter(s => s.session_type === 'sentence').length,
-        paragraphSessions: sessions.filter(s => s.session_type === 'paragraph').length,
-        mixedSessions: sessions.filter(s => s.session_type === 'mixed').length,
-      };
-    },
-    
-    // Current session info
-    currentSessionAnalysesCount: () => store.sessionAnalyses.length,
-    hasCurrentSession: () => store.currentSession !== null,
-    
-    // Pagination helpers
-    totalPages: () => Math.ceil(store.totalSessions / store.sessionsPerPage),
-    hasNextPage: () => store.sessionsPage < Math.ceil(store.totalSessions / store.sessionsPerPage),
-    hasPrevPage: () => store.sessionsPage > 1,
-  };
-};
 
 export default useSessionStore;

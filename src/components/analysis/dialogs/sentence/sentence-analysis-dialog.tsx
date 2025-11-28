@@ -78,7 +78,7 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
   }, [onExport, actions, setActionLoading]);
 
   // Default export implementation
-  const exportSentenceAnalysis = useCallback(async (analysis: SentenceAnalysis, format: ExportFormat) => {
+  const exportSentenceAnalysis = useCallback(async (analysis: SentenceAnalysis, format: ExportFormat): Promise<void> => {
     const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
     const filename = `sentence-analysis-${analysis.sentence.replace(/[^a-zA-Z0-9]/g, '-')}-${timestamp}`;
     
@@ -86,17 +86,17 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
       case 'txt':
         const textContent = formatSentenceAsText(analysis);
         downloadFile(textContent, `${filename}.txt`, 'text/plain');
-        break;
+        return;
       case 'json':
         const jsonContent = JSON.stringify(analysis, null, 2);
         downloadFile(jsonContent, `${filename}.json`, 'application/json');
-        break;
+        return;
       case 'pdf':
         // For PDF, we'll use a simple text fallback for now
         // In a real implementation, you would use a library like jsPDF
         const pdfContent = formatSentenceAsText(analysis);
         downloadFile(pdfContent, `${filename}.pdf`, 'application/pdf');
-        break;
+        return;
       default:
         throw new Error(`Unsupported export format: ${format}`);
     }
@@ -415,6 +415,8 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
       
       return () => clearTimeout(timer);
     }
+    // Explicitly return undefined for the case when the condition is not met
+    return undefined;
   }, [open, analysis]);
 
   if (!analysis) {

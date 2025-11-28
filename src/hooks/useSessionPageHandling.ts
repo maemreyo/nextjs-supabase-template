@@ -3,7 +3,7 @@
 import { useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useSessionData } from '@/hooks/useSessionData';
-import { useSessionStore } from '@/stores/session-store';
+import { useSessionStore } from '@/hooks/stores/use-session-store';
 import { useAppNavigation, NavigationValidation } from '@/lib/navigation';
 
 export interface UseSessionPageHandlingProps {

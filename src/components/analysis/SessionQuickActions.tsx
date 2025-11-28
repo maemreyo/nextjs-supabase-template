@@ -24,7 +24,7 @@ import {
   Save
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useSessionStore } from '@/stores/session-store';
+import { useSessionStore } from '@/hooks/stores/use-session-store';
 import { useAppNavigation } from '@/lib/navigation';
 import type { AnalysisSession } from '@/types/sessions';
 import { useSupabase } from '@/components/providers/supabase-provider';

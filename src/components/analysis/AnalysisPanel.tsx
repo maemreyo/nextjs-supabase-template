@@ -16,8 +16,8 @@ import {
 } from 'lucide-react';
 import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis } from './types';
 import { useState } from 'react';
-import { useSessionStore } from '@/stores/session-store';
-import { useVocabularyStore } from '@/stores/vocabulary-store';
+import { useSessionStore } from '@/hooks/stores/use-session-store';
+import { useVocabularyStore } from '@/hooks/stores/use-vocabulary-store';
 import { DialogRootRenderer } from './dialogs';
 
 interface AnalysisPanelProps {

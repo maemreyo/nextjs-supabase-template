@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { useDialogStore } from '../../../../stores/analysis-dialog-store';
+import { useDialogStore } from '@/hooks/stores/analysis-dialog-store';
 import { useOpenDialogs } from '../hooks/use-dialog-state';
 import { DynamicAnalysisDialog } from './dynamic-analysis-dialog-renderer';
 import { AnalysisType } from '../types/dialog-types';

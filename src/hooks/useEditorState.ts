@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import type { Editor } from '@tiptap/react';
-import { useSessionStore } from '@/stores/session-store';
+import { useSessionStore } from '@/hooks/stores/use-session-store';
 import type { AnalysisSession } from '@/types/sessions';
 
 interface EditorContent {
@@ -87,8 +87,10 @@ export function useEditorState({
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(initialAutoSaveEnabled);
   const [sessionQuickActionsOpen, setSessionQuickActionsOpen] = useState(false);
 
-  // Session store
-  const { sessions, createSession, setCurrentSession } = useSessionStore();
+  // Session store - separate state and actions to avoid dependency issues
+  const sessions = useSessionStore(state => state.sessions);
+  const createSession = useSessionStore(state => state.createSession);
+  const setCurrentSession = useSessionStore(state => state.setCurrentSession);
 
   // Session data (would come from useSessionData hook in real implementation)
   const [session, setSession] = useState<AnalysisSession | null>(null);
@@ -161,14 +163,20 @@ export function useEditorState({
         editor.off('update', handleUpdate);
       };
     }
+    
+    // Return cleanup function for the case when editor is null
+    return () => {
+      // No editor to clean up in this case
+    };
   }, [editor, onContentChange]);
 
   // Set current session in store when session data is loaded
   useEffect(() => {
     if (session && !isSessionLoading) {
-      setCurrentSession(session);
+      // Use direct store access to avoid dependency issues
+      useSessionStore.getState().setCurrentSession(session);
     }
-  }, [sessionId, session, isSessionLoading, setCurrentSession]);
+  }, [sessionId, session, isSessionLoading]); // Removed setCurrentSession from deps
 
   // Create new session helper
   const createNewSession = useCallback(async () => {

@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { useDialogStore } from '../../../../stores/analysis-dialog-store';
+import { useDialogStore } from '../../../../hooks/stores/analysis-dialog-store';
 import {
   UseDialogStateReturn,
   AnalysisType,

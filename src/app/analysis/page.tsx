@@ -138,7 +138,7 @@ function ImprovedAnalysisPageContent() {
 
   // Handle history item click
   const handleHistoryItemClick = (item: any) => {
-    setSelectedText(item.input);
+    setSelectedText(item.content);
     setAnalysisType(item.type);
     setActiveTab(item.type);
     // Note: analysisResult will be set by the hook when needed

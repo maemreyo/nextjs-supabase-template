@@ -1,101 +1,155 @@
 import { useCallback, useEffect } from 'react'
-import { useUIStore, uiSelectors } from '@/stores/ui-store'
+import {
+  useThemePreferencesStore,
+  themePreferencesSelectors,
+  useSidebarStateStore,
+  sidebarStateSelectors,
+  useModalManagerStore,
+  modalManagerSelectors,
+  useNotificationSystemStore,
+  notificationSystemSelectors,
+  useGlobalLoadingStore,
+  globalLoadingSelectors,
+  useLayoutDimensionsStore,
+  layoutDimensionsSelectors
+} from '@/stores'
+import type {
+  ThemePreferencesStore,
+  SidebarStateStore,
+  ModalManagerStore,
+  NotificationSystemStore,
+  GlobalLoadingStore,
+  LayoutDimensionsStore
+} from '@/stores'
 
 // UI hook with optimized selectors
 export function useUI() {
-  return useUIStore(
+  const themeState = useThemePreferencesStore(
     useCallback(
-      (state) => ({
-        // Theme
-        theme: uiSelectors.theme(state),
-        systemTheme: uiSelectors.systemTheme(state),
-        effectiveTheme: uiSelectors.effectiveTheme(state),
-        isDarkMode: uiSelectors.isDarkMode(state),
-        
-        // Sidebar
-        sidebarOpen: uiSelectors.sidebarOpen(state),
-        sidebarCollapsed: uiSelectors.sidebarCollapsed(state),
-        sidebarWidth: uiSelectors.sidebarWidth(state),
-        
-        // Modals
-        isModalOpen: uiSelectors.isModalOpen.bind(null, state),
-        getModalData: uiSelectors.getModalData.bind(null, state),
-        anyModalOpen: uiSelectors.anyModalOpen(state),
-        
-        // Notifications
-        notifications: uiSelectors.notifications(state),
-        notificationCount: uiSelectors.notificationCount(state),
-        hasNotifications: uiSelectors.hasNotifications(state),
-        
-        // Loading
-        globalLoading: uiSelectors.globalLoading(state),
-        loadingMessage: uiSelectors.loadingMessage(state),
-        
-        // Layout
-        layout: uiSelectors.layout(state),
-        headerHeight: uiSelectors.headerHeight(state),
-        
-        // Responsive
-        isMobile: uiSelectors.isMobile(state),
-        isTablet: uiSelectors.isTablet(state),
-        isDesktop: uiSelectors.isDesktop(state),
-        isMobileOrTablet: uiSelectors.isMobileOrTablet(state),
-        
-        // Focus
-        focusedElement: uiSelectors.focusedElement(state),
-        hasFocus: uiSelectors.hasFocus(state),
-        
-        // Keyboard shortcuts
-        keyboardShortcutsEnabled: uiSelectors.keyboardShortcutsEnabled(state),
-        keyboardShortcutsHelpOpen: uiSelectors.keyboardShortcutsHelpOpen(state),
-        
-        // Actions
+      (state: ThemePreferencesStore) => ({
+        theme: themePreferencesSelectors.theme(state),
+        systemTheme: themePreferencesSelectors.systemTheme(state),
+        effectiveTheme: themePreferencesSelectors.effectiveTheme(state),
+        isDarkMode: themePreferencesSelectors.isDarkMode(state),
         setTheme: state.setTheme,
         setSystemTheme: state.setSystemTheme,
         toggleTheme: state.toggleTheme,
-        
-        setSidebarOpen: state.setSidebarOpen,
-        setSidebarCollapsed: state.setSidebarCollapsed,
-        toggleSidebar: state.toggleSidebar,
-        
-        openModal: state.openModal,
-        closeModal: state.closeModal,
-        closeAllModals: state.closeAllModals,
-        toggleModal: state.toggleModal,
-        
-        addNotification: state.addNotification,
-        removeNotification: state.removeNotification,
-        clearNotifications: state.clearNotifications,
-        
-        setGlobalLoading: state.setGlobalLoading,
-        
-        updateLayout: state.updateLayout,
-        
-        setResponsive: state.setResponsive,
-        
-        setFocusedElement: state.setFocusedElement,
-        clearFocus: state.clearFocus,
-        
-        setKeyboardShortcutsEnabled: state.setKeyboardShortcutsEnabled,
-        toggleKeyboardShortcuts: state.toggleKeyboardShortcuts,
-        setKeyboardShortcutsHelp: state.setKeyboardShortcutsHelp,
-        
-        resetUI: state.resetUI,
       }),
       []
     )
   )
+
+  const sidebarState = useSidebarStateStore(
+    useCallback(
+      (state: SidebarStateStore) => ({
+        sidebarOpen: sidebarStateSelectors.sidebarOpen(state),
+        sidebarCollapsed: sidebarStateSelectors.sidebarCollapsed(state),
+        setSidebarOpen: state.setSidebarOpen,
+        setSidebarCollapsed: state.setSidebarCollapsed,
+        toggleSidebar: state.toggleSidebar,
+        resetSidebarState: state.resetSidebarState,
+      }),
+      []
+    )
+  )
+
+  const modalState = useModalManagerStore(
+    useCallback(
+      (state: ModalManagerStore) => ({
+        modals: modalManagerSelectors.modals(state),
+        isModalOpen: (modalId: string) => modalManagerSelectors.isModalOpen(state, modalId),
+        getModalData: (modalId: string) => modalManagerSelectors.getModalData(state, modalId),
+        anyModalOpen: modalManagerSelectors.anyModalOpen(state),
+        openModal: state.openModal,
+        closeModal: state.closeModal,
+        closeAllModals: state.closeAllModals,
+        toggleModal: state.toggleModal,
+      }),
+      []
+    )
+  )
+
+  const notificationState = useNotificationSystemStore(
+    useCallback(
+      (state: NotificationSystemStore) => ({
+        notifications: notificationSystemSelectors.notifications(state),
+        notificationCount: notificationSystemSelectors.notificationCount(state),
+        hasNotifications: notificationSystemSelectors.hasNotifications(state),
+        addNotification: state.addNotification,
+        removeNotification: state.removeNotification,
+        clearNotifications: state.clearNotifications,
+      }),
+      []
+    )
+  )
+
+  const loadingState = useGlobalLoadingStore(
+    useCallback(
+      (state: GlobalLoadingStore) => ({
+        globalLoading: globalLoadingSelectors.globalLoading(state),
+        loadingMessage: globalLoadingSelectors.loadingMessage(state),
+        setGlobalLoading: state.setGlobalLoading,
+      }),
+      []
+    )
+  )
+
+  const layoutState = useLayoutDimensionsStore(
+    useCallback(
+      (state: LayoutDimensionsStore) => ({
+        layout: layoutDimensionsSelectors.layout(state),
+        headerHeight: layoutDimensionsSelectors.headerHeight(state),
+        sidebarWidth: layoutDimensionsSelectors.sidebarWidth(state),
+        sidebarCollapsedWidth: layoutDimensionsSelectors.sidebarCollapsedWidth(state),
+        updateLayout: state.updateLayout,
+      }),
+      []
+    )
+  )
+
+  return {
+    ...themeState,
+    ...sidebarState,
+    ...modalState,
+    ...notificationState,
+    ...loadingState,
+    ...layoutState,
+    
+    // Computed properties
+    sidebarWidth: sidebarState.sidebarOpen && !sidebarState.sidebarCollapsed
+      ? layoutState.sidebarWidth
+      : layoutState.sidebarCollapsedWidth,
+    
+    // Responsive and focus states (these would need to be added to separate stores)
+    isMobile: false, // TODO: Add to responsive store
+    isTablet: false, // TODO: Add to responsive store
+    isDesktop: true, // TODO: Add to responsive store
+    isMobileOrTablet: false, // TODO: Add to responsive store
+    focusedElement: null, // TODO: Add to focus store
+    hasFocus: false, // TODO: Add to focus store
+    keyboardShortcutsEnabled: true, // TODO: Add to keyboard shortcuts store
+    keyboardShortcutsHelpOpen: false, // TODO: Add to keyboard shortcuts store
+    
+    // Placeholder actions for features not yet modularized
+    setResponsive: () => {}, // TODO: Add to responsive store
+    setFocusedElement: () => {}, // TODO: Add to focus store
+    clearFocus: () => {}, // TODO: Add to focus store
+    setKeyboardShortcutsEnabled: () => {}, // TODO: Add to keyboard shortcuts store
+    toggleKeyboardShortcuts: () => {}, // TODO: Add to keyboard shortcuts store
+    setKeyboardShortcutsHelp: () => {}, // TODO: Add to keyboard shortcuts store
+    resetUI: () => {}, // TODO: Implement reset across all stores
+  }
 }
 
 // Simplified UI hooks for specific use cases
 export function useTheme() {
-  return useUIStore(
+  return useThemePreferencesStore(
     useCallback(
       (state) => ({
-        theme: uiSelectors.theme(state),
-        systemTheme: uiSelectors.systemTheme(state),
-        effectiveTheme: uiSelectors.effectiveTheme(state),
-        isDarkMode: uiSelectors.isDarkMode(state),
+        theme: themePreferencesSelectors.theme(state),
+        systemTheme: themePreferencesSelectors.systemTheme(state),
+        effectiveTheme: themePreferencesSelectors.effectiveTheme(state),
+        isDarkMode: themePreferencesSelectors.isDarkMode(state),
         setTheme: state.setTheme,
         setSystemTheme: state.setSystemTheme,
         toggleTheme: state.toggleTheme,
@@ -106,12 +160,11 @@ export function useTheme() {
 }
 
 export function useSidebar() {
-  return useUIStore(
+  const sidebarState = useSidebarStateStore(
     useCallback(
-      (state) => ({
-        open: uiSelectors.sidebarOpen(state),
-        collapsed: uiSelectors.sidebarCollapsed(state),
-        width: uiSelectors.sidebarWidth(state),
+      (state: SidebarStateStore) => ({
+        open: sidebarStateSelectors.sidebarOpen(state),
+        collapsed: sidebarStateSelectors.sidebarCollapsed(state),
         setOpen: state.setSidebarOpen,
         setCollapsed: state.setSidebarCollapsed,
         toggle: state.toggleSidebar,
@@ -119,16 +172,36 @@ export function useSidebar() {
       []
     )
   )
+
+  const layoutState = useLayoutDimensionsStore(
+    useCallback(
+      (state: LayoutDimensionsStore) => ({
+        sidebarWidth: layoutDimensionsSelectors.sidebarWidth(state),
+        sidebarCollapsedWidth: layoutDimensionsSelectors.sidebarCollapsedWidth(state),
+      }),
+      []
+    )
+  )
+
+  const sidebarOpen = sidebarState.open
+  const sidebarCollapsed = sidebarState.collapsed
+
+  return {
+    ...sidebarState,
+    width: sidebarOpen && !sidebarCollapsed
+      ? layoutState.sidebarWidth
+      : layoutState.sidebarCollapsedWidth,
+  }
 }
 
 export function useModals() {
-  return useUIStore(
+  return useModalManagerStore(
     useCallback(
-      (state) => ({
-        modals: state.modals,
-        isModalOpen: (modalId: string) => uiSelectors.isModalOpen(state, modalId),
-        getModalData: (modalId: string) => uiSelectors.getModalData(state, modalId),
-        anyModalOpen: uiSelectors.anyModalOpen(state),
+      (state: ModalManagerStore) => ({
+        modals: modalManagerSelectors.modals(state),
+        isModalOpen: (modalId: string) => modalManagerSelectors.isModalOpen(state, modalId),
+        getModalData: (modalId: string) => modalManagerSelectors.getModalData(state, modalId),
+        anyModalOpen: modalManagerSelectors.anyModalOpen(state),
         openModal: state.openModal,
         closeModal: state.closeModal,
         closeAllModals: state.closeAllModals,
@@ -140,12 +213,12 @@ export function useModals() {
 }
 
 export function useNotifications() {
-  return useUIStore(
+  return useNotificationSystemStore(
     useCallback(
-      (state) => ({
-        notifications: uiSelectors.notifications(state),
-        notificationCount: uiSelectors.notificationCount(state),
-        hasNotifications: uiSelectors.hasNotifications(state),
+      (state: NotificationSystemStore) => ({
+        notifications: notificationSystemSelectors.notifications(state),
+        notificationCount: notificationSystemSelectors.notificationCount(state),
+        hasNotifications: notificationSystemSelectors.hasNotifications(state),
         addNotification: state.addNotification,
         removeNotification: state.removeNotification,
         clearNotifications: state.clearNotifications,
@@ -156,42 +229,34 @@ export function useNotifications() {
 }
 
 export function useResponsive() {
-  return useUIStore(
-    useCallback(
-      (state) => ({
-        isMobile: uiSelectors.isMobile(state),
-        isTablet: uiSelectors.isTablet(state),
-        isDesktop: uiSelectors.isDesktop(state),
-        isMobileOrTablet: uiSelectors.isMobileOrTablet(state),
-        setResponsive: state.setResponsive,
-      }),
-      []
-    )
-  )
+  // TODO: This needs to be implemented with a responsive store
+  return {
+    isMobile: false,
+    isTablet: false,
+    isDesktop: true,
+    isMobileOrTablet: false,
+    setResponsive: () => {},
+  }
 }
 
 export function useKeyboardShortcuts() {
-  return useUIStore(
-    useCallback(
-      (state) => ({
-        enabled: uiSelectors.keyboardShortcutsEnabled(state),
-        helpOpen: uiSelectors.keyboardShortcutsHelpOpen(state),
-        setEnabled: state.setKeyboardShortcutsEnabled,
-        toggle: state.toggleKeyboardShortcuts,
-        setHelpOpen: state.setKeyboardShortcutsHelp,
-      }),
-      []
-    )
-  )
+  // TODO: This needs to be implemented with a keyboard shortcuts store
+  return {
+    enabled: true,
+    helpOpen: false,
+    setEnabled: () => {},
+    toggle: () => {},
+    setHelpOpen: () => {},
+  }
 }
 
 // Hook for modal management
 export function useModal(modalId: string) {
-  return useUIStore(
+  return useModalManagerStore(
     useCallback(
-      (state) => ({
-        isOpen: uiSelectors.isModalOpen(state, modalId),
-        data: uiSelectors.getModalData(state, modalId),
+      (state: ModalManagerStore) => ({
+        isOpen: modalManagerSelectors.isModalOpen(state, modalId),
+        data: modalManagerSelectors.getModalData(state, modalId),
         open: (data?: any) => state.openModal(modalId, data),
         close: () => state.closeModal(modalId),
         toggle: (data?: any) => state.toggleModal(modalId, data),
@@ -204,7 +269,7 @@ export function useModal(modalId: string) {
 // Hook for theme detection and system theme
 export function useSystemTheme() {
   // Use direct store access to avoid function recreation issues
-  const setSystemTheme = useUIStore(state => state.setSystemTheme)
+  const setSystemTheme = useThemePreferencesStore(state => state.setSystemTheme)
   
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
@@ -227,41 +292,23 @@ export function useSystemTheme() {
 
 // Hook for responsive detection
 export function useResponsiveDetection() {
-  // Use direct store access to avoid function recreation issues
-  const setResponsive = useUIStore(state => state.setResponsive)
-  
+  // TODO: This needs to be implemented with a responsive store
   useEffect(() => {
-    const updateResponsive = () => {
-      const width = window.innerWidth
-      setResponsive({
-        isMobile: width < 768,
-        isTablet: width >= 768 && width < 1024,
-        isDesktop: width >= 1024,
-      })
-    }
-    
-    // Set initial values
-    updateResponsive()
-    
-    // Listen for resize
-    window.addEventListener('resize', updateResponsive)
-    
-    return () => {
-      window.removeEventListener('resize', updateResponsive)
-    }
-  }, [setResponsive])
+    // Placeholder implementation
+    console.log('useResponsiveDetection: TODO - implement with responsive store')
+  }, [])
 }
 
 // Hook for notification auto-dismissal
 export function useNotificationManager() {
-  const notifications = useUIStore(state => state.notifications)
+  const notifications = useNotificationSystemStore(state => notificationSystemSelectors.notifications(state))
   // Use direct store access to avoid function recreation issues
-  const removeNotification = useUIStore(state => state.removeNotification)
+  const removeNotification = useNotificationSystemStore(state => state.removeNotification)
   
   useEffect(() => {
     const timers: NodeJS.Timeout[] = []
     
-    notifications.forEach((notification) => {
+    notifications.forEach((notification: any) => {
       if (notification.duration && notification.duration > 0) {
         const timer = setTimeout(() => {
           removeNotification(notification.id)
@@ -279,72 +326,30 @@ export function useNotificationManager() {
 
 // Hook for keyboard shortcuts
 export function useKeyboardShortcutManager() {
-  const enabled = useUIStore(state => state.keyboardShortcuts.enabled)
-  const helpOpen = useUIStore(state => state.keyboardShortcuts.helpOpen)
-  // Use direct store access to avoid function recreation issues
-  const setHelpOpen = useUIStore(state => state.setKeyboardShortcutsHelp)
-  
+  // TODO: This needs to be implemented with a keyboard shortcuts store
   useEffect(() => {
-    if (!enabled) return
-    
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Help shortcut (Ctrl/Cmd + ?)
-      if ((event.ctrlKey || event.metaKey) && event.key === '?') {
-        event.preventDefault()
-        setHelpOpen(!helpOpen)
-      }
-      
-      // Escape to close help
-      if (event.key === 'Escape' && helpOpen) {
-        setHelpOpen(false)
-      }
-    }
-    
-    document.addEventListener('keydown', handleKeyDown)
-    
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [enabled, helpOpen, setHelpOpen])
+    // Placeholder implementation
+    console.log('useKeyboardShortcutManager: TODO - implement with keyboard shortcuts store')
+  }, [])
 }
 
 // Hook for focus management
 export function useFocusManager() {
-  const focusedElement = useUIStore(state => state.focusedElement)
-  // Use direct store access to avoid function recreation issues
-  const setFocusedElement = useUIStore(state => state.setFocusedElement)
-  const clearFocus = useUIStore(state => state.clearFocus)
-  
+  // TODO: This needs to be implemented with a focus store
   useEffect(() => {
-    const handleFocusIn = (event: FocusEvent) => {
-      const target = event.target as HTMLElement
-      if (target && target.id) {
-        setFocusedElement(target.id)
-      }
-    }
-    
-    const handleFocusOut = () => {
-      clearFocus()
-    }
-    
-    document.addEventListener('focusin', handleFocusIn)
-    document.addEventListener('focusout', handleFocusOut)
-    
-    return () => {
-      document.removeEventListener('focusin', handleFocusIn)
-      document.removeEventListener('focusout', handleFocusOut)
-    }
-  }, [setFocusedElement, clearFocus])
+    // Placeholder implementation
+    console.log('useFocusManager: TODO - implement with focus store')
+  }, [])
 }
 
 // Hook for sidebar auto-collapse on mobile
 export function useSidebarResponsive() {
-  const open = useUIStore(state => state.sidebarOpen)
-  const collapsed = useUIStore(state => state.sidebarCollapsed)
-  const isMobile = useUIStore(state => state.isMobile)
+  const open = useSidebarStateStore(state => sidebarStateSelectors.sidebarOpen(state))
+  const collapsed = useSidebarStateStore(state => sidebarStateSelectors.sidebarCollapsed(state))
+  const isMobile = false // TODO: Get from responsive store
   // Use direct store access to avoid function recreation issues
-  const setOpen = useUIStore(state => state.setSidebarOpen)
-  const setCollapsed = useUIStore(state => state.setSidebarCollapsed)
+  const setOpen = useSidebarStateStore(state => state.setSidebarOpen)
+  const setCollapsed = useSidebarStateStore(state => state.setSidebarCollapsed)
   
   useEffect(() => {
     if (isMobile && open) {
