@@ -203,7 +203,8 @@ export function useModal(modalId: string) {
 
 // Hook for theme detection and system theme
 export function useSystemTheme() {
-  const { setSystemTheme } = useTheme()
+  // Use direct store access to avoid function recreation issues
+  const setSystemTheme = useUIStore(state => state.setSystemTheme)
   
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
@@ -226,7 +227,8 @@ export function useSystemTheme() {
 
 // Hook for responsive detection
 export function useResponsiveDetection() {
-  const { setResponsive } = useResponsive()
+  // Use direct store access to avoid function recreation issues
+  const setResponsive = useUIStore(state => state.setResponsive)
   
   useEffect(() => {
     const updateResponsive = () => {
@@ -252,7 +254,9 @@ export function useResponsiveDetection() {
 
 // Hook for notification auto-dismissal
 export function useNotificationManager() {
-  const { notifications, removeNotification } = useNotifications()
+  const notifications = useUIStore(state => state.notifications)
+  // Use direct store access to avoid function recreation issues
+  const removeNotification = useUIStore(state => state.removeNotification)
   
   useEffect(() => {
     const timers: NodeJS.Timeout[] = []
@@ -275,7 +279,10 @@ export function useNotificationManager() {
 
 // Hook for keyboard shortcuts
 export function useKeyboardShortcutManager() {
-  const { enabled, helpOpen, setHelpOpen } = useKeyboardShortcuts()
+  const enabled = useUIStore(state => state.keyboardShortcuts.enabled)
+  const helpOpen = useUIStore(state => state.keyboardShortcuts.helpOpen)
+  // Use direct store access to avoid function recreation issues
+  const setHelpOpen = useUIStore(state => state.setKeyboardShortcutsHelp)
   
   useEffect(() => {
     if (!enabled) return
@@ -303,7 +310,10 @@ export function useKeyboardShortcutManager() {
 
 // Hook for focus management
 export function useFocusManager() {
-  const { focusedElement, setFocusedElement, clearFocus } = useUI()
+  const focusedElement = useUIStore(state => state.focusedElement)
+  // Use direct store access to avoid function recreation issues
+  const setFocusedElement = useUIStore(state => state.setFocusedElement)
+  const clearFocus = useUIStore(state => state.clearFocus)
   
   useEffect(() => {
     const handleFocusIn = (event: FocusEvent) => {
@@ -329,8 +339,12 @@ export function useFocusManager() {
 
 // Hook for sidebar auto-collapse on mobile
 export function useSidebarResponsive() {
-  const { open, setOpen, collapsed, setCollapsed } = useSidebar()
-  const { isMobile } = useResponsive()
+  const open = useUIStore(state => state.sidebarOpen)
+  const collapsed = useUIStore(state => state.sidebarCollapsed)
+  const isMobile = useUIStore(state => state.isMobile)
+  // Use direct store access to avoid function recreation issues
+  const setOpen = useUIStore(state => state.setSidebarOpen)
+  const setCollapsed = useUIStore(state => state.setSidebarCollapsed)
   
   useEffect(() => {
     if (isMobile && open) {

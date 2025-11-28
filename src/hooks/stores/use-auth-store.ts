@@ -55,7 +55,8 @@ export function useAuth() {
                 clearAuth: state.clearAuth,
             }),
             []
-        ))
+        )
+    )
 }
 
 export function useAuthUser() {
@@ -134,19 +135,38 @@ export function useAuthPermissions() {
 
 // Hook for auth initialization
 export function useAuthInit() {
-    const { setInitialized, refreshSession, clearError } = useAuthActions()
+    console.log('🔍 useAuthInit: Hook called')
+    
+    // Use direct store access to avoid function recreation issues
+    const setInitialized = useAuthStore(state => state.setInitialized)
+    const refreshSession = useAuthStore(state => state.refreshSession)
+    const clearError = useAuthStore(state => state.clearError)
+    const isInitialized = useAuthStore(state => state.isInitialized)
+    
+    console.log('🔍 useAuthInit: Actions extracted', { setInitialized: typeof setInitialized, refreshSession: typeof refreshSession, clearError: typeof clearError, isInitialized })
 
     useEffect(() => {
+        console.log('🔍 useAuthInit: useEffect triggered')
+        
+        // Skip if already initialized
+        if (isInitialized) {
+            console.log('🔍 useAuthInit: Already initialized, skipping')
+            return
+        }
+        
         let mounted = true
 
         const initializeAuth = async () => {
+            console.log('🔍 useAuthInit: initializeAuth starting')
             try {
                 clearError()
                 await refreshSession()
+                console.log('🔍 useAuthInit: refreshSession completed')
             } catch (error) {
                 console.error('Auth initialization failed:', error)
             } finally {
                 if (mounted) {
+                    console.log('🔍 useAuthInit: Setting initialized to true')
                     setInitialized(true)
                 }
             }
@@ -155,15 +175,19 @@ export function useAuthInit() {
         initializeAuth()
 
         return () => {
+            console.log('🔍 useAuthInit: Cleanup - mounted = false')
             mounted = false
         }
-    }, [setInitialized, refreshSession, clearError])
+    }, [setInitialized, refreshSession, clearError, isInitialized])
 }
 
 // Hook for auth session monitoring
 export function useAuthSessionMonitor() {
     const { isAuthenticated, user } = useAuthState()
-    const { refreshSession, clearAuth } = useAuthActions()
+    
+    // Use direct store access to avoid function recreation issues
+    const refreshSession = useAuthStore(state => state.refreshSession)
+    const clearAuth = useAuthStore(state => state.clearAuth)
 
     useEffect(() => {
         if (!isAuthenticated || !user) return

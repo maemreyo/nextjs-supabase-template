@@ -25,18 +25,27 @@ export function Providers({ children }: ProvidersProps) {
       enableSystem
       disableTransitionOnChange
     >
-      {/* <ZustandProvider> */}
+      {/* <ZustandProvider>
         <SupabaseProvider>
           <AuthSyncProvider>
             <QueryClientProvider client={queryClient}>
               <AnalysisDialogProvider>
                 {children}
-                {/* <ReactQueryDevtools initialIsOpen={false} /> */}
               </AnalysisDialogProvider>
             </QueryClientProvider>
           </AuthSyncProvider>
         </SupabaseProvider>
-      {/* </ZustandProvider> */}
+      </ZustandProvider> */}
+      <SupabaseProvider>
+        <AuthSyncProvider>
+          <QueryClientProvider client={queryClient}>
+            <AnalysisDialogProvider>
+              {children}
+              {/* <ReactQueryDevtools initialIsOpen={false} /> */}
+            </AnalysisDialogProvider>
+          </QueryClientProvider>
+        </AuthSyncProvider>
+      </SupabaseProvider>
     </ThemeProvider>
   )
 }

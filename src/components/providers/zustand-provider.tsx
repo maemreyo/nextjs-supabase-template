@@ -10,7 +10,7 @@ interface ZustandProviderProps {
 
 /**
  * Zustand Provider - Initializes and manages Zustand stores
- * 
+ *
  * This provider handles:
  * - Auth initialization and session monitoring
  * - System theme detection
@@ -21,17 +21,24 @@ interface ZustandProviderProps {
  * - Sidebar responsive behavior
  */
 export function ZustandProvider({ children }: ZustandProviderProps) {
-  // Initialize auth and monitor session
+  // All hooks are now uncommented after fixing infinite loops
+  
+  console.log('🔍 ZustandProvider: Rendering')
+  
+  // Auth hooks
   useAuthInit()
   useAuthSessionMonitor()
   
-  // Initialize UI systems
+  // UI hooks
   useSystemTheme()
   useResponsiveDetection()
   useNotificationManager()
   useKeyboardShortcutManager()
   useFocusManager()
   useSidebarResponsive()
+  
+  // Note: Theme sync removed to prevent loop
+  // Components now use next-themes directly
   
   return <>{children}</>
 }
