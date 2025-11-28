@@ -17,6 +17,7 @@ export default function AuthGuard({
   redirectTo = '/auth/signin',
   requireAuth = true
 }: AuthGuardProps) {
+  console.log('🔍 [DEBUG] AuthGuard rendering')
   const router = useRouter()
   const { user, isLoading, isInitialized } = useAuth()
 
@@ -27,7 +28,9 @@ export default function AuthGuard({
     }
 
     // If authentication is not required, allow access
-    if (!requireAuth) return
+    if (!requireAuth) {
+      return
+    }
 
     // If user is not authenticated and auth is required, redirect
     if (!user) {

@@ -1,12 +1,13 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { shallow } from 'zustand/shallow'
 import { useAuthStore, authSelectors } from '@/stores/auth_store'
 
 // Auth hook with optimized selectors
 export function useAuth() {
+    console.log('🔍 [DEBUG] useAuth() called - creating new object selector')
     return useAuthStore(
-        useCallback(
-            (state) => ({
+        (state) => {
+            return {
                 // User data
                 user: authSelectors.user(state),
                 profile: authSelectors.profile(state),
@@ -53,9 +54,8 @@ export function useAuth() {
                 // Utility
                 refreshSession: state.refreshSession,
                 clearAuth: state.clearAuth,
-            }),
-            []
-        )
+            }
+        },
     )
 }
 
@@ -78,7 +78,7 @@ export function useAuthState() {
                 user: authSelectors.user(state),
             }),
             []
-        )
+        ),
     )
 }
 
@@ -135,39 +135,34 @@ export function useAuthPermissions() {
 
 // Hook for auth initialization
 export function useAuthInit() {
-    console.log('🔍 useAuthInit: Hook called')
-    
-    // Use direct store access to avoid function recreation issues
-    const setInitialized = useAuthStore(state => state.setInitialized)
-    const refreshSession = useAuthStore(state => state.refreshSession)
-    const clearError = useAuthStore(state => state.clearError)
+    console.log('🔍 [DEBUG] useAuthInit() called')
+
+    // Get isInitialized state directly with shallow comparison
     const isInitialized = useAuthStore(state => state.isInitialized)
-    
-    console.log('🔍 useAuthInit: Actions extracted', { setInitialized: typeof setInitialized, refreshSession: typeof refreshSession, clearError: typeof clearError, isInitialized })
 
     useEffect(() => {
-        console.log('🔍 useAuthInit: useEffect triggered')
-        
+        console.log('🔍 [DEBUG] useAuthInit() main useEffect triggered, isInitialized:', isInitialized)
         // Skip if already initialized
         if (isInitialized) {
-            console.log('🔍 useAuthInit: Already initialized, skipping')
+            console.log('🔍 [DEBUG] useAuthInit() already initialized, skipping')
             return
         }
-        
+
         let mounted = true
 
         const initializeAuth = async () => {
-            console.log('🔍 useAuthInit: initializeAuth starting')
+            console.log('🔍 [DEBUG] useAuthInit() initializeAuth() starting')
             try {
-                clearError()
-                await refreshSession()
-                console.log('🔍 useAuthInit: refreshSession completed')
+                // Use getState() directly to avoid function recreation
+                useAuthStore.getState().clearError()
+                await useAuthStore.getState().refreshSession()
+                console.log('🔍 [DEBUG] useAuthInit() refreshSession completed')
             } catch (error) {
                 console.error('Auth initialization failed:', error)
             } finally {
                 if (mounted) {
-                    console.log('🔍 useAuthInit: Setting initialized to true')
-                    setInitialized(true)
+                    console.log('🔍 [DEBUG] useAuthInit() setting initialized to true')
+                    useAuthStore.getState().setInitialized(true)
                 }
             }
         }
@@ -175,45 +170,47 @@ export function useAuthInit() {
         initializeAuth()
 
         return () => {
-            console.log('🔍 useAuthInit: Cleanup - mounted = false')
             mounted = false
         }
-    }, [setInitialized, refreshSession, clearError, isInitialized])
+    }, [isInitialized]) // Only depend on isInitialized
 }
 
 // Hook for auth session monitoring
 export function useAuthSessionMonitor() {
     const { isAuthenticated, user } = useAuthState()
-    
-    // Use direct store access to avoid function recreation issues
-    const refreshSession = useAuthStore(state => state.refreshSession)
-    const clearAuth = useAuthStore(state => state.clearAuth)
 
     useEffect(() => {
-        if (!isAuthenticated || !user) return
+        if (!isAuthenticated || !user) {
+            return
+        }
 
         // Set up session refresh interval
         const interval = setInterval(async () => {
             try {
-                await refreshSession()
+                // Use getState() directly to avoid function recreation
+                await useAuthStore.getState().refreshSession()
             } catch (error) {
                 console.error('Session refresh failed:', error)
-                clearAuth()
+                useAuthStore.getState().clearAuth()
             }
         }, 5 * 60 * 1000) // Refresh every 5 minutes
 
-        return () => clearInterval(interval)
-    }, [isAuthenticated, user, refreshSession, clearAuth])
+        return () => {
+            clearInterval(interval)
+        }
+    }, [isAuthenticated, user]) // Only depend on state values
 
     // Monitor visibility change to refresh session when tab becomes active
     useEffect(() => {
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible' && isAuthenticated) {
-                refreshSession().catch(console.error)
+                useAuthStore.getState().refreshSession().catch(console.error)
             }
         }
 
         document.addEventListener('visibilitychange', handleVisibilityChange)
-        return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
-    }, [isAuthenticated, refreshSession])
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange)
+        }
+    }, [isAuthenticated]) // Only depend on isAuthenticated
 }

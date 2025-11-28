@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, ReactNode } from 'react'
+import { useEffect, ReactNode, useRef } from 'react'
 import { useAuthInit, useAuthSessionMonitor } from '@/hooks/stores/use-auth-store'
 import { useSystemTheme, useResponsiveDetection, useNotificationManager, useKeyboardShortcutManager, useFocusManager, useSidebarResponsive } from '@/hooks/stores/use-ui-store'
 
@@ -21,15 +21,16 @@ interface ZustandProviderProps {
  * - Sidebar responsive behavior
  */
 export function ZustandProvider({ children }: ZustandProviderProps) {
-  // All hooks are now uncommented after fixing infinite loops
+  console.log('🔍 [DEBUG] ZustandProvider rendering')
   
-  console.log('🔍 ZustandProvider: Rendering')
-  
-  // Auth hooks
+  // Auth hooks - these are now stable with our fixes
+  console.log('🔍 [DEBUG] ZustandProvider calling useAuthInit()')
   useAuthInit()
+  console.log('🔍 [DEBUG] ZustandProvider calling useAuthSessionMonitor()')
   useAuthSessionMonitor()
   
   // UI hooks
+  console.log('🔍 [DEBUG] ZustandProvider calling UI hooks')
   useSystemTheme()
   useResponsiveDetection()
   useNotificationManager()
@@ -40,6 +41,7 @@ export function ZustandProvider({ children }: ZustandProviderProps) {
   // Note: Theme sync removed to prevent loop
   // Components now use next-themes directly
   
+  console.log('🔍 [DEBUG] ZustandProvider rendering children')
   return <>{children}</>
 }
 

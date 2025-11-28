@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient, useMutation, useInfiniteQuery } from '@tanstack/react-query';
+import { useRef } from 'react';
 import { queryKeys } from '@/lib/query-keys';
 import { api } from '@/lib/api-client-client';
 import type { AnalysisSession, SessionAnalysis, SessionSettings } from '@/types/sessions';
@@ -73,13 +74,6 @@ export function useSessions(params: ListSessionsParams = {}, options: UseSession
   } = useQuery({
     queryKey,
     queryFn: async () => {
-      console.log('🔍 [DEBUG] useSessions - Fetching sessions', {
-        status,
-        type,
-        search,
-        page,
-        limit,
-      });
 
       try {
         // Use new API client instead of manual fetch
@@ -116,15 +110,9 @@ export function useSessions(params: ListSessionsParams = {}, options: UseSession
           };
         }
         
-        console.log('🔍 [DEBUG] useSessions - Fetch successful', {
-          sessionsCount: result.sessions?.length,
-          total: result.total,
-          responseFormat: apiResponse.success ? 'wrapped' : 'direct',
-        });
 
         return result;
       } catch (error) {
-        console.error('🔍 [DEBUG] useSessions - Fetch failed', error);
         throw error instanceof Error ? error : new Error('Failed to fetch sessions');
       }
     },
@@ -137,7 +125,6 @@ export function useSessions(params: ListSessionsParams = {}, options: UseSession
   const queryClient = useQueryClient();
   
   const invalidateCache = () => {
-    console.log('🔍 [DEBUG] useSessions - Invalidating cache');
     queryClient.invalidateQueries({
       queryKey: queryKeys.api.endpoint('/api/sessions/list'),
     });

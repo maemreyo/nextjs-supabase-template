@@ -1,7 +1,6 @@
 'use client'
 
-import React from 'react'
-import { useEffect } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { useAuthStore } from '@/stores/auth_store'
 import { useSupabase } from './supabase-provider'
 
@@ -20,26 +19,28 @@ export function AuthSyncProvider({ children }: AuthSyncProviderProps) {
   const isInitialized = useAuthStore(state => state.isInitialized)
   const authStoreUser = useAuthStore(state => state.user)
 
+  // Use refs to stabilize function references
+  const setUserRef = useRef(setUser)
+  const setSessionRef = useRef(setSession)
+  const setInitializedRef = useRef(setInitialized)
+
+  // Update refs when functions change
   useEffect(() => {
-    console.log('🔄 AUTH SYNC: Main effect triggered', {
-      user: !!user,
-      supabaseLoading,
-      authStoreUser: !!authStoreUser,
-      isAuthenticated,
-      isInitialized
-    })
-    
+    setUserRef.current = setUser
+    setSessionRef.current = setSession
+    setInitializedRef.current = setInitialized
+  }, [setUser, setSession, setInitialized])
+
+  useEffect(() => {
     // Skip if Supabase is still loading
     if (supabaseLoading) {
-      console.log('⏸️ AUTH SYNC: Skipping - Supabase still loading')
       return
     }
 
     // If Supabase has user but AuthStore doesn't, sync them
     if (user && !authStoreUser) {
-      console.log('✅ AUTH SYNC: Syncing user from Supabase to AuthStore', user.email || '')
-      setUser(user)
-      setSession({
+      setUserRef.current(user)
+      setSessionRef.current({
         user,
         access_token: '',
         refresh_token: '',
@@ -50,31 +51,26 @@ export function AuthSyncProvider({ children }: AuthSyncProviderProps) {
 
     // If Supabase has no user but AuthStore still has user, clear AuthStore
     if (!user && authStoreUser) {
-      console.log('✅ AUTH SYNC: Clearing user from AuthStore')
-      setUser(null)
-      setSession(null)
+      setUserRef.current(null)
+      setSessionRef.current(null)
     }
 
     // Mark AuthStore as initialized after sync
     if (!isInitialized) {
-      console.log('✅ AUTH SYNC: Marking AuthStore as initialized')
-      setInitialized(true)
+      setInitializedRef.current(true)
     }
   }, [user, supabaseLoading, authStoreUser, isAuthenticated, isInitialized]) // Removed store functions from deps
 
   // Listen for auth state changes from Supabase and sync to AuthStore
   useEffect(() => {
-    console.log('🔄 AUTH SYNC: Secondary effect triggered', {
-      user: !!user,
-      authStoreUser: !!authStoreUser
-    })
-
-    if (!!user !== !!authStoreUser) {
-      const authStore = useAuthStore.getState()
+    // STRONGER GUARD: Only sync if there's an actual mismatch AND main effect hasn't handled it
+    const hasRealMismatch = !!user !== !!authStoreUser
+    const alreadySynced = user?.id === authStoreUser?.id
+    
+    if (hasRealMismatch && !alreadySynced) {
       if (user) {
-        console.log('✅ AUTH SYNC: Secondary - Setting user', user.email || '')
-        authStore.setUser(user)
-        authStore.setSession({
+        setUserRef.current(user)
+        setSessionRef.current({
           user,
           access_token: '',
           refresh_token: '',
@@ -82,9 +78,8 @@ export function AuthSyncProvider({ children }: AuthSyncProviderProps) {
           token_type: 'bearer'
         })
       } else {
-        console.log('✅ AUTH SYNC: Secondary - Clearing user')
-        authStore.setUser(null)
-        authStore.setSession(null)
+        setUserRef.current(null)
+        setSessionRef.current(null)
       }
     }
   }, [user, authStoreUser]) // Removed store functions from deps

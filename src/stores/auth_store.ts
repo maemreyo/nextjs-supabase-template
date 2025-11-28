@@ -2,11 +2,25 @@ import { create } from 'zustand'
 import { devtools, subscribeWithSelector } from 'zustand/middleware'
 import type { User, Session } from '@supabase/supabase-js'
 
+// User profile interface
+export interface UserProfile {
+  id: string
+  username?: string
+  full_name?: string
+  avatar_url?: string
+  website?: string
+  bio?: string
+  email?: string
+  phone?: string
+  updated_at?: string
+  [key: string]: unknown // Allow additional properties
+}
+
 // Auth state interface
 export interface AuthState {
   // User data
   user: User | null
-  profile: any | null
+  profile: UserProfile | null
   isAuthenticated: boolean
   
   // User info
@@ -29,8 +43,8 @@ export interface AuthState {
 export interface AuthActions {
   // User data setters
   setUser: (user: User | null) => void
-  setProfile: (profile: any | null) => void
-  updateUserProfile: (updates: Partial<any>) => void
+  setProfile: (profile: UserProfile | null) => void
+  updateUserProfile: (updates: Partial<UserProfile>) => void
   setSession: (session: Session | null) => void
   setTokens: (accessToken: string | null, refreshToken: string | null) => void
   
@@ -42,14 +56,14 @@ export interface AuthActions {
   
   // Auth flow
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
-  signUp: (email: string, password: string, metadata?: any) => Promise<{ success: boolean; error?: string }>
+  signUp: (email: string, password: string, metadata?: Record<string, unknown>) => Promise<{ success: boolean; error?: string }>
   signOut: () => Promise<void>
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>
   updatePassword: (newPassword: string) => Promise<{ success: boolean; error?: string }>
   
   // Profile
   fetchProfile: () => Promise<void>
-  updateProfile: (updates: Partial<any>) => Promise<{ success: boolean; error?: string }>
+  updateProfile: (updates: Partial<UserProfile>) => Promise<{ success: boolean; error?: string }>
   uploadAvatar: (file: File) => Promise<{ success: boolean; url?: string; error?: string }>
   
   // Utility
@@ -119,7 +133,7 @@ export const useAuthStore = create<AuthStore>()(
       
       updateUserProfile: (updates) => {
         const currentProfile = get().profile
-        const newProfile = currentProfile ? { ...currentProfile, ...updates } : updates
+        const newProfile = currentProfile ? { ...currentProfile, ...updates } : { id: '', ...updates }
         set({ profile: newProfile }, false, 'updateUserProfile')
       },
       
@@ -305,6 +319,7 @@ export const useAuthStore = create<AuthStore>()(
     })),
     {
       name: 'auth-store',
+      getServerSnapshot: () => initialState,
     }
   )
 )

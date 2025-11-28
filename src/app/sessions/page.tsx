@@ -31,6 +31,7 @@ interface CreateSessionFormData {
 }
 
 export default function SessionsPage() {
+  console.log('🔍 [DEBUG] SessionsPage rendering')
   const [currentView, setCurrentView] = useState<View>('list');
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -137,6 +138,7 @@ export default function SessionsPage() {
   // Create breadcrumb items
   const breadcrumbItems = createBreadcrumbItems('/sessions');
 
+  console.log('🔍 [DEBUG] SessionsPage rendering with AuthGuard')
   return (
     <AuthGuard redirectTo="/auth/signin">
       <div className="min-h-screen bg-background">
