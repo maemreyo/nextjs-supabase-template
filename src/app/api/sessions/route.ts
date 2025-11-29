@@ -198,7 +198,19 @@ export const POST = withAuth(
       word_analyses_count: 0,
       sentence_analyses_count: 0,
       paragraph_analyses_count: 0,
+      // Set content_plain to empty string to satisfy chk_at_least_one_content_format constraint
+      content_plain: '',
     };
+
+    // Log session data for debugging constraint violation
+    apiLogger.info('Creating session with data', {
+      userId: user.id,
+      sessionData: sessionData,
+      hasContentPlain: !!sessionData.content_plain,
+      hasContentHtml: !!sessionData.content_html,
+      hasContentData: !!sessionData.content_data,
+      hasContent: !!sessionData.content
+    });
 
     // Insert session
     const { data: session, error: insertError } = await supabase
