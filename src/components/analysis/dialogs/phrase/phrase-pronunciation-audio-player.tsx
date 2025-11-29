@@ -116,7 +116,6 @@ export const PhrasePronunciationAudioPlayer: React.FC<PhrasePronunciationAudioPl
         setIsLoading(false);
         setError('Không thể phát âm cụm từ. Vui lòng thử lại.');
         utteranceRef.current = null;
-        console.error('Speech synthesis error:', event);
       };
 
       // Start speaking
@@ -128,7 +127,6 @@ export const PhrasePronunciationAudioPlayer: React.FC<PhrasePronunciationAudioPl
     } catch (err) {
       setIsLoading(false);
       setError('Lỗi khi khởi tạo phát âm.');
-      console.error('Pronunciation error:', err);
     }
   }, [phrase, rate, pitch, volume, voice, accent, onPronounce, isSupported]);
 

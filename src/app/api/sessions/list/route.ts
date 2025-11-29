@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { withAuth, createSuccessResponse, createErrorResponse } from '@/lib/api-client';
+import { apiLogger } from '@/services/logger';
 
 interface SessionsListResponse {
   sessions: any[];
@@ -9,6 +10,11 @@ interface SessionsListResponse {
 // GET /api/sessions/list - Get all sessions for the authenticated user
 export const GET = withAuth(
   async (request: NextRequest, { user, supabase }: { user: any; supabase: any }) => {
+    apiLogger.start('Handling GET /api/sessions/list', {
+      userId: user.id,
+      timestamp: new Date().toISOString()
+    })
+    
     try {
 
     // Get query parameters for filtering and pagination
@@ -28,6 +34,12 @@ export const GET = withAuth(
     const validSortOrders = ['asc', 'desc'];
     
     if (!validSortFields.includes(sortBy)) {
+      apiLogger.warn('Invalid sort field', {
+        userId: user.id,
+        sortBy,
+        validFields: validSortFields
+      })
+      
       return createErrorResponse(
         'Invalid sort field. Must be one of: ' + validSortFields.join(', '),
         400
@@ -35,6 +47,11 @@ export const GET = withAuth(
     }
     
     if (!validSortOrders.includes(sortOrder)) {
+      apiLogger.warn('Invalid sort order', {
+        userId: user.id,
+        sortOrder
+      })
+      
       return createErrorResponse(
         'Invalid sort order. Must be asc or desc',
         400
@@ -77,7 +94,11 @@ export const GET = withAuth(
     const { data: sessions, error: sessionsError, count } = await query;
 
     if (sessionsError) {
-      console.error('Error fetching sessions:', sessionsError);
+      apiLogger.error('Failed to fetch sessions', {
+        userId: user.id,
+        error: sessionsError.message
+      })
+
       return createErrorResponse(
         'Failed to fetch sessions',
         500
@@ -89,10 +110,21 @@ export const GET = withAuth(
         total: count || 0,
       };
 
+      apiLogger.success('Sessions list retrieved successfully', {
+        userId: user.id,
+        count: sessions?.length || 0,
+        total: count || 0
+      })
+
       return createSuccessResponse(response);
 
     } catch (error) {
-      console.error('Error in sessions list GET:', error);
+      apiLogger.error('Error in sessions list API', {
+        userId: user?.id,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      })
+
       return createErrorResponse(
         error instanceof Error ? error.message : 'Internal server error',
         500

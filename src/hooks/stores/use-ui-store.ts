@@ -295,7 +295,6 @@ export function useResponsiveDetection() {
   // TODO: This needs to be implemented with a responsive store
   useEffect(() => {
     // Placeholder implementation
-    console.log('useResponsiveDetection: TODO - implement with responsive store')
   }, [])
 }
 
@@ -329,7 +328,6 @@ export function useKeyboardShortcutManager() {
   // TODO: This needs to be implemented with a keyboard shortcuts store
   useEffect(() => {
     // Placeholder implementation
-    console.log('useKeyboardShortcutManager: TODO - implement with keyboard shortcuts store')
   }, [])
 }
 
@@ -338,7 +336,6 @@ export function useFocusManager() {
   // TODO: This needs to be implemented with a focus store
   useEffect(() => {
     // Placeholder implementation
-    console.log('useFocusManager: TODO - implement with focus store')
   }, [])
 }
 

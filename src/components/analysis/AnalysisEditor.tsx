@@ -23,6 +23,7 @@ import SessionQuickActions from './SessionQuickActions';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-keys';
+import { clientLogger } from '@/services/logger';
 
 // Security imports
 import { validateInput, validateAnalysisText, securityCheck } from '@/lib/security/input-validator';
@@ -79,7 +80,6 @@ export function AnalysisEditor({
       urlSessionId = null;
     }
   } catch (error) {
-    console.error('[DEBUG] AnalysisEditor - Error processing searchParams:', error);
     urlSessionId = null;
   }
   
@@ -152,9 +152,15 @@ export function AnalysisEditor({
   // Notify parent when editor is ready
   React.useEffect(() => {
     if (editor && onEditorReady) {
+      clientLogger.info('AnalysisEditor', { type: 'editor_ready', sessionId });
+      clientLogger.info('AnalysisEditor mounted', {
+        sessionId,
+        initialContentLength: initialContent.length,
+        mountTime: Date.now()
+      });
       onEditorReady(editor);
     }
-  }, [editor, onEditorReady]);
+  }, [editor, onEditorReady, sessionId]);
 
   // TipTap selection hook
   const {
@@ -192,7 +198,6 @@ export function AnalysisEditor({
       // Save successful - could show toast notification here if needed
     },
     onError: (error) => {
-      console.error('AnalysisEditor - Save failed', error);
       toast.error('Lưu thất bại', {
         description: 'Không thể lưu nội dung. Vui lòng thử lại.',
         duration: 3000,
@@ -223,7 +228,6 @@ export function AnalysisEditor({
       
       // Refetch session analyses after successful analysis if autoSave is enabled
       if (sessionId && autoSaveEnabled) {
-        console.log('🔄 [AnalysisEditor] Refetching session analyses after analysis (auto-save enabled)');
         queryClient.invalidateQueries({
           queryKey: ['word-analyses', sessionId],
         });
@@ -255,7 +259,6 @@ export function AnalysisEditor({
       
       // Refetch session analyses after successful save
       if (sessionId) {
-        console.log('🔄 [AnalysisEditor] Refetching session analyses after save');
         queryClient.invalidateQueries({
           queryKey: ['word-analyses', sessionId],
         });
@@ -274,7 +277,6 @@ export function AnalysisEditor({
       }
     },
     onError: (error) => {
-      console.error('AnalysisEditor - Failed to save analysis', error);
       toast.error('Lưu phân tích thất bại', {
         description: error.message || 'Không thể lưu kết quả phân tích. Vui lòng thử lại.',
         duration: 3000,
@@ -293,6 +295,8 @@ export function AnalysisEditor({
 
   // Handle analysis request function with security validation
   const handleAnalysisRequest = useMemoizedCallback(async (text: string, type: 'word' | 'phrase' | 'sentence' | 'paragraph') => {
+    clientLogger.info('AnalysisEditor', { type: 'analysis_request', textLength: text.length, analysisType: type });
+    
     // Validate and sanitize input
     const validation = validateAnalysisText(text, {
       maxLength: 10000,
@@ -300,6 +304,7 @@ export function AnalysisEditor({
     });
 
     if (!validation.isValid) {
+      clientLogger.warn('AnalysisEditor', { type: 'validation_failed', errors: validation.errors });
       toast.error('Invalid input', {
         description: validation.errors.join(', '),
         duration: 3000,
@@ -310,6 +315,7 @@ export function AnalysisEditor({
     // Additional security check
     const securityResult = securityCheck(validation.sanitized);
     if (!securityResult.isSafe) {
+      clientLogger.warn('AnalysisEditor', { type: 'security_check_failed', textLength: validation.sanitized.length });
       toast.error('Security check failed', {
         description: 'Input contains potentially dangerous content',
         duration: 3000,
@@ -331,22 +337,20 @@ export function AnalysisEditor({
     const textToAnalyze = selection.text || getContent.text || '';
     if (!textToAnalyze.trim()) return;
 
-    // DEBUG: Log values to verify the issue
-    console.log('🔍 [DEBUG] handleAnalyze - selection.type:', selection.type);
-    console.log('🔍 [DEBUG] handleAnalyze - textToAnalyze:', textToAnalyze);
+    clientLogger.info('AnalysisEditor', { type: 'analyze_clicked', textLength: textToAnalyze.length, selectionType: selection.type });
     
     // Tạo unique key cho request này để tránh duplicate
     const requestKey = `${textToAnalyze.trim()}-${selection.type}`;
     
     // Kiểm tra race condition
     if (analysisInProgressRef.current) {
-      console.log('🔍 [DEBUG] handleAnalyze - Analysis already in progress, ignoring');
+      clientLogger.debug('AnalysisEditor', { type: 'analysis_in_progress', requestKey });
       return;
     }
     
     // Kiểm tra duplicate request
     if (lastAnalysisRequestRef.current === requestKey) {
-      console.log('🔍 [DEBUG] handleAnalyze - Duplicate request detected, ignoring');
+      clientLogger.debug('AnalysisEditor', { type: 'duplicate_request_prevented', requestKey });
       return;
     }
     
@@ -362,6 +366,7 @@ export function AnalysisEditor({
       });
 
       if (!validation.isValid) {
+        clientLogger.warn('AnalysisEditor', { type: 'validation_failed', errors: validation.errors });
         toast.error('Invalid input', {
           description: validation.errors.join(', '),
           duration: 3000,
@@ -372,6 +377,7 @@ export function AnalysisEditor({
       // Additional security check
       const securityResult = securityCheck(validation.sanitized);
       if (!securityResult.isSafe) {
+        clientLogger.warn('AnalysisEditor', { type: 'security_check_failed', textLength: validation.sanitized.length });
         toast.error('Security check failed', {
           description: 'Input contains potentially dangerous content',
           duration: 3000,
@@ -383,12 +389,12 @@ export function AnalysisEditor({
       // selection.type luôn có giá trị hợp lệ khi có text được chọn
       const analysisTypeToUse = selection.type;
       
-      console.log('🔍 [DEBUG] handleAnalyze - analysisTypeToUse (from selection):', analysisTypeToUse);
+      clientLogger.info('AnalysisEditor', { type: 'analysis_started', analysisType: analysisTypeToUse, textLength: securityResult.sanitized.length });
       
       await triggerAnalysis(securityResult.sanitized, analysisTypeToUse);
       hideBubbleMenu();
     } catch (error) {
-      console.error('🔍 [DEBUG] handleAnalyze - Error during analysis:', error);
+      clientLogger.error('AnalysisEditor', { type: 'analysis_failed', error: error instanceof Error ? error.message : 'Unknown error' });
       setAnalysisError(error instanceof Error ? error.message : 'Đã xảy ra lỗi không xác định');
       toast.error('Phân tích thất bại', {
         description: error instanceof Error ? error.message : 'Đã xảy ra lỗi không xác định',
@@ -403,10 +409,14 @@ export function AnalysisEditor({
 
   // Handle save
   const handleSave = useCallback(() => {
+    clientLogger.info('AnalysisEditor', { type: 'save_clicked', hasAnalysisResult: !!lastAnalysisResult, sessionId });
+    
     if (lastAnalysisResult && lastAnalysisResult.data) {
       if (sessionId) {
+        clientLogger.info('AnalysisEditor', { type: 'save_to_session', sessionId });
         forceSave();
       } else {
+        clientLogger.info('AnalysisEditor', { type: 'save_analysis', analysisType: lastAnalysisResult.type });
         saveAnalysis({
           type: lastAnalysisResult.type as any,
           text: lastAnalysisResult.text,
@@ -418,14 +428,17 @@ export function AnalysisEditor({
       const editorText = getContent.text || '';
       if (editorText.trim()) {
         if (sessionId) {
+          clientLogger.info('AnalysisEditor', { type: 'save_editor_content_to_session', sessionId, textLength: editorText.length });
           forceSave();
         } else {
+          clientLogger.warn('AnalysisEditor', { type: 'save_failed_no_session' });
           toast.error('Không có session để lưu', {
             description: 'Vui lòng tạo hoặc chọn session trước khi lưu.',
             duration: 3000,
           });
         }
       } else {
+        clientLogger.warn('AnalysisEditor', { type: 'save_failed_no_content' });
         toast.error('Không có nội dung để lưu', {
           description: 'Vui lòng nhập nội dung trước khi lưu.',
           duration: 3000,
@@ -436,7 +449,6 @@ export function AnalysisEditor({
 
   // Handle pronounce
   const handlePronounce = useCallback((text: string) => {
-    console.log('Pronounce:', text);
     // Implement pronunciation logic here
   }, []);
 
@@ -530,6 +542,7 @@ export function AnalysisEditor({
   // Handle new session creation with validation
   const handleCreateNewSession = useMemoizedCallback(async () => {
     const title = `Session mới - ${new Date().toLocaleDateString('vi-VN')}`;
+    clientLogger.info('AnalysisEditor', { type: 'create_new_session', title });
     
     // Validate session title
     const titleValidation = validateInput(title, 'analysisText', {
@@ -538,6 +551,7 @@ export function AnalysisEditor({
     });
 
     if (!titleValidation.isValid) {
+      clientLogger.warn('AnalysisEditor', { type: 'session_title_validation_failed', errors: titleValidation.errors });
       toast.error('Invalid session title', {
         description: titleValidation.errors.join(', '),
         duration: 3000,
@@ -545,11 +559,16 @@ export function AnalysisEditor({
       return;
     }
 
-    const newSession = await createSession({
-      title: titleValidation.sanitized || title,
-      session_type: 'mixed'
-    });
-    navigateToAnalysis(newSession.id);
+    try {
+      const newSession = await createSession({
+        title: titleValidation.sanitized || title,
+        session_type: 'mixed'
+      });
+      clientLogger.info('AnalysisEditor', { type: 'session_created_successfully', sessionId: newSession.id });
+      navigateToAnalysis(newSession.id);
+    } catch (error) {
+      clientLogger.error('AnalysisEditor', { type: 'session_creation_failed', error: error instanceof Error ? error.message : 'Unknown error' });
+    }
   }, [createSession, navigateToAnalysis]);
 
   // Use parent's isAnalyzing state if provided, otherwise use local state
@@ -573,6 +592,13 @@ export function AnalysisEditor({
           </Button>
         </div>
       }
+      onError={(error) => {
+        clientLogger.error('AnalysisEditor ErrorBoundary triggered', {
+          sessionId,
+          error: error?.message || 'Unknown error',
+          componentStack: error?.stack
+        });
+      }}
     >
       <div className={`h-full flex flex-col ${className}`}>
         {/* Error Display */}

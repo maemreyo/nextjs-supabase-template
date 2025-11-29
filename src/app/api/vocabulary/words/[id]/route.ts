@@ -79,7 +79,7 @@ export async function GET(
     });
 
   } catch (error) {
-    console.error('Error in vocabulary word GET:', error);
+
     return NextResponse.json(
       { 
         error: error instanceof Error ? error.message : 'Internal server error',
@@ -153,7 +153,7 @@ export async function PATCH(
     });
 
   } catch (error) {
-    console.error('Error in vocabulary word PATCH:', error);
+
     return NextResponse.json(
       { 
         error: error instanceof Error ? error.message : 'Internal server error',
@@ -224,7 +224,7 @@ export async function DELETE(
     });
 
   } catch (error) {
-    console.error('Error in vocabulary word DELETE:', error);
+
     return NextResponse.json(
       { 
         error: error instanceof Error ? error.message : 'Internal server error',
@@ -321,7 +321,7 @@ export async function POST(
     });
 
   } catch (error) {
-    console.error('Error in vocabulary word practice POST:', error);
+
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Internal server error',

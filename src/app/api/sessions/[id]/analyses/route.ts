@@ -1,5 +1,6 @@
 import { withAuth, createSuccessResponse, createErrorResponse } from '@/lib/api-client';
 import { Database } from '@/lib/database.types';
+import { apiLogger } from '@/services/logger';
 
 interface SessionAnalysesResponse {
   success: boolean;
@@ -21,15 +22,21 @@ interface SessionAnalysesResponse {
 // GET /api/sessions/[id]/analyses - Load session analyses with pagination
 export const GET = withAuth(
   async (request, { user, supabase, params }) => {
-    console.log('🔍 [DEBUG] API analyses route - Starting request');
+    apiLogger.start('Handling GET /api/sessions/[id]/analyses', {
+      userId: user.id,
+      timestamp: new Date().toISOString()
+    })
     
     try {
       // Extract session ID from params (Next.js 16 compatible)
       const sessionId = params?.id;
-      console.log('🔍 [DEBUG] API analyses route - Session ID extracted:', sessionId);
+
 
       if (!sessionId) {
-        console.error('🔍 [DEBUG] API analyses route - Session ID is empty or undefined');
+        apiLogger.warn('Session ID is required', {
+          error: 'Missing session ID'
+        })
+        
         return createErrorResponse('Session ID is required', 400);
       }
 
@@ -41,19 +48,12 @@ export const GET = withAuth(
       const sortField = searchParams.get('sort') || 'created_at'; // Default sort by created_at
       const sortOrder = searchParams.get('order') as 'asc' | 'desc' || 'desc'; // Default order is DESC (newest first)
       
-      console.log('🔍 [DEBUG] API analyses route - Params:', {
-        sessionId,
-        limit,
-        offset,
-        analysisType,
-        sortField,
-        sortOrder
-      });
+      
 
-      console.log('🔍 [DEBUG] API analyses route - Processing session ID:', sessionId);
+
   
       // Get session analyses with related data
-      console.log('🔍 [DEBUG] API analyses route - Fetching session analyses...');
+
       let sessionAnalysesQuery = supabase
         .from('session_analyses')
         .select('*')
@@ -87,18 +87,14 @@ export const GET = withAuth(
         totalSessionAnalysesCount = sessionCount;
       }
 
-      console.log('🔍 [DEBUG] API analyses route - Session analyses result:', {
-        analysesError,
-        count: sessionAnalyses?.length || 0,
-        analysisType
-      });
+      
 
       // Get word analyses directly for this session (document_id = session_id) with pagination
       let wordAnalysesData: any[] = [];
       let totalWordsCount = 0;
       
       if (analysisType === 'all' || analysisType === 'word') {
-        console.log('🔍 [DEBUG] API analyses route - Fetching word analyses with pagination...');
+
         const { data: wordAnalyses, error: wordAnalysesError } = await supabase
           .from('word_analyses')
           .select('*')
@@ -128,7 +124,7 @@ export const GET = withAuth(
         // Fixed hasMore logic: hasMore = (offset + limit) < totalWordsCount
         const hasMore = (offset + limit) < totalWordsCount;
 
-        console.log('🔍 [DEBUG] API analyses route - Word analyses result:', {
+        apiLogger.debug('Word analyses result', {
           wordAnalysesError,
           count: wordAnalysesData.length,
           totalWordsCount,
@@ -140,7 +136,7 @@ export const GET = withAuth(
       }
 
       // Fetch related analysis data using optimized JOIN queries to eliminate N+1 problem
-      console.log('🔍 [DEBUG] API analyses route - Fetching related analysis data with JOIN queries...');
+
       let sessionAnalysesWithDetails = [];
       try {
         // Extract analysis IDs from session_analyses to batch fetch related data
@@ -224,26 +220,20 @@ export const GET = withAuth(
               relatedData = { phrase_analysis: phraseAnalysisMap.get(analysis.analysis_id) };
             }
           } catch (mapError) {
-            console.error('🔍 [DEBUG] API analyses route - Error combining related data:', {
-              analysisId: analysis.id,
-              analysisType: analysis.analysis_type,
-              mapError
-            });
+            
           }
           
           return { ...analysis, ...relatedData };
         });
 
-        console.log('🔍 [DEBUG] API analyses route - Optimized JOIN query results:', {
-          wordAnalysesCount: wordDataResult.data?.length || 0,
-          sentenceAnalysesCount: sentenceDataResult.data?.length || 0,
-          paragraphAnalysesCount: paragraphDataResult.data?.length || 0,
-          phraseAnalysesCount: phraseDataResult.data?.length || 0,
-          totalSessionAnalyses: sessionAnalysesWithDetails.length
-        });
+        
 
       } catch (batchFetchError) {
-        console.error('🔍 [DEBUG] API analyses route - Batch fetch error:', batchFetchError);
+        apiLogger.error('Failed to fetch related analysis data', {
+          error: batchFetchError instanceof Error ? batchFetchError.message : 'Unknown error',
+          stack: batchFetchError instanceof Error ? batchFetchError.stack : undefined
+        })
+
         return createErrorResponse('Failed to fetch related analysis data', 500);
       }
 
@@ -295,7 +285,10 @@ export const GET = withAuth(
       });
 
       if (analysesError) {
-        console.error('Error fetching session analyses:', analysesError);
+        apiLogger.error('Failed to fetch session analyses', {
+          error: analysesError.message
+        })
+
         return createErrorResponse('Failed to fetch session analyses', 500);
       }
 
@@ -364,26 +357,25 @@ export const GET = withAuth(
         }
       };
 
-      console.log('🔍 [DEBUG] API analyses route - Final pagination data:', {
-        analysisType,
-        totalCount,
-        currentCount,
-        hasMore,
-        hasMoreLogic: 'fetchedAnalyses.length === limit for word analyses',
-        limit,
-        offset,
-        paginationStructure: `pagination.${analysisType}`
-      });
+      
 
-      console.log('🔍 [DEBUG] API analyses route - Successfully processed session analyses:', sessionId);
+
+      apiLogger.success('Session analyses retrieved successfully', {
+        userId: user.id,
+        sessionId,
+        analysisType,
+        count: allAnalyses.length
+      })
+
       return createSuccessResponse(responseData);
       
     } catch (error) {
-      console.error('🔍 [DEBUG] API analyses route - Unexpected error:', {
+      apiLogger.error('Error in session analyses API', {
+        userId: user?.id,
         error: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined,
-        sessionId: params?.id || 'unknown'
-      });
+        stack: error instanceof Error ? error.stack : undefined
+      })
+      
       return createErrorResponse('Internal server error', 500);
     }
   }

@@ -55,7 +55,7 @@ export async function GET(
     });
 
   } catch (error) {
-    console.error('Error in vocabulary collection GET:', error);
+
     return NextResponse.json(
       { 
         error: error instanceof Error ? error.message : 'Internal server error',
@@ -129,7 +129,7 @@ export async function PATCH(
     });
 
   } catch (error) {
-    console.error('Error in vocabulary collection PATCH:', error);
+
     return NextResponse.json(
       { 
         error: error instanceof Error ? error.message : 'Internal server error',
@@ -200,7 +200,7 @@ export async function DELETE(
     });
 
   } catch (error) {
-    console.error('Error in vocabulary collection DELETE:', error);
+
     return NextResponse.json(
       { 
         error: error instanceof Error ? error.message : 'Internal server error',

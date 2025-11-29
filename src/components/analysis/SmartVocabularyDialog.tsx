@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, BookOpen, AlertCircle, Info } from 'lucide-react';
+import { interactionLogger } from '@/services/logger';
 
 // Import types
 import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis } from './types';
@@ -72,14 +73,18 @@ export function SmartVocabularyDialog({
   useEffect(() => {
     if (!analysisResult || !open) return;
 
+    interactionLogger.info('SmartVocabularyDialog', { type: 'dialog_opened', analysisType, hasResult: !!analysisResult });
+
     if (analysisType === 'word') {
       const wordAnalysis = analysisResult as WordAnalysis;
       const mappedData = mapWordAnalysisToVocabulary(wordAnalysis);
+      interactionLogger.info('SmartVocabularyDialog', { type: 'word_analysis_mapped', word: mappedData.word });
       setVocabularyData(mappedData);
       setMappedWords([mappedData]);
     } else if (analysisType === 'sentence') {
       const sentenceAnalysis = analysisResult as SentenceAnalysis;
       const mappedDataList = mapSentenceAnalysisToVocabulary(sentenceAnalysis);
+      interactionLogger.info('SmartVocabularyDialog', { type: 'sentence_analysis_mapped', wordsCount: mappedDataList.length });
       setMappedWords(mappedDataList);
       
       if (mappedDataList.length > 0) {
@@ -89,6 +94,7 @@ export function SmartVocabularyDialog({
     } else if (analysisType === 'paragraph') {
       // For paragraph analysis, we don't have direct mapping
       // Reset to default values
+      interactionLogger.info('SmartVocabularyDialog', { type: 'paragraph_analysis_reset' });
       setVocabularyData({
         word: '',
         ipa: null,
@@ -128,6 +134,7 @@ export function SmartVocabularyDialog({
 
   // Handle word selection for sentence analysis
   const handleWordSelection = (index: number) => {
+    interactionLogger.info('SmartVocabularyDialog', { type: 'word_selected', index, word: mappedWords[index]?.word });
     setSelectedWordIndex(index);
     if (mappedWords[index]) {
       setVocabularyData(mappedWords[index]);
@@ -138,13 +145,16 @@ export function SmartVocabularyDialog({
   const handleSubmit = async () => {
     const validation = validateVocabularyData(vocabularyData);
     if (!validation.isValid) {
+      interactionLogger.warn('SmartVocabularyDialog', { type: 'validation_failed', errors: validation.errors });
       setValidationErrors(validation.errors);
       return;
     }
 
+    interactionLogger.info('SmartVocabularyDialog', { type: 'submitting_vocabulary', word: vocabularyData.word });
     setIsLoading(true);
     try {
       await onAddToVocabulary(vocabularyData);
+      interactionLogger.info('SmartVocabularyDialog', { type: 'vocabulary_added_successfully', word: vocabularyData.word });
       onOpenChange(false);
       
       // Reset form
@@ -169,7 +179,7 @@ export function SmartVocabularyDialog({
       });
       setValidationErrors([]);
     } catch (error) {
-      console.error('Failed to add to vocabulary:', error);
+      interactionLogger.error('SmartVocabularyDialog', { type: 'vocabulary_add_failed', word: vocabularyData.word, error: error instanceof Error ? error.message : 'Unknown error' });
       setValidationErrors(['Failed to add to vocabulary. Please try again.']);
     } finally {
       setIsLoading(false);

@@ -30,23 +30,19 @@ class DialogManagerServiceImpl implements DialogManagerService {
     if (options) {
       if (options.size) {
         // Size would be handled by dialog component
-        console.log(`Dialog size set to: ${options.size}`);
       }
       
       if (options.enableResize !== undefined) {
         // Resize setting would be handled by dialog component
-        console.log(`Dialog resize enabled: ${options.enableResize}`);
       }
       
       if (options.enableFullscreen !== undefined) {
         // Fullscreen setting would be handled by dialog component
-        console.log(`Dialog fullscreen enabled: ${options.enableFullscreen}`);
       }
       
       if (options.position) {
         store.setDialogWidth(type, options.position.x);
         // Position would be handled by dialog component
-        console.log(`Dialog position set to:`, options.position);
       }
     }
     
@@ -168,7 +164,6 @@ class DialogManagerServiceImpl implements DialogManagerService {
     // This would be implemented by store subscription
     // Parameter is unused but required by interface
     void _callback;
-    console.log('Unsubscribe called');
   }
 }
 

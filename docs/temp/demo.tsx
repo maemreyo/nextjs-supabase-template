@@ -7,26 +7,22 @@ import { BookOpen, Type, FileText, AlignLeft, Bold, Italic, Underline, List, Lis
 // ============================================
 const callbacks = {
   analyzeWord: (word: string) => {
-    console.log('Analyzing word:', word);
     return { word, type: 'word', definition: 'Definition placeholder', pronunciation: '/.../', examples: ['Example 1', 'Example 2'] };
   },
   analyzePhrase: (phrase) => {
-    console.log('Analyzing phrase:', phrase);
     return { phrase, type: 'phrase', meaning: 'Phrase meaning placeholder', usage: 'Common usage', examples: ['Example phrase usage'] };
   },
   analyzeSentence: (sentence) => {
-    console.log('Analyzing sentence:', sentence);
     return { sentence, type: 'sentence', grammar: 'Grammar analysis', structure: 'S + V + O', translation: 'Translation placeholder' };
   },
   analyzeParagraph: (paragraph) => {
-    console.log('Analyzing paragraph:', paragraph);
     return { paragraph, type: 'paragraph', mainIdea: 'Main idea', summary: 'Summary', keyPoints: ['Point 1', 'Point 2'] };
   },
-  pronounce: (text) => console.log('Pronouncing:', text),
-  translate: (text) => { console.log('Translating:', text); return 'Translation placeholder'; },
-  addToVocabulary: (text, type) => console.log('Adding to vocabulary:', text, type),
-  highlightText: (text, color) => console.log('Highlighting:', text, color),
-  onContentChange: (html) => console.log('Content changed:', html),
+  pronounce: (text) => null,
+  translate: (text) => { return 'Translation placeholder'; },
+  addToVocabulary: (text, type) => null,
+  highlightText: (text, color) => null,
+  onContentChange: (html) => null,
 };
 
 const EnglishLearningEditor = () => {

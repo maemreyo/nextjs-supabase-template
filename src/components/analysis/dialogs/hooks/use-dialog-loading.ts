@@ -117,7 +117,6 @@ export const useDialogLoading = (type: AnalysisType): UseDialogLoadingReturn => 
     // Update message if provided
     if (message && loading) {
       // Could store message in state if needed
-      console.log(`[${type}] Loading message: ${message}`);
     }
   }, [type]);
   

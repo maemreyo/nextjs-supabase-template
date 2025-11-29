@@ -70,13 +70,9 @@ export function useParagraphAnalyses({
       ? ['paragraph-analyses', sessionId, 'component', componentId] as const
       : ['paragraph-analyses', sessionId] as const;
       
-  console.log(`[useParagraphAnalyses] Initializing hook, enabled: ${enabled}, pageSize: ${pageSize}, queryKey:`, queryKey);
-  
   return useInfiniteQuery({
     queryKey,
     queryFn: async ({ pageParam = 0 }): Promise<ParagraphAnalysesResponse> => {
-      console.log(`[API] Fetching paragraph analyses, offset: ${pageParam}, limit: ${pageSize}`);
-      
       const response = await api.sessions.getAnalyses(sessionId, {
         limit: pageSize,
         offset: pageParam,
@@ -84,8 +80,6 @@ export function useParagraphAnalyses({
         sort: 'created_at', // Sort by created_at
         order: 'desc', // Order descending (newest first)
       });
-      
-      console.log(`[API] Response for paragraph analyses, analyses count: ${response.data?.analyses?.length || 0}, hasMore: ${response.data?.pagination?.paragraph?.hasMore}`);
       
       // Extract paragraph analyses from the response
       const paragraphAnalyses = response.data?.analyses
@@ -108,13 +102,9 @@ export function useParagraphAnalyses({
       const nextPageOffset = lastPageParam + pageSize;
       const currentTotalItems = allPages.reduce((sum, page) => sum + (page.analyses?.length || 0), 0);
       
-      console.log(`[getNextPageParam] paragraph: hasMore=${hasMore}, nextPageOffset=${nextPageOffset}, currentTotalItems=${currentTotalItems}`);
-      
       if (hasMore) {
-        console.log(`[fetchNextPage] Will fetch next page for paragraph at offset ${nextPageOffset}`);
         return nextPageOffset;
       }
-      console.log(`[fetchNextPage] No more pages for paragraph, hasMore=${hasMore}`);
       return undefined;
     },
     initialPageParam: 0,
@@ -128,8 +118,6 @@ export function useParagraphAnalyses({
     select: (data) => {
       const allAnalyses = data.pages.flatMap(page => page.analyses);
       const totalCount = data.pages[0]?.pagination.total || 0;
-      
-      console.log(`[select] paragraph: total analyses: ${allAnalyses.length}, totalCount: ${totalCount}`);
       
       return {
         pages: data.pages,

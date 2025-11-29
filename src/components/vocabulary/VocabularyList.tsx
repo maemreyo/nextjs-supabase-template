@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useVocabularyStore } from '@/hooks/stores/use-vocabulary-store';
 import type { VocabularyWord } from '@/types/vocabulary';
 import { Search, Plus, Filter, Grid, List, Volume2, BookOpen } from 'lucide-react';
+import { clientLogger } from '@/services/logger';
 
 interface VocabularyListProps {
   onCreateWord?: () => void;
@@ -69,7 +70,7 @@ export function VocabularyList({
   const handlePlayAudio = (word: VocabularyWord) => {
     if (word.audio_url) {
       const audio = new Audio(word.audio_url);
-      audio.play().catch(console.error);
+      audio.play().catch(clientLogger.error);
     }
     onPlayAudio?.(word);
   };

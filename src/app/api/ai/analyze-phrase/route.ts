@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAIServiceServer } from '@/lib/ai/ai-service-server'
 import { AnalyzePhraseRequest } from '@/lib/ai/types'
 import { createClient } from '@/lib/supabase/server'
+import { apiLogger } from '@/services/logger'
 
 // Security imports
 import { validateInput, validateWord, securityCheck } from '@/lib/security/input-validator'
@@ -25,6 +26,10 @@ const rateLimitedHandler = rateLimitMiddleware('analysis', (req) => {
 
 export async function POST(request: NextRequest) {
   const timer = performanceMonitor.startTimer('analyze-phrase-api')
+  
+  apiLogger.start('Handling POST /api/ai/analyze-phrase', {
+    timestamp: new Date().toISOString()
+  })
   
   try {
     // Check rate limit first
@@ -52,7 +57,7 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error } = await supabase.auth.getUser(token)
     
     if (error || !user) {
-      console.log('DEBUG: API Route - Invalid token:', error?.message);
+
       return NextResponse.json(
         { error: 'Invalid or expired token' },
         { status: 401 }
@@ -60,6 +65,8 @@ export async function POST(request: NextRequest) {
     }
     
     const userId = user.id
+    
+    apiLogger.info('User authenticated successfully', { userId })
 
     // Parse request body
     const body = await request.json()
@@ -172,6 +179,13 @@ export async function POST(request: NextRequest) {
 
     // Return successful response
     timer.end()
+    
+    apiLogger.success('Phrase analysis completed successfully', {
+      userId,
+      phrase: phraseValidation.sanitized || phrase,
+      processingTime: timer.end()
+    })
+    
     return NextResponse.json({
       success: true,
       data: result.data,
@@ -185,12 +199,15 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     timer.end()
-    console.error('Error in analyze-phrase API:', error)
+    apiLogger.error('Error in analyze-phrase API', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    })
     
     return NextResponse.json(
-      { 
+      {
         error: error instanceof Error ? error.message : 'Internal server error',
-        success: false 
+        success: false
       },
       { status: 500 }
     )
@@ -199,6 +216,10 @@ export async function POST(request: NextRequest) {
 
 // Handle GET method for checking if phrase analysis is available
 export async function GET(request: NextRequest) {
+  apiLogger.start('Handling GET /api/ai/analyze-phrase', {
+    timestamp: new Date().toISOString()
+  })
+  
   try {
     // Get user ID from authentication
     const authHeader = request.headers.get('authorization')
@@ -216,7 +237,7 @@ export async function GET(request: NextRequest) {
     const { data: { user }, error } = await supabase.auth.getUser(token)
     
     if (error || !user) {
-      console.log('DEBUG: API Route GET - Invalid token:', error?.message);
+
       return NextResponse.json(
         { error: 'Invalid or expired token' },
         { status: 401 }
@@ -226,8 +247,16 @@ export async function GET(request: NextRequest) {
     const userId = user.id
     const aiService = createAIServiceServer()
     
+    apiLogger.info('Checking user AI usage limits', { userId })
+    
     // Check user limits
     const usageCheck = await aiService.checkUsage(userId)
+    
+    apiLogger.success('Usage limits retrieved successfully', {
+      userId,
+      canUseAI: usageCheck.canUseAI,
+      remainingRequests: usageCheck.remainingRequests
+    })
     
     return NextResponse.json({
       available: usageCheck.canUseAI,
@@ -237,12 +266,15 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error in analyze-phrase GET API:', error)
+    apiLogger.error('Error in analyze-phrase GET API', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    })
     
     return NextResponse.json(
-      { 
+      {
         error: error instanceof Error ? error.message : 'Internal server error',
-        available: false 
+        available: false
       },
       { status: 500 }
     )

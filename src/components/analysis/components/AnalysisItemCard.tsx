@@ -27,6 +27,7 @@ import { AnalysisItemCardProps, DEFAULT_LAYOUTS, COMPACT_LAYOUTS, isDirectStruct
 import { normalizePOS } from '../helpers/pos-normalizer';
 import { useDialogDispatcher } from '../dialogs/utils/dialog-dispatcher';
 import { ExportFormat } from '../dialogs/types/dialog-types';
+import { analysisLogger } from '@/services/logger';
 
 export function AnalysisItemCard({
   analysis,
@@ -168,10 +169,10 @@ export function AnalysisItemCard({
   const handleCardClick = () => {
     // Improved logging with structure clarity
     const structureType = isDirectStructure(analysis) ? 'direct' : 'unknown';
-    console.log(`[AnalysisItemCard] handleCardClick - structure: ${structureType}, enableDialogSystem: ${enableDialogSystem}, analysisType: ${analysis.analysisType}`);
-    console.log(`[AnalysisItemCard] analysisItem keys:`, Object.keys(analysis));
+    
+    analysisLogger.debug(`[AnalysisItemCard] analysisItem keys:`, Object.keys(analysis));
     if (isWordAnalysis(analysis)) {
-      console.log(`[AnalysisItemCard] WORD analysisItem fields: word=${!!analysis.word}, definition=${!!analysis.definition}, translation=${!!analysis.translation}, exampleSentence=${!!analysis.exampleSentence}`);
+      
     }
     
     if (enableDialogSystem && onViewDetails) {
@@ -232,11 +233,11 @@ export function AnalysisItemCard({
     if (enableDialogSystem && onAddToVocabulary) {
       dialogDispatcher.addToVocabulary(analysis, () => {
         // Fallback: log to console
-        console.log('Added to vocabulary:', analysis);
+        
       });
     } else {
       // Fallback: log to console
-      console.log('Added to vocabulary:', analysis);
+      
     }
   }, [analysis, enableDialogSystem, onAddToVocabulary, dialogDispatcher]);
 

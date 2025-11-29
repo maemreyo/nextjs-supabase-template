@@ -75,13 +75,9 @@ export function usePhraseAnalyses({
       ? ['phrase-analyses', sessionId, 'component', componentId] as const
       : ['phrase-analyses', sessionId] as const;
       
-  console.log(`[usePhraseAnalyses] Initializing hook, enabled: ${enabled}, pageSize: ${pageSize}, queryKey:`, queryKey);
-  
   return useInfiniteQuery({
     queryKey,
     queryFn: async ({ pageParam = 0 }): Promise<PhraseAnalysesResponse> => {
-      console.log(`[API] Fetching phrase analyses, offset: ${pageParam}, limit: ${pageSize}`);
-      
       const response = await api.sessions.getAnalyses(sessionId, {
         limit: pageSize,
         offset: pageParam,
@@ -89,8 +85,6 @@ export function usePhraseAnalyses({
         sort: 'created_at', // Sort by created_at
         order: 'desc', // Order descending (newest first)
       });
-      
-      console.log(`[API] Response for phrase analyses, analyses count: ${response.data?.analyses?.length || 0}, hasMore: ${response.data?.pagination?.phrase?.hasMore}`);
       
       // Extract phrase analyses from the response
       const phraseAnalyses = response.data?.analyses
@@ -113,13 +107,9 @@ export function usePhraseAnalyses({
       const nextPageOffset = lastPageParam + pageSize;
       const currentTotalItems = allPages.reduce((sum, page) => sum + (page.analyses?.length || 0), 0);
       
-      console.log(`[getNextPageParam] phrase: hasMore=${hasMore}, nextPageOffset=${nextPageOffset}, currentTotalItems=${currentTotalItems}`);
-      
       if (hasMore) {
-        console.log(`[fetchNextPage] Will fetch next page for phrase at offset ${nextPageOffset}`);
         return nextPageOffset;
       }
-      console.log(`[fetchNextPage] No more pages for phrase, hasMore=${hasMore}`);
       return undefined;
     },
     initialPageParam: 0,
@@ -133,8 +123,6 @@ export function usePhraseAnalyses({
     select: (data) => {
       const allAnalyses = data.pages.flatMap(page => page.analyses);
       const totalCount = data.pages[0]?.pagination.total || 0;
-      
-      console.log(`[select] phrase: total analyses: ${allAnalyses.length}, totalCount: ${totalCount}`);
       
       return {
         pages: data.pages,

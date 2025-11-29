@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
+import { clientLogger } from '@/services/logger';
 
 // Highlight colors
 const HIGHLIGHT_COLORS = [
@@ -36,8 +37,6 @@ const speakText = (text: string, lang: string = 'en-US') => {
     utterance.volume = 1;
 
     window.speechSynthesis.speak(utterance);
-  } else {
-    console.warn('Text-to-speech not supported in this browser');
   }
 };
 
@@ -70,7 +69,7 @@ const MemoizedBubbleMenu = React.memo(function BubbleMenu({
     // Ngăn chặn multiple calls trong khoảng thời gian ngắn
     const now = Date.now();
     if (analyzeCallRef.current || (now - lastAnalysisTimeRef.current < 3000)) {
-      console.log('[BubbleMenu] Throttling analyze call');
+      clientLogger.debug('BubbleMenu', { type: 'analyze_click_throttled', timeSinceLastCall: now - lastAnalysisTimeRef.current });
       return;
     }
     
@@ -78,7 +77,8 @@ const MemoizedBubbleMenu = React.memo(function BubbleMenu({
     analyzeCallRef.current = true;
     lastAnalysisTimeRef.current = now;
     
-    console.log('[BubbleMenu] Triggering analysis');
+    clientLogger.info('BubbleMenu', { type: 'analyze_clicked', selectionText: selection.text, selectionType: selection.type });
+    
     onDynamicIslandTrigger?.();
     onAnalyze();
     
@@ -86,21 +86,26 @@ const MemoizedBubbleMenu = React.memo(function BubbleMenu({
     setTimeout(() => {
       analyzeCallRef.current = false;
     }, 3000);
-  }, [onDynamicIslandTrigger, onAnalyze]);
+  }, [onDynamicIslandTrigger, onAnalyze, selection.text, selection.type]);
 
   const handlePronounce = useCallback(() => {
+    clientLogger.info('BubbleMenu', { type: 'pronounce_clicked', text: selection.text, isSpeaking });
+    
     if (isSpeaking) {
       // Stop speaking
+      clientLogger.debug('BubbleMenu', { type: 'pronounce_stopped' });
       window.speechSynthesis.cancel();
       setIsSpeaking(false);
     } else {
       // Start speaking
+      clientLogger.debug('BubbleMenu', { type: 'pronounce_started', text: selection.text });
       setIsSpeaking(true);
       speakText(selection.text);
 
       // Reset speaking state when done
       const checkSpeaking = setInterval(() => {
         if (!window.speechSynthesis.speaking) {
+          clientLogger.debug('BubbleMenu', { type: 'pronounce_completed' });
           setIsSpeaking(false);
           clearInterval(checkSpeaking);
         }
@@ -112,12 +117,18 @@ const MemoizedBubbleMenu = React.memo(function BubbleMenu({
   }, [isSpeaking, onPronounce, selection.text]);
 
   const handlePrevColor = useCallback(() => {
-    setCurrentColorIndex((prev) => (prev - 1 + HIGHLIGHT_COLORS.length) % HIGHLIGHT_COLORS.length);
-  }, []);
+    const newIndex = (currentColorIndex - 1 + HIGHLIGHT_COLORS.length) % HIGHLIGHT_COLORS.length;
+    const color = HIGHLIGHT_COLORS[newIndex];
+    clientLogger.debug('BubbleMenu', { type: 'highlight_color_changed', direction: 'prev', newIndex, color: color?.label || 'Unknown' });
+    setCurrentColorIndex(newIndex);
+  }, [currentColorIndex]);
 
   const handleNextColor = useCallback(() => {
-    setCurrentColorIndex((prev) => (prev + 1) % HIGHLIGHT_COLORS.length);
-  }, []);
+    const newIndex = (currentColorIndex + 1) % HIGHLIGHT_COLORS.length;
+    const color = HIGHLIGHT_COLORS[newIndex];
+    clientLogger.debug('BubbleMenu', { type: 'highlight_color_changed', direction: 'next', newIndex, color: color?.label || 'Unknown' });
+    setCurrentColorIndex(newIndex);
+  }, [currentColorIndex]);
 
   const currentColor = HIGHLIGHT_COLORS[currentColorIndex] || HIGHLIGHT_COLORS[0] as any;
 
@@ -209,12 +220,15 @@ const MemoizedBubbleMenu = React.memo(function BubbleMenu({
             variant="ghost"
             size="sm"
             onMouseDown={(e) => e.preventDefault()}
-            onClick={() => onHighlight(currentColor.value)}
+            onClick={() => {
+              clientLogger.info('BubbleMenu', { type: 'highlight_applied', color: currentColor.value, colorLabel: currentColor.label, text: selection.text });
+              onHighlight(currentColor.value);
+            }}
             className="h-7 px-0 py-0"
             title={`Highlight with ${currentColor.label}`}
           >
             <div
-              className={cn("w-4 h-4 rounded border border-border", currentColor.className)}
+              className={cn("w-4 h-4 rounded border border-border", currentColor?.className)}
             />
           </Button>
 

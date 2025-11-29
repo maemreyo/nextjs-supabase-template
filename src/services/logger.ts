@@ -22,5 +22,13 @@ export const apiLogger = logger.withTag('API');
 export const dbLogger = logger.withTag('Database');
 export const authLogger = logger.withTag('Auth');
 export const clientLogger = logger.withTag('Client');
+export const analysisLogger = logger.withTag('Analysis');
+export const sessionLogger = logger.withTag('Session');
+export const errorLogger = logger.withTag('Error');
+export const interactionLogger = logger.withTag('Interaction');
+export const validationLogger = logger.withTag('Validation');
+export const apiClientLogger = logger.withTag('APIClient');
+export const performanceLogger = logger.withTag('Performance');
+export const cacheLogger = logger.withTag('Cache');
 
 export default logger;

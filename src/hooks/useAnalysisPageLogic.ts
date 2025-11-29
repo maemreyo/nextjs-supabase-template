@@ -204,7 +204,6 @@ export function useAnalysisPageLogic({ sessionId, editor }: UseAnalysisPageLogic
       
       return state.doc.textBetween(start, end, ' ');
     } catch (error) {
-      console.error('Error extracting sentence context:', error);
       return '';
     }
   }, [editor]);
@@ -227,7 +226,6 @@ export function useAnalysisPageLogic({ sessionId, editor }: UseAnalysisPageLogic
       
       return state.doc.textBetween(start, end, ' ');
     } catch (error) {
-      console.error('Error extracting paragraph context:', error);
       return '';
     }
   }, [editor]);
@@ -239,8 +237,6 @@ export function useAnalysisPageLogic({ sessionId, editor }: UseAnalysisPageLogic
     const sentenceContext = extractSentenceContext(text);
     const paragraphContext = extractParagraphContext(text);
 
-    console.log('🔍 [DEBUG] handleAnalyze', { text, type, sentenceContext, paragraphContext });
-    console.log('🔍 [DEBUG] handleAnalyze - SWITCHING ON TYPE:', type);
 
     // Check if this is a duplicate request (same text and type within last 2 seconds)
     const now = Date.now();
@@ -345,12 +341,10 @@ export function useAnalysisPageLogic({ sessionId, editor }: UseAnalysisPageLogic
   }, []);
 
   const handleRewriteApply = useCallback((text: string) => {
-    console.log('Applied rewrite:', text);
     // TODO: Cập nhật editor với text mới
   }, []);
 
   const handleFeedbackApply = useCallback((text: string) => {
-    console.log('Applied feedback:', text);
     // TODO: Cập nhật editor với text mới
   }, []);
 
@@ -379,7 +373,6 @@ export function useAnalysisPageLogic({ sessionId, editor }: UseAnalysisPageLogic
 
     // First, try to get saved analysis from database
     if (sessionId) {
-      console.log('🔍 [DEBUG] handleWordFromSessionAnalyze - Checking for saved analysis', { word, sessionId });
       
       try {
         // Direct API call to check for saved analysis
@@ -393,7 +386,6 @@ export function useAnalysisPageLogic({ sessionId, editor }: UseAnalysisPageLogic
         const result = await api.analyses.list(queryParams);
         
         if (result.success && result.data?.analyses?.length > 0) {
-          console.log('🔍 [DEBUG] handleWordFromSessionAnalyze - Found saved analysis', { word });
           
           // Transform database format to WordAnalysis format
           const dbAnalysis = result.data.analyses[0];
@@ -459,7 +451,6 @@ export function useAnalysisPageLogic({ sessionId, editor }: UseAnalysisPageLogic
           return;
         }
       } catch (error) {
-        console.error('🔍 [DEBUG] handleWordFromSessionAnalyze - Error checking saved analysis', error);
         // Continue with API call if saved analysis check fails
       }
     }
@@ -506,7 +497,6 @@ export function useAnalysisPageLogic({ sessionId, editor }: UseAnalysisPageLogic
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Phân tích từ thất bại';
       setErrorState(errorMessage);
-      console.error('Word analysis error:', err);
     } finally {
       setIsAnalyzingState(false);
     }

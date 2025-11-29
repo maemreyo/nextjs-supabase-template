@@ -47,7 +47,6 @@ export function useSavedAnalysisDetail(
         throw new Error('Analysis ID is required');
       }
 
-      console.log('🔍 [DEBUG] useSavedAnalysisDetail - Fetching analysis detail', { id });
 
       try {
         // Get access token for authentication
@@ -76,14 +75,9 @@ export function useSavedAnalysisDetail(
 
         const result: AnalysisDetailResponse = await response.json();
         
-        console.log('🔍 [DEBUG] useSavedAnalysisDetail - Fetch successful', {
-          analysisType: result.data?.analysis_type,
-          hasData: !!result.data,
-        });
 
         return result;
       } catch (error) {
-        console.error('🔍 [DEBUG] useSavedAnalysisDetail - Fetch failed', error);
         throw error instanceof Error ? error : new Error('Failed to fetch analysis detail');
       }
     },
@@ -96,7 +90,6 @@ export function useSavedAnalysisDetail(
   const queryClient = useQueryClient();
   
   const invalidateCache = () => {
-    console.log('🔍 [DEBUG] useSavedAnalysisDetail - Invalidating cache');
     queryClient.invalidateQueries({
       queryKey: queryKeys.api.endpoint('/api/analyses/[id]'),
     });

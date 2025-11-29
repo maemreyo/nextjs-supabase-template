@@ -100,7 +100,6 @@ export const WordPhoneticPronunciationAudioPlayer: React.FC<WordPhoneticPronunci
         setIsPlaying(false);
         setIsLoading(false);
         setError('Không thể phát âm. Vui lòng thử lại.');
-        console.error('Speech synthesis error:', event);
       };
       
       utteranceRef.current = utterance;
@@ -115,7 +114,6 @@ export const WordPhoneticPronunciationAudioPlayer: React.FC<WordPhoneticPronunci
     } catch (error) {
       setIsLoading(false);
       setError('Không thể phát âm. Vui lòng thử lại.');
-      console.error('Pronunciation error:', error);
     }
   }, [word, rate, pitch, volume, accent, onPronounce, isSupported]);
 

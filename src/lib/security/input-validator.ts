@@ -3,6 +3,8 @@
  * Provides comprehensive validation for user inputs to prevent injection attacks
  */
 
+import { validationLogger } from '@/services/logger';
+
 // Validation patterns
 const PATTERNS = {
   // Email validation

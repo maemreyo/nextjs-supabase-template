@@ -14,6 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useAuth } from '@/hooks/stores/use-auth-store'
 import { Loader2Icon, MailIcon } from 'lucide-react'
 import { forgotPasswordSchema, type ForgotPasswordFormValues } from '@/lib/validations/auth'
+import { authLogger } from '@/services/logger'
 
 function ForgotPasswordPageContent() {
   const router = useRouter()
@@ -38,7 +39,7 @@ function ForgotPasswordPageContent() {
       await resetPassword(data.email)
       router.push('/(auth)/signin?message=reset-success')
     } catch (err) {
-      console.error('Reset password error:', err)
+      authLogger.error('Reset password error:', err)
       setIsSubmitted(false)
     }
   }

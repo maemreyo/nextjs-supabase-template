@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ParagraphAnalysis, AnalyzeParagraphRequest, AnalysisResponse } from '@/lib/ai/types';
 import { useSupabase } from '@/components/providers/supabase-provider';
+import { clientLogger } from '@/services/logger';
 
 // Query keys cho paragraph analysis
 export const paragraphAnalysisKeys = {
@@ -26,12 +27,8 @@ export function useParagraphAnalysis(
     queryKey: paragraphAnalysisKeys.detail(paragraph),
     queryFn: async (): Promise<ParagraphAnalysis> => {
       // DEBUG: Log để kiểm tra authentication state
-      console.log('DEBUG: useParagraphAnalysis - Starting API call for paragraph:', paragraph.substring(0, 50) + '...');
-      
       // Get access token for authentication
       const token = await getAccessToken();
-      console.log('DEBUG: useParagraphAnalysis - Access token exists:', !!token);
-      
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
@@ -39,9 +36,7 @@ export function useParagraphAnalysis(
       // Add authorization header if token is available
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
-        console.log('DEBUG: useParagraphAnalysis - Added Authorization header');
       } else {
-        console.log('DEBUG: useParagraphAnalysis - No access token available');
       }
       
       const response = await fetch('/api/ai/analyze-paragraph', {
@@ -52,8 +47,6 @@ export function useParagraphAnalysis(
         } as AnalyzeParagraphRequest),
       });
       
-      console.log('DEBUG: useParagraphAnalysis - Response status:', response.status);
-      console.log('DEBUG: useParagraphAnalysis - Response ok:', response.ok);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -126,7 +119,10 @@ export function useParagraphAnalysisMutation() {
       );
     },
     onError: (error) => {
-      console.error('Paragraph analysis error:', error);
+      clientLogger.error('Paragraph analysis mutation failed', {
+        error: error.message || error,
+        operation: 'paragraph-analysis'
+      });
     },
   });
 }

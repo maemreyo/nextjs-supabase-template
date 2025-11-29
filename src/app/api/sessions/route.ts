@@ -7,10 +7,16 @@ import type {
   SessionFilters,
   SessionsListResponse
 } from '@/types/sessions';
+import { apiLogger } from '@/services/logger';
 
 // GET /api/sessions - List sessions with filters and pagination
 export const GET = withAuth(
   async (request: NextRequest, { user, supabase }: { user: any; supabase: any }) => {
+    apiLogger.start('Handling GET /api/sessions', {
+      userId: user.id,
+      timestamp: new Date().toISOString()
+    })
+    
     try {
 
     // Parse query parameters
@@ -32,6 +38,12 @@ export const GET = withAuth(
     const validSortOrders = ['asc', 'desc'];
     
     if (!validSortFields.includes(sortBy)) {
+      apiLogger.warn('Invalid sort field', {
+        userId: user.id,
+        sortBy,
+        validFields: validSortFields
+      })
+      
       return createErrorResponse(
         'Invalid sort field. Must be one of: ' + validSortFields.join(', '),
         400
@@ -39,6 +51,11 @@ export const GET = withAuth(
     }
     
     if (!validSortOrders.includes(sortOrder)) {
+      apiLogger.warn('Invalid sort order', {
+        userId: user.id,
+        sortOrder
+      })
+      
       return createErrorResponse(
         'Invalid sort order. Must be asc or desc',
         400
@@ -99,6 +116,11 @@ export const GET = withAuth(
       .range(offset, offset + perPage - 1);
 
     if (fetchError) {
+      apiLogger.error('Failed to fetch sessions', {
+        userId: user.id,
+        error: fetchError.message
+      })
+      
       throw fetchError;
     }
 
@@ -115,10 +137,21 @@ export const GET = withAuth(
       }
     };
 
+      apiLogger.success('Sessions retrieved successfully', {
+        userId: user.id,
+        count: response.sessions?.length || 0,
+        total: response.pagination?.total_pages || 0
+      })
+
       return createSuccessResponse(response);
 
     } catch (error) {
-      console.error('Error in sessions GET:', error);
+      apiLogger.error('Error in sessions API', {
+        userId: user?.id,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      })
+
       return createErrorResponse(
         error instanceof Error ? error.message : 'Internal server error',
         500
@@ -130,6 +163,11 @@ export const GET = withAuth(
 // POST /api/sessions - Create new session
 export const POST = withAuth(
   async (request: NextRequest, { user, supabase }: { user: any; supabase: any }) => {
+    apiLogger.start('Handling POST /api/sessions', {
+      userId: user.id,
+      timestamp: new Date().toISOString()
+    })
+    
     try {
 
     // Parse request body
@@ -137,6 +175,12 @@ export const POST = withAuth(
 
       // Validate required fields
       if (!body.title || !body.session_type) {
+        apiLogger.warn('Title and session_type are required', {
+          userId: user.id,
+          hasTitle: !!body.title,
+          hasSessionType: !!body.session_type
+        })
+        
         return createErrorResponse(
           'Title and session_type are required',
           400
@@ -164,6 +208,11 @@ export const POST = withAuth(
       .single();
 
     if (insertError) {
+      apiLogger.error('Failed to create session', {
+        userId: user.id,
+        error: insertError.message
+      })
+      
       throw insertError;
     }
 
@@ -180,7 +229,7 @@ export const POST = withAuth(
         .insert(settingsData);
 
       if (settingsError) {
-        console.error('Error creating session settings:', settingsError);
+
         // Don't fail the whole operation if settings fail
       }
     }
@@ -197,15 +246,26 @@ export const POST = withAuth(
         .insert(tagRelations);
 
       if (tagsError) {
-        console.error('Error adding session tags:', tagsError);
+
         // Don't fail the whole operation if tags fail
       }
     }
 
+      apiLogger.success('Session created successfully', {
+        userId: user.id,
+        sessionId: session.id,
+        title: session.title
+      })
+
       return createSuccessResponse(session);
 
     } catch (error) {
-      console.error('Error in sessions POST:', error);
+      apiLogger.error('Error in create session API', {
+        userId: user?.id,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      })
+
       return createErrorResponse(
         error instanceof Error ? error.message : 'Internal server error',
         500

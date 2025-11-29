@@ -202,7 +202,6 @@ function extractSentenceContext(editor: Editor | null, from: number, to: number)
     }
     return state.doc.textBetween(start, end, ' ');
   } catch (error) {
-    console.error('Error extracting sentence context:', error);
     return '';
   }
 }
@@ -217,7 +216,6 @@ function extractParagraphContext(editor: Editor | null, from: number, to: number
     const end = $from.end(depth);
     return state.doc.textBetween(start, end, ' ');
   } catch (error) {
-    console.error('Error extracting paragraph context:', error);
     return '';
   }
 }
@@ -245,7 +243,6 @@ function extractParagraphContext(editor: Editor | null, from: number, to: number
         toJSON: () => ({}),
       } as DOMRect;
     } catch (error) {
-      console.error('Error getting selection rect:', error);
       return undefined;
     }
   }, [editor]);
@@ -293,7 +290,6 @@ function extractParagraphContext(editor: Editor | null, from: number, to: number
     const { from, to, empty } = editor.state.selection;
     const text = editor.state.doc.textBetween(from, to, '\n');
     const detectedType = detectSelectionType(text);
-    console.log("detectedType", detectedType)
     const sentenceContext = extractSentenceContext(editor, from, to);
     const paragraphContext = extractParagraphContext(editor, from, to);
     const newSelection: SelectionInfo = {

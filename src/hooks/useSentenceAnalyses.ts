@@ -69,13 +69,9 @@ export function useSentenceAnalyses({
       ? ['sentence-analyses', sessionId, 'component', componentId] as const
       : ['sentence-analyses', sessionId] as const;
       
-  console.log(`[useSentenceAnalyses] Initializing hook, enabled: ${enabled}, pageSize: ${pageSize}, queryKey:`, queryKey);
-  
   return useInfiniteQuery({
     queryKey,
     queryFn: async ({ pageParam = 0 }): Promise<SentenceAnalysesResponse> => {
-      console.log(`[API] Fetching sentence analyses, offset: ${pageParam}, limit: ${pageSize}`);
-      
       const response = await api.sessions.getAnalyses(sessionId, {
         limit: pageSize,
         offset: pageParam,
@@ -83,8 +79,6 @@ export function useSentenceAnalyses({
         sort: 'created_at', // Sort by created_at
         order: 'desc', // Order descending (newest first)
       });
-      
-      console.log(`[API] Response for sentence analyses, analyses count: ${response.data?.analyses?.length || 0}, hasMore: ${response.data?.pagination?.sentence?.hasMore}`);
       
       // Extract sentence analyses from the response
       const sentenceAnalyses = response.data?.analyses
@@ -107,13 +101,9 @@ export function useSentenceAnalyses({
       const nextPageOffset = lastPageParam + pageSize;
       const currentTotalItems = allPages.reduce((sum, page) => sum + (page.analyses?.length || 0), 0);
       
-      console.log(`[getNextPageParam] sentence: hasMore=${hasMore}, nextPageOffset=${nextPageOffset}, currentTotalItems=${currentTotalItems}`);
-      
       if (hasMore) {
-        console.log(`[fetchNextPage] Will fetch next page for sentence at offset ${nextPageOffset}`);
         return nextPageOffset;
       }
-      console.log(`[fetchNextPage] No more pages for sentence, hasMore=${hasMore}`);
       return undefined;
     },
     initialPageParam: 0,
@@ -127,8 +117,6 @@ export function useSentenceAnalyses({
     select: (data) => {
       const allAnalyses = data.pages.flatMap(page => page.analyses);
       const totalCount = data.pages[0]?.pagination.total || 0;
-      
-      console.log(`[select] sentence: total analyses: ${allAnalyses.length}, totalCount: ${totalCount}`);
       
       return {
         pages: data.pages,

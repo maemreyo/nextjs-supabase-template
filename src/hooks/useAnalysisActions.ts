@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { WordAnalysis, SentenceAnalysis, ParagraphAnalysis, PhraseAnalysis } from '@/lib/ai/types';
+import { clientLogger } from '@/services/logger';
 
 type AnalysisType = 'word' | 'phrase' | 'sentence' | 'paragraph';
 
@@ -43,9 +44,15 @@ export function useAnalysisActions({
 
   const handleExport = useCallback((options: ExportOptions = {}) => {
     if (!analysis) {
-      console.warn('No analysis data available for export');
+      clientLogger.warn('Export attempted without analysis data', { analysisType });
       return;
     }
+
+    clientLogger.info('Starting analysis export', {
+      analysisType,
+      includeMetadata: options.includeMetadata,
+      filename: options.filename
+    });
 
     const {
       includeMetadata = true,
@@ -76,18 +83,26 @@ export function useAnalysisActions({
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      console.log(`Analysis exported successfully: ${a.download}`);
     } catch (error) {
-      console.error('Error exporting analysis:', error);
+      clientLogger.error('Failed to export analysis', {
+        analysisType,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
       throw new Error('Failed to export analysis');
     }
   }, [analysis, analysisType, metadata]);
 
   const handlePrint = useCallback((options: PrintOptions = {}) => {
     if (!contentRef.current) {
-      console.warn('No content reference available for printing');
+      clientLogger.warn('Print attempted without content', { analysisType });
       return;
     }
+
+    clientLogger.info('Starting analysis print', {
+      analysisType,
+      title: options.title,
+      includeStyles: options.includeStyles
+    });
 
     const {
       title = `Analysis Report - ${analysisType.toUpperCase()}`,
@@ -98,6 +113,10 @@ export function useAnalysisActions({
     try {
       const printWindow = window.open('', '_blank');
       if (!printWindow) {
+        clientLogger.error('Failed to open print window', {
+          analysisType,
+          error: 'Popup blocked or window.open failed'
+        });
         throw new Error('Failed to open print window. Please allow popups for this site.');
       }
 
@@ -110,7 +129,6 @@ export function useAnalysisActions({
                 .map(rule => rule.cssText)
                 .join('\n');
             } catch (e) {
-              console.warn('Could not access stylesheet:', e);
               return '';
             }
           })
@@ -164,21 +182,26 @@ export function useAnalysisActions({
       `);
       
       printWindow.document.close();
-      console.log('Print window opened successfully');
     } catch (error) {
-      console.error('Error preparing print:', error);
+      clientLogger.error('Failed to prepare print view', {
+        analysisType,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
       throw new Error('Failed to prepare print view');
     }
   }, [contentRef, analysisType]);
 
   const handleShare = useCallback(async (): Promise<ShareResult> => {
     if (!analysis) {
+      clientLogger.warn('Share attempted without analysis data', { analysisType });
       return {
         success: false,
         method: 'error',
         message: 'No analysis data available for sharing'
       };
     }
+
+    clientLogger.info('Starting analysis share', { analysisType });
 
     try {
       // Create summary text based on analysis type
@@ -212,8 +235,11 @@ export function useAnalysisActions({
             message: 'Shared successfully using Web Share API'
           };
         } catch (shareError) {
+          clientLogger.warn('Web Share API failed, falling back to clipboard', {
+            analysisType,
+            error: shareError instanceof Error ? shareError.message : 'Unknown error'
+          });
           // User cancelled or share failed, fall back to clipboard
-          console.log('Web Share API failed or cancelled, falling back to clipboard:', shareError);
         }
       }
 
@@ -250,7 +276,11 @@ export function useAnalysisActions({
         throw clipboardError;
       }
     } catch (error) {
-      console.error('Error sharing analysis:', error);
+      clientLogger.error('Failed to share analysis', {
+        analysisType,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      
       return {
         success: false,
         method: 'error',

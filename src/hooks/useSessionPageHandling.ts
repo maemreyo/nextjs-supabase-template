@@ -49,7 +49,6 @@ export function useSessionPageHandling({
       sessionId = null;
     }
   } catch (error) {
-    console.error('[DEBUG] useSessionPageHandling - Error processing searchParams:', error);
     sessionId = null;
   }
 

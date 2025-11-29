@@ -4,6 +4,7 @@
  */
 
 import { validateSessionId, validateInput } from './input-validator';
+import { validationLogger } from '@/services/logger';
 
 // Session configuration
 const SESSION_CONFIG = {
@@ -135,6 +136,11 @@ export function validateSession(sessionId: string): {
     // Validate session ID format
     const sessionIdValidation = validateSessionId(sessionId);
     if (!sessionIdValidation.isValid) {
+      validationLogger.warn('Session validation failed', {
+        sessionId,
+        reason: 'invalid_format',
+        providedBy: 'client'
+      });
       return {
         isValid: false,
         error: 'Invalid session ID format'
@@ -506,6 +512,11 @@ export function validateSessionForAPI(
   // Validate session
   const sessionValidation = validateSession(sessionId);
   if (!sessionValidation.isValid) {
+    validationLogger.warn('Session validation failed', {
+      sessionId,
+      reason: sessionValidation.error || 'invalid_format',
+      providedBy: 'client'
+    });
     errors.push(sessionValidation.error || 'Invalid session');
     return {
       isValid: false,

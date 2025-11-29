@@ -1,5 +1,6 @@
 import { withAuth, createSuccessResponse, createErrorResponse } from '@/lib/api-client';
 import { Database } from '@/lib/database.types';
+import { apiLogger } from '@/services/logger';
 
 interface DuplicateSessionRequest {
   title?: string;
@@ -24,9 +25,19 @@ interface DuplicateSessionResponse {
 // POST /api/sessions/[id]/duplicate - Duplicate a session with optional content
 export const POST = withAuth(
   async (request, { user, supabase, params }) => {
+    apiLogger.start('Handling POST /api/sessions/[id]/duplicate', {
+      userId: user.id,
+      sessionId: params?.id,
+      timestamp: new Date().toISOString()
+    })
+    
     const sessionId = params?.id;
 
     if (!sessionId) {
+      apiLogger.warn('Session ID is required', {
+        error: 'Missing session ID'
+      })
+      
       return createErrorResponse('Session ID is required', 400);
     }
 
@@ -42,6 +53,12 @@ export const POST = withAuth(
       .single();
 
     if (sessionError || !originalSession) {
+      apiLogger.warn('Session not found or access denied', {
+        userId: user.id,
+        sessionId,
+        error: sessionError?.message || 'Session not found'
+      })
+      
       return createErrorResponse('Session not found or access denied', 404);
     }
 
@@ -65,7 +82,12 @@ export const POST = withAuth(
       .single();
 
     if (duplicateError || !duplicatedSession) {
-      console.error('Error duplicating session:', duplicateError);
+      apiLogger.error('Failed to duplicate session', {
+        userId: user.id,
+        sessionId,
+        error: duplicateError.message
+      })
+
       return createErrorResponse('Failed to duplicate session', 500);
     }
 
@@ -184,6 +206,15 @@ export const POST = withAuth(
       duplicatedSettings: body.includeSettings ? duplicatedSettings : undefined,
       duplicatedTags: body.includeTags ? duplicatedTags : undefined,
     };
+
+    apiLogger.success('Session duplicated successfully', {
+      userId: user.id,
+      originalSessionId: sessionId,
+      newSessionId: duplicatedSession.id,
+      duplicatedAnalyses,
+      duplicatedSettings,
+      duplicatedTags
+    })
 
     return createSuccessResponse(responseData);
   }

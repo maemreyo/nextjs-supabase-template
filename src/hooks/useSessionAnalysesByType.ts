@@ -46,20 +46,14 @@ export function useSessionAnalysesByType({
       ? ['session-analyses', sessionId, type, 'component', componentId] as const
       : ['session-analyses', sessionId, type] as const;
       
-  console.log(`[useSessionAnalysesByType] Initializing hook for ${type}, enabled: ${enabled}, pageSize: ${pageSize}, queryKey:`, queryKey);
-  
   return useInfiniteQuery({
     queryKey,
     queryFn: async ({ pageParam = 0 }): Promise<SessionAnalysesResponse> => {
-      console.log(`[API] Fetching analyses for ${type}, offset: ${pageParam}, limit: ${pageSize}`);
-      
       const response = await api.sessions.getAnalyses(sessionId, {
         limit: pageSize,
         offset: pageParam,
         type: type, // Fetch specific type
       });
-      
-      console.log(`[API] Response for ${type}, analyses count: ${response.data?.analyses?.length || 0}, hasMore: ${response.data?.pagination?.[type]?.hasMore}`);
       
       return {
         analyses: response.data?.analyses || [],
@@ -73,13 +67,9 @@ export function useSessionAnalysesByType({
       const nextPageOffset = lastPageParam + pageSize;
       const currentTotalItems = allPages.reduce((sum, page) => sum + (page.analyses?.length || 0), 0);
       
-      console.log(`[getNextPageParam] ${type}: hasMore=${hasMore}, nextPageOffset=${nextPageOffset}, currentTotalItems=${currentTotalItems}`);
-      
       if (hasMore) {
-        console.log(`[fetchNextPage] Will fetch next page for ${type} at offset ${nextPageOffset}`);
         return nextPageOffset;
       }
-      console.log(`[fetchNextPage] No more pages for ${type}, hasMore=${hasMore}`);
       return undefined;
     },
     initialPageParam: 0,
@@ -97,8 +87,6 @@ export function useSessionAnalysesByType({
       ).filter(analysis => analysis.analysisType === type);
       
       const totalCount = data.pages[0]?.pagination[type]?.total || 0;
-      
-      console.log(`[select] ${type}: total analyses after filtering: ${allAnalyses.length}, totalCount: ${totalCount}`);
       
       return {
         pages: data.pages.map(page => ({

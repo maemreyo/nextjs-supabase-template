@@ -91,7 +91,6 @@ export const AnalysisDialogHeaderWithIconTitleAndActionsComponent: React.FC<Anal
             if (onShare && analysis) {
               onShare(analysis);
             } else {
-              console.log('Share action triggered - no handler or analysis data');
             }
           }}
           aria-label="Share"
@@ -109,7 +108,6 @@ export const AnalysisDialogHeaderWithIconTitleAndActionsComponent: React.FC<Anal
             if (onPrint && analysis) {
               onPrint(analysis);
             } else {
-              console.log('Print action triggered - using fallback');
               window.print(); // Fallback to default print
             }
           }}
@@ -144,10 +142,8 @@ export const AnalysisDialogHeaderWithIconTitleAndActionsComponent: React.FC<Anal
                 await navigator.clipboard.writeText(textToCopy);
                 onCopy(textToCopy);
               } catch (error) {
-                console.error('Failed to copy text:', error);
               }
             } else {
-              console.log('Copy action triggered - no handler or analysis data');
             }
           }}
           aria-label="Copy"

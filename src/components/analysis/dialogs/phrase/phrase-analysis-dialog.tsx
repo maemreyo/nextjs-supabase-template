@@ -50,7 +50,6 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
       setPronunciationError(null);
       onPronounce?.(phrase);
     } catch (error) {
-      console.error('Pronunciation error:', error);
       setPronunciationError('Không thể phát âm cụm từ này. Vui lòng thử lại.');
     }
   }, [onPronounce]);
@@ -68,7 +67,6 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
         await exportPhraseAnalysis(analysis, format);
       }
     } catch (error) {
-      console.error('Export error:', error);
       actions.setError('Không thể xuất dữ liệu. Vui lòng thử lại.');
     } finally {
       setActionLoading('export', false);
@@ -185,7 +183,6 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
         await sharePhraseAnalysis(analysis);
       }
     } catch (error) {
-      console.error('Share error:', error);
       actions.setError('Không thể chia sẻ. Vui lòng thử lại.');
     } finally {
       setActionLoading('share', false);
@@ -208,12 +205,10 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
       } catch (error) {
         // If user cancels or Web Share API fails, fallback to clipboard
         await navigator.clipboard.writeText(`${shareText}\n\nRead more: ${shareUrl}`);
-        console.log('Đã sao chép link chia sẻ vào clipboard');
       }
     } else {
       // Fallback to clipboard
       await navigator.clipboard.writeText(`${shareText}\n\nRead more: ${shareUrl}`);
-      console.log('Đã sao chép link chia sẻ vào clipboard');
     }
   }, []);
 
@@ -230,7 +225,6 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
         printPhraseAnalysis(analysis);
       }
     } catch (error) {
-      console.error('Print error:', error);
       actions.setError('Không thể in. Vui lòng thử lại.');
     } finally {
       setActionLoading('print', false);
@@ -275,7 +269,6 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
       setIsAnimating(true);
       setTimeout(() => setIsAnimating(false), 1000);
     } catch (error) {
-      console.error('Add to vocabulary error:', error);
       actions.setError('Không thể thêm vào từ vựng. Vui lòng thử lại.');
     } finally {
       actions.setLoading(false);
@@ -294,7 +287,6 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
       await onDelete?.(analysisId);
       onOpenChange(false);
     } catch (error) {
-      console.error('Delete error:', error);
       actions.setError('Không thể xóa. Vui lòng thử lại.');
     } finally {
       actions.setLoading(false);
@@ -314,9 +306,7 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
       // Show success message
       actions.setError(null); // Clear any existing errors
       // You could add a toast notification here if you have one
-      console.log('Đã sao chép thành công:', text);
     } catch (error) {
-      console.error('Copy error:', error);
       actions.setError('Không thể sao chép. Vui lòng thử lại.');
     } finally {
       setActionLoading('copy', false);
@@ -525,7 +515,6 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
           onPronounce={handlePronounce}
           onAnalyzeRelatedPhrase={(phrase) => {
             // This would open a new phrase analysis dialog
-            console.log('Analyze related phrase:', phrase);
           }}
           showPronunciation={true}
           showContext={true}

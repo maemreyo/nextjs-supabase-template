@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Loader2, Sparkles, AlertCircle, CheckCircle, TrendingUp } from 'lucide-react'
+import { clientLogger } from '@/services/logger'
 
 // Mock AI service types (these would be imported from actual AI service)
 interface AIResponse {
@@ -103,7 +104,7 @@ export function BasicAIExample() {
       const result = await generateText({ prompt })
       setResponse(result)
     } catch (err) {
-      console.error('AI generation failed:', err)
+      clientLogger.error('AI generation failed:', err)
     }
   }
 
@@ -204,7 +205,7 @@ export function UsageTrackingExample() {
         remainingRequests: Math.max(0, remainingRequests - 1)
       })
     } catch (err) {
-      console.error('AI generation failed:', err)
+      clientLogger.error('AI generation failed:', err)
     }
   }
 
@@ -319,7 +320,7 @@ export function AdvancedAIExample() {
     if (!prompt.trim()) return
 
     try {
-      const result = await generateText({ 
+      const result = await generateText({
         prompt,
         model,
         provider,
@@ -327,7 +328,7 @@ export function AdvancedAIExample() {
       })
       setResponse(result)
     } catch (err) {
-      console.error('AI generation failed:', err)
+      clientLogger.error('AI generation failed:', err)
     }
   }
 

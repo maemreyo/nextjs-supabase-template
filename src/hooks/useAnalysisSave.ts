@@ -79,11 +79,6 @@ export function useAnalysisSave(options: UseAnalysisSaveOptions = {}) {
       }
     },
     onSuccess: (data, variables) => {
-      console.log('🔍 [DEBUG] useAnalysisSave - Mutation success callback', {
-        analysisId: data.data.analysisId,
-        type: data.data.type,
-      });
-
       // Invalidate related queries to refresh cache
       queryClient.invalidateQueries({
         queryKey: queryKeys.api.endpoint('/api/analyses/list'),
@@ -93,14 +88,6 @@ export function useAnalysisSave(options: UseAnalysisSaveOptions = {}) {
       onSuccess?.(data);
     },
     onError: (error, variables) => {
-      console.error('🔍 [DEBUG] useAnalysisSave - Mutation error callback', {
-        error: error.message,
-        variables: {
-          type: variables.type,
-          textLength: variables.text.length,
-        },
-      });
-
       // Call custom error callback if provided
       onError?.(error);
     },

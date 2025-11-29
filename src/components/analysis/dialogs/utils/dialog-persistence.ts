@@ -13,7 +13,6 @@ export const dialogPersistence = {
     try {
       localStorage.setItem('dialog-state', JSON.stringify(state));
     } catch (error) {
-      console.error('Failed to save dialog state:', error);
     }
   },
   
@@ -25,7 +24,6 @@ export const dialogPersistence = {
       const saved = localStorage.getItem('dialog-state');
       return saved ? JSON.parse(saved) : null;
     } catch (error) {
-      console.error('Failed to load dialog state:', error);
       return null;
     }
   },
@@ -37,7 +35,6 @@ export const dialogPersistence = {
     try {
       localStorage.removeItem('dialog-state');
     } catch (error) {
-      console.error('Failed to clear dialog state:', error);
     }
   },
   
@@ -48,7 +45,6 @@ export const dialogPersistence = {
     try {
       localStorage.setItem('dialog-preferences', JSON.stringify(preferences));
     } catch (error) {
-      console.error('Failed to save dialog preferences:', error);
     }
   },
   
@@ -60,7 +56,6 @@ export const dialogPersistence = {
       const saved = localStorage.getItem('dialog-preferences');
       return saved ? JSON.parse(saved) : {};
     } catch (error) {
-      console.error('Failed to load dialog preferences:', error);
       return {};
     }
   },

@@ -28,6 +28,7 @@ import { useSessionStore } from '@/hooks/stores/use-session-store';
 import { useAppNavigation } from '@/lib/navigation';
 import type { AnalysisSession } from '@/types/sessions';
 import { useSupabase } from '@/components/providers/supabase-provider';
+import { clientLogger } from '@/services/logger';
 
 interface SessionQuickActionsProps {
   currentSession?: AnalysisSession | null;
@@ -61,10 +62,12 @@ export function SessionQuickActions({
 
   const handleCreateSession = async () => {
     if (!newSessionTitle.trim()) {
+      clientLogger.warn('SessionQuickActions', { type: 'create_session_empty_title' });
       toast.error('Tên session không được để trống');
       return;
     }
 
+    clientLogger.info('SessionQuickActions', { type: 'create_session_started', title: newSessionTitle.trim() });
     setIsCreating(true);
     try {
       const newSession = await createSession({
@@ -73,6 +76,7 @@ export function SessionQuickActions({
         session_type: 'mixed'
       });
       
+      clientLogger.info('SessionQuickActions', { type: 'session_created_successfully', sessionId: newSession.id, title: newSession.title });
       toast.success('Tạo session thành công', {
         description: `Session "${newSession.title}" đã được tạo.`,
         duration: 2000,
@@ -82,7 +86,7 @@ export function SessionQuickActions({
       onOpenChange(false);
       navigateToAnalysis(newSession.id);
     } catch (error) {
-      console.error('Failed to create session:', error);
+      clientLogger.error('SessionQuickActions', { type: 'session_creation_failed', error: error instanceof Error ? error.message : 'Unknown error' });
       toast.error('Tạo session thất bại', {
         description: 'Không thể tạo session. Vui lòng thử lại.',
         duration: 5000,
@@ -136,7 +140,7 @@ export function SessionQuickActions({
       // Refresh the page to update the session title
       window.location.reload();
     } catch (error) {
-      console.error('Failed to rename session:', error);
+      
       toast.error('Đổi tên session thất bại', {
         description: 'Không thể đổi tên session. Vui lòng thử lại.',
         duration: 5000,
@@ -149,6 +153,8 @@ export function SessionQuickActions({
   const handleDuplicateSession = async () => {
     if (!currentSession) return;
 
+    clientLogger.info('SessionQuickActions', { type: 'duplicate_session_started', sessionId: currentSession.id, title: currentSession.title });
+    
     try {
       // Get access token for authentication
       const token = await getAccessToken();
@@ -180,6 +186,7 @@ export function SessionQuickActions({
 
       const result = await response.json();
       
+      clientLogger.info('SessionQuickActions', { type: 'session_duplicated_successfully', originalSessionId: currentSession.id, newSessionId: result.data.duplicatedSession.id, newTitle: result.data.duplicatedSession.title });
       toast.success('Nhân bản session thành công', {
         description: `Session "${result.data.duplicatedSession.title}" đã được tạo.`,
         duration: 2000,
@@ -188,7 +195,7 @@ export function SessionQuickActions({
       onOpenChange(false);
       navigateToAnalysis(result.data.duplicatedSession.id);
     } catch (error) {
-      console.error('Failed to duplicate session:', error);
+      clientLogger.error('SessionQuickActions', { type: 'session_duplicate_failed', sessionId: currentSession?.id, error: error instanceof Error ? error.message : 'Unknown error' });
       toast.error('Nhân bản session thất bại', {
         description: 'Không thể nhân bản session. Vui lòng thử lại.',
         duration: 5000,
@@ -197,6 +204,7 @@ export function SessionQuickActions({
   };
 
   const handleSwitchToSession = (sessionId: string) => {
+    clientLogger.info('SessionQuickActions', { type: 'switch_to_session', sessionId });
     navigateToAnalysis(sessionId);
     onOpenChange(false);
   };

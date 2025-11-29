@@ -21,6 +21,7 @@ import type { AnalysisSession } from '@/types/sessions';
 import AuthGuard from '@/components/auth/auth-guard';
 import { useAppNavigation, createBreadcrumbItems } from '@/lib/navigation';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
+import { sessionLogger } from '@/services/logger';
 
 type View = 'list' | 'detail' | 'create';
 
@@ -31,7 +32,7 @@ interface CreateSessionFormData {
 }
 
 export default function SessionsPage() {
-  console.log('🔍 [DEBUG] SessionsPage rendering')
+  sessionLogger.debug('SessionsPage rendering')
   const [currentView, setCurrentView] = useState<View>('list');
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -74,7 +75,7 @@ export default function SessionsPage() {
         setCurrentView('detail');
       }
     } catch (error) {
-      console.error('Failed to create session:', error);
+      
     }
   };
 
@@ -90,7 +91,7 @@ export default function SessionsPage() {
 
   const handleEditSession = (session: AnalysisSession) => {
     // TODO: Implement edit session dialog
-    console.log('Edit session:', session);
+    
   };
 
   const handleDeleteSession = async (sessionId: string) => {
@@ -102,33 +103,33 @@ export default function SessionsPage() {
         handleBackToList();
       }
     } catch (error) {
-      console.error('Failed to delete session:', error);
+      
     }
   };
 
   const handleSessionSettings = (sessionId: string) => {
     // TODO: Implement session settings dialog
-    console.log('Session settings:', sessionId);
+    
   };
 
   const handleDuplicateSession = async (session: AnalysisSession) => {
     // TODO: Implement duplicate session
-    console.log('Duplicate session:', session);
+    
   };
 
   const handleArchiveSession = async (session: AnalysisSession) => {
     // TODO: Implement archive session
-    console.log('Archive session:', session);
+    
   };
 
   const handleExportSession = async (session: AnalysisSession) => {
     // TODO: Implement export session
-    console.log('Export session:', session);
+    
   };
 
   const handleShareSession = async (session: AnalysisSession) => {
     // TODO: Implement share session
-    console.log('Share session:', session);
+    
   };
 
   const handleOpenInEditor = (session: AnalysisSession) => {
@@ -138,7 +139,7 @@ export default function SessionsPage() {
   // Create breadcrumb items
   const breadcrumbItems = createBreadcrumbItems('/sessions');
 
-  console.log('🔍 [DEBUG] SessionsPage rendering with AuthGuard')
+  sessionLogger.debug('SessionsPage rendering with AuthGuard')
   return (
     <AuthGuard redirectTo="/auth/signin">
       <div className="min-h-screen bg-background">

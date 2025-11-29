@@ -69,13 +69,9 @@ export function useWordAnalyses({
       ? ['word-analyses', sessionId, 'component', componentId] as const
       : ['word-analyses', sessionId] as const;
       
-  console.log(`[useWordAnalyses] Initializing hook, enabled: ${enabled}, pageSize: ${pageSize}, queryKey:`, queryKey);
-  
   return useInfiniteQuery({
     queryKey,
     queryFn: async ({ pageParam = 0 }): Promise<WordAnalysesResponse> => {
-      console.log(`[API] Fetching word analyses, offset: ${pageParam}, limit: ${pageSize}`);
-      
       const response = await api.sessions.getAnalyses(sessionId, {
         limit: pageSize,
         offset: pageParam,
@@ -83,8 +79,6 @@ export function useWordAnalyses({
         sort: 'created_at', // Sort by created_at
         order: 'desc', // Order descending (newest first)
       });
-      
-      console.log(`[API] Response for word analyses, analyses count: ${response.data?.analyses?.length || 0}, hasMore: ${response.data?.pagination?.word?.hasMore}`);
       
       // Extract word analyses from the response
       const wordAnalyses = response.data?.analyses
@@ -107,13 +101,9 @@ export function useWordAnalyses({
       const nextPageOffset = lastPageParam + pageSize;
       const currentTotalItems = allPages.reduce((sum, page) => sum + (page.analyses?.length || 0), 0);
       
-      console.log(`[getNextPageParam] word: hasMore=${hasMore}, nextPageOffset=${nextPageOffset}, currentTotalItems=${currentTotalItems}`);
-      
       if (hasMore) {
-        console.log(`[fetchNextPage] Will fetch next page for word at offset ${nextPageOffset}`);
         return nextPageOffset;
       }
-      console.log(`[fetchNextPage] No more pages for word, hasMore=${hasMore}`);
       return undefined;
     },
     initialPageParam: 0,
@@ -127,8 +117,6 @@ export function useWordAnalyses({
     select: (data) => {
       const allAnalyses = data.pages.flatMap(page => page.analyses);
       const totalCount = data.pages[0]?.pagination.total || 0;
-      
-      console.log(`[select] word: total analyses: ${allAnalyses.length}, totalCount: ${totalCount}`);
       
       return {
         pages: data.pages,

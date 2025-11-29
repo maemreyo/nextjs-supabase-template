@@ -55,7 +55,7 @@ export function DeleteSessionDialog({
       await onDelete(session.id);
       onOpenChange(false);
     } catch (err) {
-      console.error('Failed to delete session:', err);
+      
       setError('Không thể xóa session. Vui lòng thử lại.');
     }
   };

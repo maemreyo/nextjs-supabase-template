@@ -7,6 +7,7 @@ import type {
   ParagraphAnalysis,
   PhraseAnalysis
 } from '@/lib/ai/types';
+import { apiLogger } from '@/services/logger';
 import crypto from 'crypto';
 
 interface SaveAnalysisRequest {
@@ -82,7 +83,7 @@ async function checkExistingAnalysis(supabase: any, type: string, userId: string
   
   const { data, error } = await query;
   if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-    console.error('Error checking existing analysis:', error);
+
   }
   
   return data || null;
@@ -239,6 +240,11 @@ function createSessionAnalysisEntry(
 // POST /api/analyses/save - Save analysis result to database
 export const POST = withAuth(
   async (request: NextRequest, { user, supabase }: { user: any; supabase: any }) => {
+    apiLogger.start('Save analysis', {
+      userId: user.id,
+      timestamp: new Date().toISOString()
+    })
+    
     try {
 
     // Parse request body
@@ -246,6 +252,13 @@ export const POST = withAuth(
 
       // Validate required fields
       if (!body.type || !body.text || !body.analysisData) {
+        apiLogger.warn('Invalid request - missing required fields', {
+          userId: user.id,
+          hasType: !!body.type,
+          hasText: !!body.text,
+          hasAnalysisData: !!body.analysisData
+        });
+        
         return createErrorResponse(
           'Type, text, and analysisData are required',
           400
@@ -254,6 +267,11 @@ export const POST = withAuth(
 
       // Validate analysis type
       if (!['word', 'sentence', 'paragraph', 'phrase'].includes(body.type)) {
+        apiLogger.warn('Invalid analysis type', {
+          userId: user.id,
+          type: body.type
+        });
+        
         return createErrorResponse(
           'Type must be word, sentence, paragraph, or phrase',
           400
@@ -268,7 +286,7 @@ export const POST = withAuth(
       body.documentId
     );
 
-    console.log(`[DEDUPLICATION] Processing ${body.type} analysis with hash: ${contentHash}`);
+
 
     // Check if analysis already exists
     const existingAnalysis = await checkExistingAnalysis(
@@ -281,7 +299,11 @@ export const POST = withAuth(
     );
 
     if (existingAnalysis) {
-      console.log(`[DEDUPLICATION] Found existing ${body.type} analysis: ${existingAnalysis.id}`);
+      apiLogger.info('Analysis already exists, returning existing record', {
+        userId: user.id,
+        analysisId: existingAnalysis.id,
+        type: body.type
+      });
       
       // Link to session if sessionId is provided
       if (body.sessionId) {
@@ -303,10 +325,20 @@ export const POST = withAuth(
           .select();
         
         if (sessionError) {
-          console.error('Error linking existing analysis to session:', sessionError);
+          apiLogger.error('Failed to link analysis to session', {
+            userId: user.id,
+            analysisId: existingAnalysis.id,
+            sessionId: body.sessionId,
+            error: sessionError.message
+          });
+          
           // Don't fail the operation, just log the error
         } else {
-          console.log(`[DEDUPLICATION] Linked existing analysis to session: ${body.sessionId}`);
+          apiLogger.success('Analysis linked to session successfully', {
+            userId: user.id,
+            analysisId: existingAnalysis.id,
+            sessionId: body.sessionId
+          });
         }
       }
 
@@ -318,7 +350,7 @@ export const POST = withAuth(
       });
     }
 
-    console.log(`[DEDUPLICATION] No existing analysis found, creating new ${body.type} analysis`);
+
 
     let analysisId: string = '';
     let analysisData: any;
@@ -342,7 +374,12 @@ export const POST = withAuth(
         .single();
       
       if (error) {
-        console.error('Error saving word analysis:', error);
+        apiLogger.error('Failed to save word analysis', {
+          userId: user.id,
+          word: body.text,
+          error: error.message
+        });
+        
         throw error;
       }
       
@@ -355,7 +392,11 @@ export const POST = withAuth(
         .single();
       
       if (fetchError) {
-        console.error('Error fetching word analysis data:', fetchError);
+        apiLogger.error('Failed to fetch full word analysis data', {
+          userId: user.id,
+          word: body.text,
+          error: fetchError.message
+        });
       } else {
         analysisData = fullData;
       }
@@ -378,7 +419,7 @@ export const POST = withAuth(
           .insert(synonymData);
         
         if (synonymError) {
-          console.error('Error saving synonyms:', synonymError);
+
           // Don't fail the whole operation if synonyms fail
         }
       }
@@ -398,7 +439,7 @@ export const POST = withAuth(
           .insert(antonymData);
         
         if (antonymError) {
-          console.error('Error saving antonyms:', antonymError);
+
           // Don't fail the whole operation if antonyms fail
         }
       }
@@ -418,7 +459,7 @@ export const POST = withAuth(
           .insert(collocationData);
         
         if (collocationError) {
-          console.error('Error saving collocations:', collocationError);
+
           // Don't fail the whole operation if collocations fail
         }
       }
@@ -440,7 +481,12 @@ export const POST = withAuth(
         .single();
       
       if (error) {
-        console.error('Error saving sentence analysis:', error);
+        apiLogger.error('Failed to save sentence analysis', {
+          userId: user.id,
+          sentence: body.text.substring(0, 50) + '...',
+          error: error.message
+        });
+        
         throw error;
       }
       
@@ -465,7 +511,7 @@ export const POST = withAuth(
           .insert(keyComponentsData);
         
         if (keyComponentsError) {
-          console.error('Error saving key components:', keyComponentsError);
+
           // Don't fail the whole operation if key components fail
         }
       }
@@ -484,7 +530,7 @@ export const POST = withAuth(
           .insert(rewriteSuggestionsData);
         
         if (rewriteSuggestionsError) {
-          console.error('Error saving rewrite suggestions:', rewriteSuggestionsError);
+
           // Don't fail the whole operation if rewrite suggestions fail
         }
       }
@@ -506,7 +552,12 @@ export const POST = withAuth(
         .single();
       
       if (error) {
-        console.error('Error saving paragraph analysis:', error);
+        apiLogger.error('Failed to save paragraph analysis', {
+          userId: user.id,
+          paragraph: body.text.substring(0, 50) + '...',
+          error: error.message
+        });
+        
         throw error;
       }
       
@@ -531,7 +582,7 @@ export const POST = withAuth(
           .insert(structureBreakdownData);
         
         if (structureBreakdownError) {
-          console.error('Error saving structure breakdown:', structureBreakdownError);
+
           // Don't fail the whole operation if structure breakdown fails
         }
       }
@@ -550,7 +601,7 @@ export const POST = withAuth(
           .insert(feedbackData);
         
         if (feedbackError) {
-          console.error('Error saving constructive feedback:', feedbackError);
+
           // Don't fail the whole operation if feedback fails
         }
       }
@@ -572,7 +623,12 @@ export const POST = withAuth(
         .single();
       
       if (error) {
-        console.error('Error saving phrase analysis:', error);
+        apiLogger.error('Failed to save phrase analysis', {
+          userId: user.id,
+          phrase: body.text,
+          error: error.message
+        });
+        
         throw error;
       }
       
@@ -585,7 +641,11 @@ export const POST = withAuth(
         .single();
       
       if (fetchError) {
-        console.error('Error fetching phrase analysis data:', fetchError);
+        apiLogger.error('Failed to fetch full phrase analysis data', {
+          userId: user.id,
+          phrase: body.text,
+          error: fetchError.message
+        });
       } else {
         analysisData = fullData;
       }
@@ -613,11 +673,22 @@ export const POST = withAuth(
         .select();
       
       if (sessionAnalysisError) {
-        console.error('Error linking analysis to session:', sessionAnalysisError);
+        apiLogger.error('Failed to create session analysis entry', {
+          userId: user.id,
+          analysisId,
+          sessionId: body.sessionId,
+          error: sessionAnalysisError.message
+        });
+        
         // Don't fail the whole operation if session linking fails
       } else {
         sessionAnalysisId = sessionAnalysis.id;
-        console.log(`[DEDUPLICATION] Linked new analysis to session: ${body.sessionId}`);
+        apiLogger.success('Session analysis entry created successfully', {
+          userId: user.id,
+          analysisId,
+          sessionId: body.sessionId,
+          sessionAnalysisId
+        });
         
         // Update session counts
         // First get current counts
@@ -650,15 +721,27 @@ export const POST = withAuth(
             .eq('id', body.sessionId);
           
           if (updateError) {
-            console.error('Error updating session:', updateError);
+            apiLogger.error('Failed to update session counts', {
+              userId: user.id,
+              sessionId: body.sessionId,
+              type: body.type,
+              error: updateError.message
+            });
+            
             // Don't fail the whole operation if session update fails
+          } else {
+            apiLogger.success('Session counts updated successfully', {
+              userId: user.id,
+              sessionId: body.sessionId,
+              type: body.type
+            });
           }
         }
         
       }
     }
 
-      console.log(`[DEDUPLICATION] Analysis saved successfully: ${body.type} analysis with ID ${analysisId}`);
+
 
       const response = {
         analysisId,
@@ -668,10 +751,22 @@ export const POST = withAuth(
         message: 'New analysis created successfully'
       };
 
+      apiLogger.success('Analysis saved successfully', {
+        userId: user.id,
+        analysisId,
+        type: body.type,
+        isDuplicate: false
+      });
+
       return createSuccessResponse(response);
 
     } catch (error) {
-      console.error('Error in analyses save POST:', error);
+      apiLogger.error('Error in save analysis API', {
+        userId: user?.id,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
+
       return createErrorResponse(
         error instanceof Error ? error.message : 'Internal server error',
         500

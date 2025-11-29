@@ -89,7 +89,7 @@ export function DuplicateSessionDialog({
       });
       onOpenChange(false);
     } catch (error) {
-      console.error('Failed to duplicate session:', error);
+      
       setTitleError('Không thể nhân bản session. Vui lòng thử lại.');
     }
   };

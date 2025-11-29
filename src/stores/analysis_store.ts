@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { devtools, subscribeWithSelector } from 'zustand/middleware'
 import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis, PhraseAnalysis } from '@/lib/ai/types'
+import { clientLogger } from '@/services/logger'
 
 // Wrapper types that include database fields
 export interface WordAnalysisWithId extends WordAnalysis {
@@ -407,7 +408,7 @@ export const useAnalysisStore = create<AnalysisStore>()(
         set({ isAnalyzing: true, analysisError: null })
         try {
           // Placeholder implementation
-          console.log('Analyzing word:', word)
+          clientLogger.info('Analyzing word', { word })
           const analysis: WordAnalysisWithId = {
             id: Date.now().toString(),
             createdAt: new Date(),
@@ -454,7 +455,7 @@ export const useAnalysisStore = create<AnalysisStore>()(
         set({ isAnalyzing: true, analysisError: null })
         try {
           // Placeholder implementation
-          console.log('Analyzing sentence:', sentence)
+          clientLogger.info('Analyzing sentence', { sentence })
           const analysis: SentenceAnalysisWithId = {
             id: Date.now().toString(),
             createdAt: new Date(),
@@ -502,7 +503,7 @@ export const useAnalysisStore = create<AnalysisStore>()(
         set({ isAnalyzing: true, analysisError: null })
         try {
           // Placeholder implementation
-          console.log('Analyzing paragraph:', paragraph)
+          clientLogger.info('Analyzing paragraph', { paragraph })
           const analysis: ParagraphAnalysisWithId = {
             id: Date.now().toString(),
             createdAt: new Date(),
@@ -553,7 +554,7 @@ export const useAnalysisStore = create<AnalysisStore>()(
         set({ isAnalyzing: true, analysisError: null })
         try {
           // Placeholder implementation
-          console.log('Analyzing phrase:', phrase)
+          clientLogger.info('Analyzing phrase', { phrase })
           const analysis: PhraseAnalysisWithId = {
             id: Date.now().toString(),
             createdAt: new Date(),
@@ -612,7 +613,7 @@ export const useAnalysisStore = create<AnalysisStore>()(
         set({ isSaving: true, saveError: null })
         try {
           // Placeholder implementation
-          console.log('Saving analysis:', { type, analysis })
+          clientLogger.info('Saving analysis', { type, analysisId: analysis?.id })
           
           switch (type) {
             case 'word':
@@ -643,7 +644,7 @@ export const useAnalysisStore = create<AnalysisStore>()(
         set({ isLoading: true, analysisError: null })
         try {
           // Placeholder implementation
-          console.log('Loading analyses for type:', type)
+          clientLogger.info('Loading analyses for type', { type })
           // Would load from database
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Load analyses failed'
@@ -656,7 +657,7 @@ export const useAnalysisStore = create<AnalysisStore>()(
       deleteAnalysis: async (type, id) => {
         try {
           // Placeholder implementation
-          console.log('Deleting analysis:', { type, id })
+          clientLogger.info('Deleting analysis', { type, id })
           
           switch (type) {
             case 'word':

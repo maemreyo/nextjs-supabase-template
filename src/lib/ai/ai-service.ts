@@ -92,6 +92,10 @@ export class AIService {
       const cacheKey = this.generateCacheKey('text', params)
       const cached = this.getFromCache(cacheKey)
       if (cached) {
+        clientLogger.debug('Analysis cache hit', {
+          operation: 'text-generation',
+          cacheKey: cacheKey.substring(0,50)+'...'
+        })
         return cached
       }
     }

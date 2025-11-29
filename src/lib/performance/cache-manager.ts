@@ -3,6 +3,7 @@
  * Provides comprehensive caching strategies for API responses, computed values, and data optimization
  */
 
+import { cacheLogger } from '@/services/logger';
 
 // Cache configuration
 const CACHE_CONFIG = {

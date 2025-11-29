@@ -1,11 +1,12 @@
 /**
  * Navigation Test Utilities
- * 
+ *
  * File này chứa các utilities để test luồng điều hướng
  * giữa SessionList và AnalysisEditor
  */
 
 import { NavigationUtils, NavigationValidation } from './navigation';
+import { clientLogger } from '@/services/logger';
 
 /**
  * Test các URL parameters
@@ -88,7 +89,7 @@ export function runAllNavigationTests() {
     testBreadcrumbGeneration();
     testCompleteNavigationFlow();
   } catch (error) {
-    // Error handling without console logging
+    clientLogger.error('Navigation test error', { error });
   }
 }
 

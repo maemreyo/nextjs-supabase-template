@@ -30,7 +30,6 @@ export const useAnalysisDialogResizing = (props: UseAnalysisDialogResizingProps)
     const newWidth = event.clientX - rect.left;
     
     // Update width in state (would be handled by parent component)
-    console.log('Dialog resized to:', newWidth);
   }, [isResizing, resizable, dialogRef]);
 
   // Handle mouse events for resizing

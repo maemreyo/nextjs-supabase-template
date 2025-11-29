@@ -75,7 +75,6 @@ export const PhraseUsageExamplesSection: React.FC<PhraseUsageExamplesSectionProp
       // Reset copied state after 2 seconds
       setTimeout(() => setCopiedExample(null), 2000);
     } catch (error) {
-      console.error('Failed to copy example:', error);
     }
   };
 
@@ -88,7 +87,6 @@ export const PhraseUsageExamplesSection: React.FC<PhraseUsageExamplesSectionProp
       // Reset copied state after 2 seconds
       setTimeout(() => setCopiedTip(null), 2000);
     } catch (error) {
-      console.error('Failed to copy tip:', error);
     }
   };
 
@@ -247,7 +245,6 @@ export const PhraseUsageExamplesSection: React.FC<PhraseUsageExamplesSectionProp
                   className="text-xs"
                   onClick={() => {
                     // This would typically trigger showing more examples
-                    console.log('Show more examples');
                   }}
                 >
                   Xem thêm {normalizedExamples.length - maxExamples} ví dụ

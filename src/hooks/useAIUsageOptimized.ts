@@ -88,7 +88,6 @@ export function useAIUsageOptimized(userId?: string): UseAIUsageOptimizedReturn 
       const usageData = await aiServiceClient.checkUsage(userId)
       return usageData.canUseAI
     } catch (error) {
-      console.error('Failed to check usage:', error)
       return false
     }
   }, [userId])
@@ -195,7 +194,6 @@ export function useAIUsageRealtime(userId?: string) {
           const usageData = await aiServiceClient.checkUsage(userId)
           setUsage(usageData)
         } catch (error) {
-          console.error('Real-time usage update failed:', error)
         }
       }, 5000) // Update every 5 seconds
 
@@ -217,7 +215,6 @@ export function useAIUsageRealtime(userId?: string) {
         const usageData = await aiServiceClient.checkUsage(userId)
         setUsage(usageData)
       } catch (error) {
-        console.error('Failed to refresh usage:', error)
       }
     }
   }
@@ -258,7 +255,6 @@ export function useAIUsageLimits(userId?: string) {
           cost: usageData.tier.maxCostPerDay
         })
       } catch (error) {
-        console.error('Failed to check limits:', error)
       }
     }
 

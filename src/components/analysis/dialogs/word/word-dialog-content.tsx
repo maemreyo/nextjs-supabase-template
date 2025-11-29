@@ -86,7 +86,6 @@ export const WordDialogContent: React.FC<WordDialogContentProps> = ({
         setLocalLoading('fullData', false);
       }
     } catch (error) {
-      console.error('Error managing loading state in WordDialogContent:', error);
       setLocalLoading('fullData', false);
     }
   }, [isFetchingFullData, setLocalLoading]);
@@ -102,7 +101,6 @@ export const WordDialogContent: React.FC<WordDialogContentProps> = ({
   // Xử lý lỗi khi fetch data
   useEffect(() => {
     if (isError && fetchError) {
-      console.error('🔍 [DEBUG] WordDialogContent - Error fetching full analysis data:', fetchError);
       // Sử dụng error handler từ hook thay vì local state
       // Không clear loading - vẫn có summary data để hiển thị
     }
@@ -114,7 +112,6 @@ export const WordDialogContent: React.FC<WordDialogContentProps> = ({
     try {
       await onPronounce?.(word);
     } catch (error) {
-      console.error('Error pronouncing word:', error);
       // Error sẽ được xử lý bởi DialogErrorHandler
     } finally {
       setActionLoading('pronunciation', false);

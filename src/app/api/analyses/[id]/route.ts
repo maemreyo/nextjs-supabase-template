@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { Database } from '@/lib/database.types';
+import { apiLogger } from '@/services/logger';
 
 interface DeleteAnalysisResponse {
   success: boolean;
@@ -17,6 +18,10 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  apiLogger.start('Handling DELETE /api/analyses/[id]', {
+    timestamp: new Date().toISOString()
+  })
+  
   try {
     // Get user ID from authentication
     const authHeader = request.headers.get('authorization');
@@ -42,6 +47,10 @@ export async function DELETE(
     const { id: analysisId } = await params;
 
     if (!analysisId) {
+      apiLogger.warn('Analysis ID is required', {
+        error: 'Missing analysis ID'
+      })
+      
       return NextResponse.json(
         { error: 'Analysis ID is required' },
         { status: 400 }
@@ -107,7 +116,7 @@ export async function DELETE(
         .eq('word_analysis_id', analysisId);
 
       if (synonymError) {
-        console.error('Error deleting word synonyms:', synonymError);
+
         // Don't fail the whole operation if related data deletion fails
       }
 
@@ -118,7 +127,7 @@ export async function DELETE(
         .eq('word_analysis_id', analysisId);
 
       if (antonymError) {
-        console.error('Error deleting word antonyms:', antonymError);
+
         // Don't fail the whole operation if related data deletion fails
       }
 
@@ -129,7 +138,7 @@ export async function DELETE(
         .eq('word_analysis_id', analysisId);
 
       if (collocationError) {
-        console.error('Error deleting word collocations:', collocationError);
+
         // Don't fail the whole operation if related data deletion fails
       }
 
@@ -141,7 +150,7 @@ export async function DELETE(
         .eq('user_id', user.id);
 
       if (deleteError) {
-        console.error('Error deleting word analysis:', deleteError);
+
         throw deleteError;
       }
 
@@ -153,7 +162,7 @@ export async function DELETE(
         .eq('sentence_analysis_id', analysisId);
 
       if (keyComponentsError) {
-        console.error('Error deleting sentence key components:', keyComponentsError);
+
         // Don't fail the whole operation if related data deletion fails
       }
 
@@ -164,7 +173,7 @@ export async function DELETE(
         .eq('sentence_analysis_id', analysisId);
 
       if (rewriteSuggestionsError) {
-        console.error('Error deleting sentence rewrite suggestions:', rewriteSuggestionsError);
+
         // Don't fail the whole operation if related data deletion fails
       }
 
@@ -176,7 +185,7 @@ export async function DELETE(
         .eq('user_id', user.id);
 
       if (deleteError) {
-        console.error('Error deleting sentence analysis:', deleteError);
+
         throw deleteError;
       }
 
@@ -188,7 +197,7 @@ export async function DELETE(
         .eq('paragraph_analysis_id', analysisId);
 
       if (structureBreakdownError) {
-        console.error('Error deleting paragraph structure breakdown:', structureBreakdownError);
+
         // Don't fail the whole operation if related data deletion fails
       }
 
@@ -199,7 +208,7 @@ export async function DELETE(
         .eq('paragraph_analysis_id', analysisId);
 
       if (feedbackError) {
-        console.error('Error deleting paragraph constructive feedback:', feedbackError);
+
         // Don't fail the whole operation if related data deletion fails
       }
 
@@ -211,7 +220,7 @@ export async function DELETE(
         .eq('user_id', user.id);
 
       if (deleteError) {
-        console.error('Error deleting paragraph analysis:', deleteError);
+
         throw deleteError;
       }
     }
@@ -224,7 +233,7 @@ export async function DELETE(
       .eq('user_id', user.id);
 
     if (sessionAnalysisError) {
-      console.error('Error deleting session analysis link:', sessionAnalysisError);
+
       // Don't fail the whole operation if session link deletion fails
     }
 
@@ -286,7 +295,7 @@ export async function DELETE(
             .eq('id', session.id);
 
           if (updateError) {
-            console.error('Error updating session counts:', updateError);
+
             // Don't fail the whole operation if session update fails
           } else {
             sessionUpdated = true;
@@ -295,7 +304,7 @@ export async function DELETE(
       }
     }
 
-    console.log(`Analysis deleted successfully: ${analysisType} analysis with ID ${analysisId}`);
+
 
     const response: DeleteAnalysisResponse = {
       success: true,
@@ -306,14 +315,24 @@ export async function DELETE(
       }
     };
 
+    apiLogger.success('Analysis deleted successfully', {
+      analysisId,
+      analysisType,
+      sessionUpdated
+    })
+
     return NextResponse.json(response);
 
   } catch (error) {
-    console.error('Error in analyses DELETE:', error);
+    apiLogger.error('Error in delete analysis API', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    })
+
     return NextResponse.json(
-      { 
+      {
         error: error instanceof Error ? error.message : 'Internal server error',
-        success: false 
+        success: false
       },
       { status: 500 }
     );
@@ -325,6 +344,10 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  apiLogger.start('Handling GET /api/analyses/[id]', {
+    timestamp: new Date().toISOString()
+  })
+  
   try {
     // Get user ID from authentication
     const authHeader = request.headers.get('authorization');
@@ -350,6 +373,10 @@ export async function GET(
     const { id: analysisId } = await params;
 
     if (!analysisId) {
+      apiLogger.warn('Analysis ID is required', {
+        error: 'Missing analysis ID'
+      })
+      
       return NextResponse.json(
         { error: 'Analysis ID is required' },
         { status: 400 }
@@ -427,17 +454,26 @@ export async function GET(
       analysisData.session_analysis = sessionAnalysis;
     }
 
+    apiLogger.success('Analysis retrieved successfully', {
+      analysisId,
+      analysisType: analysisData?.analysis_type
+    })
+
     return NextResponse.json({
       success: true,
       data: analysisData
     });
 
   } catch (error) {
-    console.error('Error in analyses GET:', error);
+    apiLogger.error('Error in get analysis API', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    })
+
     return NextResponse.json(
-      { 
+      {
         error: error instanceof Error ? error.message : 'Internal server error',
-        success: false 
+        success: false
       },
       { status: 500 }
     );

@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { WordAnalysis, AnalyzeWordRequest, AnalysisResponse } from '@/lib/ai/types';
 import { useSupabase } from '@/components/providers/supabase-provider';
 import { useSavedAnalysis, useSavedAnalysisByWord } from './useSavedAnalysis';
+import { clientLogger } from '@/services/logger';
 
 // Query keys cho word analysis
 export const wordAnalysisKeys = {
@@ -52,19 +53,11 @@ export function useWordAnalysis(
     queryFn: async (): Promise<WordAnalysis> => {
       // If we have a saved analysis, return it
       if (savedAnalysis) {
-        console.log('🔍 [DEBUG] useWordAnalysis - Using saved analysis', {
-          word: savedAnalysis.meta.word,
-          source: wordId ? 'wordId' : 'word+sessionId'
-        });
         return savedAnalysis;
       }
       // DEBUG: Log để kiểm tra authentication state
-      console.log('DEBUG: useWordAnalysis - Starting API call for word:', word);
-      
       // Get access token for authentication
       const token = await getAccessToken();
-      console.log('DEBUG: useWordAnalysis - Access token exists:', !!token);
-      
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
@@ -72,9 +65,7 @@ export function useWordAnalysis(
       // Add authorization header if token is available
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
-        console.log('DEBUG: useWordAnalysis - Added Authorization header');
       } else {
-        console.log('DEBUG: useWordAnalysis - No access token available');
       }
       
       const response = await fetch('/api/ai/analyze-word', {
@@ -87,8 +78,6 @@ export function useWordAnalysis(
         } as AnalyzeWordRequest),
       });
       
-      console.log('DEBUG: useWordAnalysis - Response status:', response.status);
-      console.log('DEBUG: useWordAnalysis - Response ok:', response.ok);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -126,7 +115,6 @@ export function useWordAnalysisMutation() {
   
   return useMutation({
     mutationFn: async (params: AnalyzeWordRequest): Promise<WordAnalysis> => {
-      console.log('DEBUG: useWordAnalysisMutation - params received:', params);
       // Get access token for authentication
       const token = await getAccessToken();
       
@@ -165,7 +153,10 @@ export function useWordAnalysisMutation() {
       );
     },
     onError: (error) => {
-      console.error('Word analysis error:', error);
+      clientLogger.error('Word analysis mutation failed', {
+        error: error.message || error,
+        operation: 'word-analysis'
+      });
     },
   });
 }

@@ -2,8 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { aiServiceServer } from '@/lib/ai/ai-service-server'
 import { GenerateTextParams } from '@/lib/ai/types'
+import { apiLogger } from '@/services/logger'
 
 export async function POST(request: NextRequest) {
+  apiLogger.start('Handling POST /api/ai/generate-text', {
+    timestamp: new Date().toISOString()
+  })
+  
   try {
     // Get user from session
     const supabase = await createClient()
@@ -51,13 +56,15 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('AI generate text error:', error)
+    apiLogger.error('Error in AI generate text API', {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    })
     
     const errorMessage = error instanceof Error ? error.message : 'Internal server error'
     
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: errorMessage,
         metadata: {
           timestamp: new Date().toISOString()

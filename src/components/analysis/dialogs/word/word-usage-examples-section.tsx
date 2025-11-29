@@ -68,7 +68,6 @@ export const WordUsageExamplesSection: React.FC<WordUsageExamplesSectionProps> =
       // Reset copied state after 2 seconds
       setTimeout(() => setCopiedExample(null), 2000);
     } catch (error) {
-      console.error('Failed to copy example:', error);
     }
   }, [onCopy]);
 

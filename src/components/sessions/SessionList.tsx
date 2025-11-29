@@ -77,7 +77,7 @@ export function SessionList({
         await deleteSessionMutation(sessionId);
         refetch();
       } catch (error) {
-        console.error('Failed to delete session:', error);
+        
       }
     }
   };

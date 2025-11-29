@@ -14,6 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useAuth } from '@/hooks/stores/use-auth-store'
 import { EyeIcon, EyeOffIcon, Loader2Icon } from 'lucide-react'
 import { signUpSchema, type SignUpFormValues } from '@/lib/validations/auth'
+import { authLogger } from '@/services/logger'
 
 export default function SignUpPage() {
   const router = useRouter()
@@ -39,7 +40,7 @@ export default function SignUpPage() {
       })
       router.push('/(auth)/signin?message=signup-success')
     } catch (err) {
-      console.error('Sign up error:', err)
+      authLogger.error('Sign up error:', err)
     }
   }
 

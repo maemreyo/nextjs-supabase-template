@@ -53,11 +53,9 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
       const { data: { session } } = await supabase.auth.getSession()
       
       if (!session?.access_token) {
-        console.warn('🔍 [DEBUG] SupabaseProvider - getAccessToken - No access token in session');
         // Try to refresh the session
         const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
         if (refreshError) {
-          console.error('🔍 [DEBUG] SupabaseProvider - getAccessToken - Refresh failed:', refreshError);
           return null
         }
         return refreshData.session?.access_token || null
@@ -65,7 +63,6 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
       
       return session.access_token
     } catch (error) {
-      console.error('🔍 [DEBUG] SupabaseProvider - getAccessToken - Error:', error);
       return null
     }
   }

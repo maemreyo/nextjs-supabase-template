@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { useAuth, useAuthUser, useAuthProfile, useAuthState, useAuthActions } from '@/hooks/stores/use-auth-store'
+import { authLogger } from '@/services/logger'
 
 // Example component showing auth state
 export function AuthStatusExample() {
@@ -87,7 +88,7 @@ export function SignInFormExample() {
       // Form will be cleared automatically on successful sign in
     } catch (error) {
       // Error is handled by the store
-      console.error('Sign in failed:', error)
+      authLogger.error('Sign in failed:', error)
     }
   }
   
@@ -154,7 +155,7 @@ export function SignUpFormExample() {
       await signUp(email, password, { full_name: fullName })
       // Form will be cleared automatically on successful sign up
     } catch (error) {
-      console.error('Sign up failed:', error)
+      authLogger.error('Sign up failed:', error)
     }
   }
   
@@ -230,7 +231,7 @@ export function ProfileManagementExample() {
     try {
       await updateProfile({ full_name: fullName })
     } catch (error) {
-      console.error('Profile update failed:', error)
+      authLogger.error('Profile update failed:', error)
     }
   }
   
@@ -241,7 +242,7 @@ export function ProfileManagementExample() {
       await uploadAvatar(avatarFile)
       setAvatarFile(null)
     } catch (error) {
-      console.error('Avatar upload failed:', error)
+      authLogger.error('Avatar upload failed:', error)
     }
   }
   
@@ -318,7 +319,7 @@ export function PasswordResetExample() {
       await resetPassword(email)
       setSubmitted(true)
     } catch (error) {
-      console.error('Password reset failed:', error)
+      authLogger.error('Password reset failed:', error)
     }
   }
   

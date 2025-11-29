@@ -47,7 +47,7 @@ export function SynonymAntonymList({
                       onClick={(e) => {
                         e.stopPropagation();
                         // TODO: Implement text-to-speech for synonym
-                        console.log('Play pronunciation for:', synonym.word);
+                        
                       }}
                     >
                       <Volume2 className="h-3 w-3" />
@@ -96,7 +96,7 @@ export function SynonymAntonymList({
                       onClick={(e) => {
                         e.stopPropagation();
                         // TODO: Implement text-to-speech for antonym
-                        console.log('Play pronunciation for:', antonym.word);
+                        
                       }}
                     >
                       <Volume2 className="h-3 w-3" />

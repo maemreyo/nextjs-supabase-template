@@ -31,8 +31,6 @@ export function useDeleteAnalysis(options: UseDeleteAnalysisOptions = {}) {
 
   const deleteAnalysisMutation = useMutation<DeleteAnalysisResponse, Error, string>({
     mutationFn: async (id: string) => {
-      console.log('🔍 [DEBUG] useDeleteAnalysis - Starting delete analysis', { id });
-
       try {
         // Get access token for authentication
         const token = await getAccessToken();
@@ -60,21 +58,12 @@ export function useDeleteAnalysis(options: UseDeleteAnalysisOptions = {}) {
 
         const result: DeleteAnalysisResponse = await response.json();
         
-        console.log('🔍 [DEBUG] useDeleteAnalysis - Delete successful', {
-          deletedId: result.data.deletedId,
-          deletedType: result.data.deletedType,
-          sessionUpdated: result.data.sessionUpdated,
-        });
-
         return result;
       } catch (error) {
-        console.error('🔍 [DEBUG] useDeleteAnalysis - Delete failed', error);
         throw error instanceof Error ? error : new Error('Failed to delete analysis');
       }
     },
     onMutate: async (id) => {
-      console.log('🔍 [DEBUG] useDeleteAnalysis - onMutate', { id });
-
       // Cancel ongoing queries
       await queryClient.cancelQueries({
         queryKey: queryKeys.api.endpoint('/api/analyses/list'),
@@ -100,11 +89,6 @@ export function useDeleteAnalysis(options: UseDeleteAnalysisOptions = {}) {
       return { previousData };
     },
     onError: (error, id, context: any) => {
-      console.error('🔍 [DEBUG] useDeleteAnalysis - Mutation error callback', {
-        error: error.message,
-        id,
-      });
-
       // Rollback on error
       if (context?.previousData) {
         queryClient.setQueryData(
@@ -117,11 +101,6 @@ export function useDeleteAnalysis(options: UseDeleteAnalysisOptions = {}) {
       onError?.(error);
     },
     onSuccess: (data, id) => {
-      console.log('🔍 [DEBUG] useDeleteAnalysis - Mutation success callback', {
-        deletedId: data.data.deletedId,
-        deletedType: data.data.deletedType,
-      });
-
       // Invalidate related queries to ensure cache consistency
       queryClient.invalidateQueries({
         queryKey: queryKeys.api.endpoint('/api/analyses/list'),
@@ -131,8 +110,6 @@ export function useDeleteAnalysis(options: UseDeleteAnalysisOptions = {}) {
       onSuccess?.(data);
     },
     onSettled: () => {
-      console.log('🔍 [DEBUG] useDeleteAnalysis - Mutation settled');
-      
       // Always invalidate to ensure consistency
       queryClient.invalidateQueries({
         queryKey: queryKeys.api.endpoint('/api/analyses/list'),

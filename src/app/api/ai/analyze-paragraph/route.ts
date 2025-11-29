@@ -2,9 +2,15 @@ import { NextRequest } from 'next/server'
 import { createAIServiceServer } from '@/lib/ai/ai-service-server'
 import { AnalyzeParagraphRequest } from '@/lib/ai/types'
 import { withAuth, createSuccessResponse, createErrorResponse } from '@/lib/api-client'
+import { apiLogger } from '@/services/logger'
 
 export const POST = withAuth(
   async (request: NextRequest, { user }: { user: any }) => {
+    apiLogger.start('Handling POST /api/ai/analyze-paragraph', {
+      userId: user.id,
+      timestamp: new Date().toISOString()
+    })
+    
     try {
       const userId = user.id
 
@@ -73,7 +79,10 @@ export const POST = withAuth(
       })
 
     } catch (error) {
-      console.error('Error in analyze-paragraph API:', error)
+      apiLogger.error('Error in analyze-paragraph API', {
+        userId: user.id,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      })
       
       return createErrorResponse(
         error instanceof Error ? error.message : 'Internal server error',
@@ -86,12 +95,25 @@ export const POST = withAuth(
 // Handle GET method for checking if paragraph analysis is available
 export const GET = withAuth(
   async (request: NextRequest, { user }: { user: any }) => {
+    apiLogger.start('Handling GET /api/ai/analyze-paragraph', {
+      userId: user.id,
+      timestamp: new Date().toISOString()
+    })
+    
     try {
       const userId = user.id
       const aiService = createAIServiceServer()
-
+      
+      apiLogger.info('Checking user AI usage limits', { userId })
+      
       // Check user limits
       const usageCheck = await aiService.checkUsage(userId)
+      
+      apiLogger.success('Usage limits retrieved successfully', {
+        userId,
+        canUseAI: usageCheck.canUseAI,
+        remainingRequests: usageCheck.remainingRequests
+      })
       
       return createSuccessResponse({
         available: usageCheck.canUseAI,
@@ -101,7 +123,10 @@ export const GET = withAuth(
       })
 
     } catch (error) {
-      console.error('Error in analyze-paragraph GET API:', error)
+      apiLogger.error('Error in analyze-paragraph GET API', {
+        userId: user.id,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      })
       
       return createErrorResponse(
         error instanceof Error ? error.message : 'Internal server error',

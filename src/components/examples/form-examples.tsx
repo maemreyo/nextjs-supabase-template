@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { interactionLogger } from '@/services/logger'
 
 export function FormExamples() {
   const [formData, setFormData] = useState({
@@ -20,7 +21,7 @@ export function FormExamples() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('Form submitted:', formData)
+    interactionLogger.info('Form submitted:', formData)
   }
 
   return (

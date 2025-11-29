@@ -39,14 +39,11 @@ export function useSavedAnalysis(
         return null;
       }
 
-      console.log('🔍 [DEBUG] useSavedAnalysis - Fetching analysis', { wordId, sessionId });
-      
       try {
         // Use API client with built-in authentication
         const result = await api.analyses.get(wordId);
-        
+
         if (!result.success || !result.data) {
-          console.log('🔍 [DEBUG] useSavedAnalysis - Invalid response', result);
           return null;
         }
 
@@ -98,15 +95,8 @@ export function useSavedAnalysis(
           }
         };
 
-        console.log('🔍 [DEBUG] useSavedAnalysis - Successfully fetched and transformed analysis', {
-          word: wordAnalysis.meta.word,
-          hasSynonyms: wordAnalysis.relations.synonyms.length > 0,
-          hasAntonyms: wordAnalysis.relations.antonyms.length > 0
-        });
-
         return wordAnalysis;
       } catch (error) {
-        console.error('🔍 [DEBUG] useSavedAnalysis - Fetch failed', error);
         return null;
       }
     },
@@ -135,8 +125,6 @@ export function useSavedAnalysisByWord(
         return null;
       }
 
-      console.log('🔍 [DEBUG] useSavedAnalysisByWord - Fetching analysis', { word, sessionId });
-      
       try {
         // Use API client with built-in authentication
         const queryParams = {
@@ -147,9 +135,8 @@ export function useSavedAnalysisByWord(
         };
 
         const result = await api.analyses.list(queryParams);
-        
+
         if (!result.success || !result.data?.analyses?.length) {
-          console.log('🔍 [DEBUG] useSavedAnalysisByWord - No analysis found', { word, sessionId });
           return null;
         }
 
@@ -201,15 +188,8 @@ export function useSavedAnalysisByWord(
           }
         };
 
-        console.log('🔍 [DEBUG] useSavedAnalysisByWord - Successfully fetched and transformed analysis', {
-          word: wordAnalysis.meta.word,
-          hasSynonyms: wordAnalysis.relations.synonyms.length > 0,
-          hasAntonyms: wordAnalysis.relations.antonyms.length > 0
-        });
-
         return wordAnalysis;
       } catch (error) {
-        console.error('🔍 [DEBUG] useSavedAnalysisByWord - Fetch failed', error);
         return null;
       }
     },
@@ -227,7 +207,6 @@ export function useInvalidateSavedAnalysis() {
   const queryClient = useQueryClient();
 
   return () => {
-    console.log('🔍 [DEBUG] useInvalidateSavedAnalysis - Invalidating cache');
     queryClient.invalidateQueries({ queryKey: savedAnalysisKeys.all });
   };
 }

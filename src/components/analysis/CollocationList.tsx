@@ -89,7 +89,7 @@ export function CollocationList({
                 onClick={(e) => {
                   e.stopPropagation();
                   // TODO: Implement text-to-speech for collocation phrase
-                  console.log('Play pronunciation for:', collocation.phrase);
+                  
                 }}
               >
                 <Volume2 className="h-3 w-3" />
@@ -120,7 +120,7 @@ export function CollocationList({
             size="sm"
             onClick={() => {
               // TODO: Implement show all functionality
-              console.log('Show all collocations');
+              
             }}
           >
             Hiển thị thêm {collocations.length - maxItems} collocations

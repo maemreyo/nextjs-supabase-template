@@ -84,7 +84,7 @@ export function ExportSessionDialog({
       
       onOpenChange(false);
     } catch (error) {
-      console.error('Failed to export session:', error);
+      
       setError('Không thể xuất session. Vui lòng thử lại.');
     }
   };

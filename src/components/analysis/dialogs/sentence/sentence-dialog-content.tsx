@@ -61,12 +61,7 @@ export const SentenceDialogContent: React.FC<SentenceDialogContentProps> = ({
         rewriteSuggestions: fullAnalysisData.sentence_rewrite_suggestions || [],
       };
       
-      console.log('🔍 [DEBUG] SentenceDialogContent - Merged analysis data', {
-        hasSummaryData: !!analysis,
-        hasFullData: !!fullAnalysisData,
-        hasKeyComponents: fullSentenceAnalysis.keyComponents.length > 0,
-        hasRewriteSuggestions: fullSentenceAnalysis.rewriteSuggestions.length > 0,
-      });
+      
       
       return fullSentenceAnalysis;
     }
@@ -90,7 +85,6 @@ export const SentenceDialogContent: React.FC<SentenceDialogContentProps> = ({
         }
       }
     } catch (error) {
-      console.error('Error managing loading state in SentenceDialogContent:', error);
       setIsFetchingFullData(false);
     }
   }, [isLoading, mergedAnalysis, actions]);
@@ -98,7 +92,6 @@ export const SentenceDialogContent: React.FC<SentenceDialogContentProps> = ({
   // Handle error state
   useEffect(() => {
     if (isError && error) {
-      console.error('🔍 [DEBUG] SentenceDialogContent - Error fetching full analysis data:', error);
       setFetchError(error instanceof Error ? error.message : 'Failed to fetch full analysis data');
       setIsFetchingFullData(false);
       // Don't clear loading - we still have summary data to show
@@ -128,7 +121,6 @@ export const SentenceDialogContent: React.FC<SentenceDialogContentProps> = ({
       setCopiedSection(section);
       setTimeout(() => setCopiedSection(null), 2000);
     } catch (error) {
-      console.error('Failed to copy:', error);
     }
   }, []);
 

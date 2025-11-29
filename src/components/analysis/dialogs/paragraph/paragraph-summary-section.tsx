@@ -39,7 +39,6 @@ export const ParagraphSummarySection: React.FC<ParagraphSummarySectionProps> = (
       // Reset copied state after 2 seconds
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error('Failed to copy text:', error);
     }
   }, [onCopy]);
 

@@ -42,7 +42,6 @@ export const WordDefinitionAndContextMeaningList: React.FC<WordDefinitionAndCont
       // Reset copied state after 2 seconds
       setTimeout(() => setCopiedSection(null), 2000);
     } catch (error) {
-      console.error('Failed to copy:', error);
     }
   }, [onCopy]);
 

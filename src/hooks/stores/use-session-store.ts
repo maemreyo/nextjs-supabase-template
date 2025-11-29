@@ -483,7 +483,6 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
   },
 
   loadSession: async (id) => {
-    console.warn('⚠️ [DEPRECATED] loadSession() is deprecated. Use useSessionData() instead which uses parallel detail/analyses APIs.');
     set({ isLoading: true, error: null });
     
     try {
@@ -696,7 +695,6 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
   },
 
   loadSessionAnalyses: async (sessionId) => {
-    console.warn('⚠️ [DEPRECATED] loadSessionAnalyses() is deprecated. Use useSessionData() instead which uses parallel detail/analyses APIs.');
     set({ isLoading: true, error: null });
     
     try {

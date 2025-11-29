@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { Database } from '@/lib/database.types';
+import { apiLogger } from '@/services/logger';
 
 interface ListAnalysesRequest {
   type?: 'word' | 'sentence' | 'paragraph' | 'all';
@@ -28,10 +29,18 @@ interface ListAnalysesResponse {
 
 // GET /api/analyses/list - List analyses with filters and pagination
 export async function GET(request: NextRequest) {
+  apiLogger.start('Handling GET /api/analyses/list', {
+    timestamp: new Date().toISOString()
+  })
+  
   try {
     // Get user ID from authentication
     const authHeader = request.headers.get('authorization');
     if (!authHeader) {
+      apiLogger.warn('Authorization header required', {
+        error: 'Missing authorization header'
+      })
+      
       return NextResponse.json(
         { error: 'Authorization header required' },
         { status: 401 }
@@ -44,6 +53,10 @@ export async function GET(request: NextRequest) {
     const { data: { user }, error } = await supabase.auth.getUser(token);
     
     if (error || !user) {
+      apiLogger.warn('Invalid or expired token', {
+        error: error?.message || 'Authentication failed'
+      })
+      
       return NextResponse.json(
         { error: 'Invalid or expired token' },
         { status: 401 }
@@ -62,6 +75,11 @@ export async function GET(request: NextRequest) {
 
     // Validate type parameter
     if (!['word', 'sentence', 'paragraph', 'all'].includes(type)) {
+      apiLogger.warn('Invalid type parameter', {
+        type,
+        userId: user.id
+      })
+      
       return NextResponse.json(
         { error: 'Type must be word, sentence, paragraph, or all' },
         { status: 400 }
@@ -277,14 +295,25 @@ export async function GET(request: NextRequest) {
       }
     };
 
+    apiLogger.success('Analyses list retrieved successfully', {
+      userId: user.id,
+      type,
+      count: paginatedAnalyses.length,
+      total: totalCount
+    })
+
     return NextResponse.json(response);
 
   } catch (error) {
-    console.error('Error in analyses list GET:', error);
+    apiLogger.error('Error in list analyses API', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    })
+
     return NextResponse.json(
-      { 
+      {
         error: error instanceof Error ? error.message : 'Internal server error',
-        success: false 
+        success: false
       },
       { status: 500 }
     );

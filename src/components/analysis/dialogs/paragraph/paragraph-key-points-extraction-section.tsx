@@ -53,7 +53,6 @@ export const ParagraphKeyPointsExtractionSection: React.FC<ParagraphKeyPointsExt
         // Reset copied state after 2 seconds
         setTimeout(() => setCopied(false), 2000);
       } catch (error) {
-        console.error('Failed to copy keywords:', error);
       }
     }
   }, [keywords, onCopy]);

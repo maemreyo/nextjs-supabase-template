@@ -36,7 +36,6 @@ export const useDialogActions = (type: AnalysisType, analysis: AnalysisItem): Us
       setError(prev => ({ ...prev, [loadingKey]: null }));
       setError(prev => ({ ...prev, export: errorMessage }));
       
-      console.error('Export error:', err);
     }
   }, [analysis, type, actions]);
   
@@ -66,7 +65,6 @@ export const useDialogActions = (type: AnalysisType, analysis: AnalysisItem): Us
       const errorMessage = `Share failed: ${err instanceof Error ? err.message : 'Unknown error'}`;
       setError(prev => ({ ...prev, share: errorMessage }));
       
-      console.error('Share error:', err);
     }
   }, [analysis, type]);
   
@@ -86,7 +84,6 @@ export const useDialogActions = (type: AnalysisType, analysis: AnalysisItem): Us
       const errorMessage = `Print failed: ${err instanceof Error ? err.message : 'Unknown error'}`;
       setError(prev => ({ ...prev, print: errorMessage }));
       
-      console.error('Print error:', err);
     }
   }, [analysis, type]);
   
@@ -103,7 +100,6 @@ export const useDialogActions = (type: AnalysisType, analysis: AnalysisItem): Us
       const errorMessage = `Copy failed: ${err instanceof Error ? err.message : 'Unknown error'}`;
       setError(prev => ({ ...prev, copy: errorMessage }));
       
-      console.error('Copy error:', err);
     }
   }, [analysis, type]);
   
@@ -127,7 +123,6 @@ export const useDialogActions = (type: AnalysisType, analysis: AnalysisItem): Us
       const errorMessage = `Pronunciation failed: ${err instanceof Error ? err.message : 'Unknown error'}`;
       setError(prev => ({ ...prev, pronounce: errorMessage }));
       
-      console.error('Pronunciation error:', err);
     }
   }, []);
   
@@ -521,7 +516,6 @@ const downloadFile = async (data: any, format: ExportFormat, analysis: AnalysisI
  */
 const showSuccessMessage = (message: string): void => {
   // This could integrate with a toast/notification system
-  console.log('Success:', message);
   
   // For now, just use alert
   // In a real app, this would use a proper notification system

@@ -1,9 +1,15 @@
 import { withAuth, createSuccessResponse, createErrorResponse } from '@/lib/api-client';
 import { Database } from '@/lib/database.types';
+import { apiLogger } from '@/services/logger';
 
 // GET /api/sessions/search - Search sessions with advanced filters and faceting
 export const GET = withAuth(
   async (request, { user, supabase }) => {
+    apiLogger.start('Handling GET /api/sessions/search', {
+      userId: user.id,
+      timestamp: new Date().toISOString()
+    })
+    
     try {
 
       // Parse query parameters
@@ -11,6 +17,11 @@ export const GET = withAuth(
       const searchQuery = searchParams.get('query') || '';
       
       if (!searchQuery.trim()) {
+        apiLogger.warn('Search query is required', {
+          userId: user.id,
+          searchQuery
+        })
+        
         return createErrorResponse('Search query is required', 400);
       }
 
@@ -33,18 +44,38 @@ export const GET = withAuth(
 
       // Validate parameters
       if (!['word', 'sentence', 'paragraph', 'mixed', 'all'].includes(type)) {
+        apiLogger.warn('Invalid type filter', {
+          userId: user.id,
+          type
+        })
+        
         return createErrorResponse('Invalid type filter', 400);
       }
 
       if (!['active', 'archived', 'deleted', 'all'].includes(status)) {
+        apiLogger.warn('Invalid status filter', {
+          userId: user.id,
+          status
+        })
+        
         return createErrorResponse('Invalid status filter', 400);
       }
 
       if (!['title', 'created_at', 'updated_at', 'last_accessed_at', 'total_analyses'].includes(sortField)) {
+        apiLogger.warn('Invalid sort field', {
+          userId: user.id,
+          sortField
+        })
+        
         return createErrorResponse('Invalid sort field', 400);
       }
 
       if (!['asc', 'desc'].includes(sortDirection)) {
+        apiLogger.warn('Invalid sort direction', {
+          userId: user.id,
+          sortDirection
+        })
+        
         return createErrorResponse('Invalid sort direction', 400);
       }
 
@@ -118,7 +149,11 @@ export const GET = withAuth(
       .range(offset, offset + perPage - 1);
 
       if (sessionsError) {
-        console.error('Error searching sessions:', sessionsError);
+        apiLogger.error('Failed to search sessions', {
+          userId: user.id,
+          error: sessionsError.message
+        })
+
         return createErrorResponse('Failed to search sessions', 500);
       }
 
@@ -156,6 +191,12 @@ export const GET = withAuth(
       };
     }
 
+      apiLogger.success('Sessions search completed successfully', {
+        userId: user.id,
+        count: sessions?.length || 0,
+        total: totalSessions
+      })
+
       return createSuccessResponse({
         sessions: sessions || [],
         pagination: {
@@ -168,7 +209,12 @@ export const GET = withAuth(
       });
 
     } catch (error) {
-      console.error('Error in sessions search GET:', error);
+      apiLogger.error('Error in sessions search API', {
+        userId: user?.id,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      })
+
       return createErrorResponse(
         error instanceof Error ? error.message : 'Internal server error',
         500

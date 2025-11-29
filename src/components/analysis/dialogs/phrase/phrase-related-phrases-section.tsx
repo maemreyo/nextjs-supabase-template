@@ -115,7 +115,6 @@ export const PhraseRelatedPhrasesSection: React.FC<PhraseRelatedPhrasesSectionPr
       // Reset copied state after 2 seconds
       setTimeout(() => setCopiedSection(null), 2000);
     } catch (error) {
-      console.error('Failed to copy:', error);
     }
   };
 
@@ -275,7 +274,6 @@ export const PhraseRelatedPhrasesSection: React.FC<PhraseRelatedPhrasesSectionPr
                     className="h-6 px-2 text-xs"
                     onClick={() => {
                       // This would typically show more synonyms
-                      console.log('Show more synonyms');
                     }}
                   >
                     +{normalizedSynonyms.length - maxItems!} nữa
@@ -339,7 +337,6 @@ export const PhraseRelatedPhrasesSection: React.FC<PhraseRelatedPhrasesSectionPr
                     className="h-6 px-2 text-xs"
                     onClick={() => {
                       // This would typically show more antonyms
-                      console.log('Show more antonyms');
                     }}
                   >
                     +{normalizedAntonyms.length - maxItems!} nữa
@@ -403,7 +400,6 @@ export const PhraseRelatedPhrasesSection: React.FC<PhraseRelatedPhrasesSectionPr
                     className="h-6 px-2 text-xs"
                     onClick={() => {
                       // This would typically show more variations
-                      console.log('Show more variations');
                     }}
                   >
                     +{normalizedVariations.length - maxItems!} nữa
@@ -467,7 +463,6 @@ export const PhraseRelatedPhrasesSection: React.FC<PhraseRelatedPhrasesSectionPr
                     className="h-6 px-2 text-xs"
                     onClick={() => {
                       // This would typically show more collocations
-                      console.log('Show more collocations');
                     }}
                   >
                     +{normalizedCollocations.length - maxItems!} nữa

@@ -148,6 +148,13 @@ export function useTipTapAutoSave({
         error: err.message,
       }));
       
+      clientLogger.warn('AutoSave failed, attempting retry', {
+        sessionId,
+        failureCount: 1,
+        willRetry: true,
+        nextRetryIn: '5 seconds'
+      });
+      
       onError?.(err);
       
       toast.error('Lưu thất bại', {

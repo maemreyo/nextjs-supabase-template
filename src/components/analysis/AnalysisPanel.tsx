@@ -19,6 +19,7 @@ import { useState } from 'react';
 import { useSessionStore } from '@/hooks/stores/use-session-store';
 import { useVocabularyStore } from '@/hooks/stores/use-vocabulary-store';
 import { DialogRootRenderer } from './dialogs';
+import { clientLogger } from '@/services/logger';
 
 interface AnalysisPanelProps {
   analysisPanelOpen: boolean;
@@ -35,12 +36,6 @@ export function AnalysisPanel({
   analysisType,
   selectedText
 }: AnalysisPanelProps) {
-  console.log('🔍 [DEBUG] AnalysisPanel - Component started', {
-    analysisPanelOpen,
-    hasAnalysisResult: !!analysisResult,
-    analysisType,
-    selectedText
-  });
   const [addToVocabularyDialogOpen, setAddToVocabularyDialogOpen] = useState(false);
   const [vocabularyData, setVocabularyData] = useState({
     word: '',
@@ -69,18 +64,21 @@ export function AnalysisPanel({
 
   // Handle add to vocabulary
   const handleAddToVocabulary = async () => {
+    clientLogger.info('AnalysisPanel', { type: 'add_to_vocabulary', word: vocabularyData.word });
+    
     try {
       await createWord({
         ...vocabularyData,
         source_type: 'analysis' as const,
         source_reference: ''
       });
+      clientLogger.info('AnalysisPanel', { type: 'vocabulary_added_successfully', word: vocabularyData.word });
       setAddToVocabularyDialogOpen(false);
       setVocabularyData({ word: '', definition_en: '', definition_vi: '', difficulty_level: 1 });
       // Show success message - using a simple alert for now, could be replaced with a toast notification
       alert('Từ đã được thêm vào vocabulary thành công!');
     } catch (error) {
-      console.error('Failed to add to vocabulary:', error);
+      clientLogger.error('AnalysisPanel', { type: 'vocabulary_add_failed', word: vocabularyData.word, error: error instanceof Error ? error.message : 'Unknown error' });
       alert('Không thể thêm từ vào vocabulary. Vui lòng thử lại.');
     }
   };
@@ -90,7 +88,10 @@ export function AnalysisPanel({
     const word = getWordForVocabulary() || '';
     const definition = getDefinitionForVocabulary() || '';
     
+    clientLogger.info('AnalysisPanel', { type: 'vocabulary_dialog_opened', word, hasDefinition: !!definition });
+    
     if (!word.trim()) {
+      clientLogger.warn('AnalysisPanel', { type: 'vocabulary_dialog_no_word', analysisType });
       alert('Không tìm thấy từ để thêm vào vocabulary. Vui lòng phân tích một từ.');
       return;
     }
@@ -105,14 +106,8 @@ export function AnalysisPanel({
   };
 
   if (!analysisPanelOpen || !analysisResult) {
-    console.log('🔍 [DEBUG] AnalysisPanel - Early return', {
-      analysisPanelOpen,
-      hasAnalysisResult: !!analysisResult
-    });
     return null;
   }
-
-  console.log('🔍 [DEBUG] AnalysisPanel - About to render panel content');
   
   return (
     <>
@@ -178,12 +173,6 @@ export function AnalysisPanel({
                 {(() => {
                   const sentenceAnalysis = analysisResult as SentenceAnalysis;
                   // Log để debug khi semantics undefined
-                  if (!sentenceAnalysis.semantics) {
-                    console.warn('DEBUG: semantics is undefined in SentenceAnalysis:', sentenceAnalysis);
-                  }
-                  if (!sentenceAnalysis.translation) {
-                    console.warn('DEBUG: translation is undefined in SentenceAnalysis:', sentenceAnalysis);
-                  }
                   return null;
                 })()}
                 <div>
@@ -298,7 +287,6 @@ export function AnalysisPanel({
     </>
   );
   
-  console.log('🔍 [DEBUG] AnalysisPanel - Component finished');
 }
 
 export default AnalysisPanel;

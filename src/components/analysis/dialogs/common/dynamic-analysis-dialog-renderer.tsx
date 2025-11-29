@@ -57,15 +57,12 @@ export const DynamicAnalysisDialog: React.FC<DynamicAnalysisDialogProps> = ({
           {...commonDialogProps}
           analysis={data as WordAnalysis | null}
           onPronounce={(word: string) => {
-            console.log('Pronounce word:', word);
             // Implement pronunciation logic
           }}
           onAddToVocabulary={(wordAnalysis: WordAnalysis) => {
-            console.log('Add to vocabulary:', wordAnalysis);
             // Implement add to vocabulary logic
           }}
           onExport={(analysis: WordAnalysis, format: ExportFormat) => {
-            console.log('Export word analysis:', analysis, format);
             // Implement export logic
           }}
         />
@@ -77,15 +74,12 @@ export const DynamicAnalysisDialog: React.FC<DynamicAnalysisDialogProps> = ({
           {...commonDialogProps}
           analysis={data as PhraseAnalysis}
           onPronounce={(phrase: string) => {
-            console.log('Pronounce phrase:', phrase);
             // Implement pronunciation logic
           }}
           onAddToVocabulary={(phraseAnalysis: PhraseAnalysis) => {
-            console.log('Add to vocabulary:', phraseAnalysis);
             // Implement add to vocabulary logic
           }}
           onExport={(analysis: PhraseAnalysis, format: ExportFormat) => {
-            console.log('Export phrase analysis:', analysis, format);
             // Implement export logic
           }}
         />
@@ -97,15 +91,12 @@ export const DynamicAnalysisDialog: React.FC<DynamicAnalysisDialogProps> = ({
           {...commonDialogProps}
           analysis={data as SentenceAnalysis | null}
           onPronounce={(sentence: string) => {
-            console.log('Pronounce sentence:', sentence);
             // Implement pronunciation logic
           }}
           onAddToVocabulary={(sentenceAnalysis: SentenceAnalysis) => {
-            console.log('Add to vocabulary:', sentenceAnalysis);
             // Implement add to vocabulary logic
           }}
           onExport={(analysis: SentenceAnalysis, format: ExportFormat) => {
-            console.log('Export sentence analysis:', analysis, format);
             // Implement export logic
           }}
         />
@@ -117,22 +108,18 @@ export const DynamicAnalysisDialog: React.FC<DynamicAnalysisDialogProps> = ({
           {...commonDialogProps}
           analysis={data as ParagraphAnalysis | null}
           onPronounce={(paragraph: string) => {
-            console.log('Pronounce paragraph:', paragraph);
             // Implement pronunciation logic
           }}
           onAddToVocabulary={(paragraphAnalysis: ParagraphAnalysis) => {
-            console.log('Add to vocabulary:', paragraphAnalysis);
             // Implement add to vocabulary logic
           }}
           onExport={(analysis: ParagraphAnalysis, format: ExportFormat) => {
-            console.log('Export paragraph analysis:', analysis, format);
             // Implement export logic
           }}
         />
       );
 
     default:
-      console.warn('Unknown dialog type:', type);
       return null;
   }
 };

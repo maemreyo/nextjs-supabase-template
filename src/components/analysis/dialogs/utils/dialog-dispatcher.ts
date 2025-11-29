@@ -151,7 +151,6 @@ export class DialogDispatcher {
    * Handle fallback behavior when dialog system is disabled
    */
   static handleFallback(action: string, analysis: AnalysisItem, originalHandler?: Function) {
-    console.warn(`Dialog system disabled, falling back for action: ${action}`);
     
     // Try to call original handler if provided
     if (originalHandler && typeof originalHandler === 'function') {
@@ -162,22 +161,16 @@ export class DialogDispatcher {
     // Default fallback behaviors
     switch (action) {
       case 'view':
-        console.log('View details fallback:', analysis);
         break;
       case 'edit':
-        console.log('Edit fallback:', analysis);
         break;
       case 'export':
-        console.log('Export fallback:', analysis);
         break;
       case 'vocabulary':
-        console.log('Add to vocabulary fallback:', analysis);
         break;
       case 'practice':
-        console.log('Practice fallback:', analysis);
         break;
       default:
-        console.log('Unknown action fallback:', action, analysis);
     }
   }
 }
@@ -193,7 +186,6 @@ export const useDialogDispatcher = () => {
       try {
         DialogDispatcher.openViewDetails(analysis, options);
       } catch (error) {
-        console.error('Failed to open view details dialog:', error);
         DialogDispatcher.handleFallback('view', analysis, fallbackHandler);
       }
     } else {
@@ -206,7 +198,6 @@ export const useDialogDispatcher = () => {
       try {
         DialogDispatcher.openEditDialog(analysis, options);
       } catch (error) {
-        console.error('Failed to open edit dialog:', error);
         DialogDispatcher.handleFallback('edit', analysis, fallbackHandler);
       }
     } else {
@@ -219,7 +210,6 @@ export const useDialogDispatcher = () => {
       try {
         DialogDispatcher.openExportDialog(analysis, format);
       } catch (error) {
-        console.error('Failed to open export dialog:', error);
         DialogDispatcher.handleFallback('export', analysis, fallbackHandler);
       }
     } else {
@@ -232,7 +222,6 @@ export const useDialogDispatcher = () => {
       try {
         DialogDispatcher.addToVocabulary(analysis);
       } catch (error) {
-        console.error('Failed to add to vocabulary:', error);
         DialogDispatcher.handleFallback('vocabulary', analysis, fallbackHandler);
       }
     } else {
@@ -245,7 +234,6 @@ export const useDialogDispatcher = () => {
       try {
         DialogDispatcher.openPracticeDialog(analysis);
       } catch (error) {
-        console.error('Failed to open practice dialog:', error);
         DialogDispatcher.handleFallback('practice', analysis, fallbackHandler);
       }
     } else {

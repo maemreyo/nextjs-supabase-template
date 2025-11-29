@@ -9,6 +9,7 @@ import Highlight from '@tiptap/extension-highlight';
 import TextAlign from '@tiptap/extension-text-align';
 import Link from '@tiptap/extension-link';
 import { withAuth, createSuccessResponse, createErrorResponse } from '@/lib/api-client';
+import { apiLogger } from '@/services/logger';
 
 interface UpdateSessionContentRequest {
   // Primary content data (TipTap JSON format)
@@ -65,7 +66,7 @@ function tiptapToHTML(data: any): string {
     
     return html;
   } catch (error) {
-    console.error('Error converting TipTap to HTML:', error);
+
     return '';
   }
 }
@@ -103,7 +104,7 @@ function tiptapToPlainText(data: any): string {
     
     return renderNode(data).trim();
   } catch (error) {
-    console.error('Error converting TipTap to plain text:', error);
+
     return '';
   }
 }
@@ -111,6 +112,14 @@ function tiptapToPlainText(data: any): string {
 // PATCH /api/sessions/[id]/content - Update session content
 export const PATCH = withAuth(
   async (request: NextRequest, { user, supabase }: { user: any; supabase: any }, { params }: { params: Promise<{ id: string }> }) => {
+    const { id: sessionId } = await params;
+    
+    apiLogger.start('Handling PATCH /api/sessions/[id]/content (refactored)', {
+      userId: user.id,
+      sessionId: sessionId,
+      timestamp: new Date().toISOString()
+    })
+    
     try {
       // Parse request body
       const body: UpdateSessionContentRequest = await request.json();
@@ -118,6 +127,11 @@ export const PATCH = withAuth(
       // Validate that at least one content format is provided
       const hasContent = body.content_data || body.content_html || body.content_plain || body.content;
       if (!hasContent) {
+        apiLogger.warn('No content provided in session update request (refactored)', {
+          userId: user.id,
+          sessionId: sessionId
+        })
+        
         return createErrorResponse('At least one content format is required', 400);
       }
 
@@ -126,9 +140,11 @@ export const PATCH = withAuth(
         return createErrorResponse('Invalid TipTap JSON structure', 400);
       }
 
-      const { id: sessionId } = await params;
-
       if (!sessionId) {
+        apiLogger.warn('Session ID is required (refactored)', {
+          userId: user.id
+        })
+        
         return createErrorResponse('Session ID is required', 400);
       }
 
@@ -176,11 +192,16 @@ export const PATCH = withAuth(
         .single();
 
       if (updateError) {
-        console.error('Error updating session content:', updateError);
+        apiLogger.error('Failed to update session content (refactored)', {
+          userId: user.id,
+          sessionId: sessionId,
+          error: updateError.message
+        })
+
         return createErrorResponse('Failed to update session content', 500);
       }
 
-      console.log(`Session content updated successfully: ${sessionId} with format: ${contentFormat}`);
+
 
       // Prepare response data
       const responseData: any = {
@@ -194,10 +215,22 @@ export const PATCH = withAuth(
       if (updatedSession.content_plain) responseData.content_plain = updatedSession.content_plain;
       if (updatedSession.content) responseData.content = updatedSession.content; // Legacy support
 
+      apiLogger.success('Session content updated successfully (refactored)', {
+        userId: user.id,
+        sessionId: sessionId,
+        contentFormat
+      })
+
       return createSuccessResponse(responseData);
 
     } catch (error) {
-      console.error('Error in session content PATCH:', error);
+      apiLogger.error('Error in session content update API (refactored)', {
+        userId: user?.id,
+        sessionId: sessionId,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      })
+
       return createErrorResponse(
         error instanceof Error ? error.message : 'Internal server error',
         500
@@ -209,10 +242,21 @@ export const PATCH = withAuth(
 // GET /api/sessions/[id]/content - Get session content
 export const GET = withAuth(
   async (request: NextRequest, { user, supabase }: { user: any; supabase: any }, { params }: { params: Promise<{ id: string }> }) => {
+    const { id: sessionId } = await params;
+    
+    apiLogger.start('Handling GET /api/sessions/[id]/content (refactored)', {
+      userId: user.id,
+      sessionId: sessionId,
+      timestamp: new Date().toISOString()
+    })
+    
     try {
-      const { id: sessionId } = await params;
 
       if (!sessionId) {
+        apiLogger.warn('Session ID is required (refactored)', {
+          userId: user.id
+        })
+        
         return createErrorResponse('Session ID is required', 400);
       }
 
@@ -225,7 +269,12 @@ export const GET = withAuth(
         .single();
 
       if (fetchError) {
-        console.error('Error fetching session content:', fetchError);
+        apiLogger.error('Session not found or access denied (refactored)', {
+          userId: user.id,
+          sessionId: sessionId,
+          error: fetchError.message
+        })
+
         return createErrorResponse('Session not found or access denied', 404);
       }
 
@@ -258,15 +307,27 @@ export const GET = withAuth(
             .eq('id', sessionId)
             .eq('user_id', user.id);
         } catch (migrationError) {
-          console.warn('Failed to migrate content formats:', migrationError);
+
           // Don't fail the request if migration fails
         }
       }
 
+      apiLogger.success('Session content retrieved successfully (refactored)', {
+        userId: user.id,
+        sessionId: sessionId,
+        contentFormat: responseData.content_format
+      })
+
       return createSuccessResponse(responseData);
 
     } catch (error) {
-      console.error('Error in session content GET:', error);
+      apiLogger.error('Error in session content get API (refactored)', {
+        userId: user?.id,
+        sessionId: sessionId,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      })
+
       return createErrorResponse(
         error instanceof Error ? error.message : 'Internal server error',
         500

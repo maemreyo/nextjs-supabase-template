@@ -1,5 +1,6 @@
 import { withAuth, createSuccessResponse, createErrorResponse } from '@/lib/api-client';
 import { Database } from '@/lib/database.types';
+import { apiLogger } from '@/services/logger';
 
 interface RenameSessionRequest {
   title: string;
@@ -19,9 +20,19 @@ interface RenameSessionResponse {
 // PUT /api/sessions/[id]/rename - Rename a session
 export const PUT = withAuth(
   async (request, { user, supabase, params }) => {
+    apiLogger.start('Handling PUT /api/sessions/[id]/rename', {
+      userId: user.id,
+      sessionId: params?.id,
+      timestamp: new Date().toISOString()
+    })
+    
     const sessionId = params?.id;
 
     if (!sessionId) {
+      apiLogger.warn('Session ID is required', {
+        error: 'Missing session ID'
+      })
+      
       return createErrorResponse('Session ID is required', 400);
     }
 
@@ -35,6 +46,12 @@ export const PUT = withAuth(
 
     // Validate title length
     if (body.title.length > 200) {
+      apiLogger.warn('Title must be 200 characters or less', {
+        userId: user.id,
+        sessionId: params?.id,
+        titleLength: body.title.length
+      })
+      
       return createErrorResponse('Title must be 200 characters or less', 400);
     }
 
@@ -52,12 +69,25 @@ export const PUT = withAuth(
       .single();
 
     if (fetchError || !currentSession) {
+      apiLogger.warn('Session not found or access denied', {
+        userId: user.id,
+        sessionId: params?.id,
+        error: fetchError?.message || 'Session not found'
+      })
+      
       return createErrorResponse('Session not found or access denied', 404);
     }
 
     // Check if title is actually different
     if (currentSession.title === body.title &&
         (currentSession.description || null) === (body.description || null)) {
+      apiLogger.warn('No changes detected in session rename', {
+        userId: user.id,
+        sessionId: params?.id,
+        currentTitle: currentSession.title,
+        newTitle: body.title
+      })
+      
       return createErrorResponse('No changes detected', 400);
     }
 
@@ -77,7 +107,12 @@ export const PUT = withAuth(
       .single();
 
     if (updateError || !updatedSession) {
-      console.error('Error renaming session:', updateError);
+      apiLogger.error('Failed to rename session', {
+        userId: user.id,
+        sessionId: params?.id,
+        error: updateError.message
+      })
+
       return createErrorResponse('Failed to rename session', 500);
     }
 
@@ -86,6 +121,13 @@ export const PUT = withAuth(
       previousTitle: currentSession.title,
       previousDescription: currentSession.description || undefined,
     };
+
+    apiLogger.success('Session renamed successfully', {
+      userId: user.id,
+      sessionId: params?.id,
+      previousTitle: currentSession.title,
+      newTitle: updatedSession.title
+    })
 
     return createSuccessResponse(responseData);
   }

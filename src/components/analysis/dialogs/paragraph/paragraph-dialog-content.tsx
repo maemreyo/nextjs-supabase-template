@@ -96,12 +96,7 @@ export const ParagraphDialogContent: React.FC<ParagraphDialogContentProps> = ({
         constructiveFeedback: fullAnalysisData.paragraph_constructive_feedback || [],
       };
       
-      console.log('🔍 [DEBUG] ParagraphDialogContent - Merged analysis data', {
-        hasSummaryData: !!analysis,
-        hasFullData: !!fullAnalysisData,
-        hasStructureBreakdown: fullParagraphAnalysis.structureBreakdown.length > 0,
-        hasConstructiveFeedback: fullParagraphAnalysis.constructiveFeedback.length > 0,
-      });
+      
       
       return fullParagraphAnalysis;
     }
@@ -125,7 +120,6 @@ export const ParagraphDialogContent: React.FC<ParagraphDialogContentProps> = ({
         }
       }
     } catch (error) {
-      console.error('Error managing loading state in ParagraphDialogContent:', error);
       setIsFetchingFullData(false);
     }
   }, [isLoading, mergedAnalysis, actions]);
@@ -133,7 +127,6 @@ export const ParagraphDialogContent: React.FC<ParagraphDialogContentProps> = ({
   // Handle error state
   useEffect(() => {
     if (isError && error) {
-      console.error('🔍 [DEBUG] ParagraphDialogContent - Error fetching full analysis data:', error);
       setFetchError(error instanceof Error ? error.message : 'Failed to fetch full analysis data');
       setIsFetchingFullData(false);
       // Don't clear loading - we still have summary data to show
@@ -164,7 +157,6 @@ export const ParagraphDialogContent: React.FC<ParagraphDialogContentProps> = ({
       setCopiedSection(section);
       setTimeout(() => setCopiedSection(null), 2000);
     } catch (error) {
-      console.error('Failed to copy:', error);
     }
   }, []);
 

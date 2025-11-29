@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { toast } from 'sonner';
-import { AnalysisItem, AnalysisType } from '../../../types/analysis-types';
+import { AnalysisItem, AnalysisType, isWordAnalysis, isPhraseAnalysis, isSentenceAnalysis, isParagraphAnalysis } from '../../../types/analysis-types';
 import { ExportFormat } from '../../types/dialog-types';
 
 interface UseAnalysisActionsProps {
@@ -185,14 +185,15 @@ export const useAnalysisActions = ({
         }
         
         if (paragraphAnalysis.sentimentLabel) {
-          paragraphContent += `SENTIMENT:\n${paragraphAnalysis.sentimentLabel}\n`;
-          if (paragraphAnalysis.sentimentIntensity) {
-            paragraphContent += `Intensity: ${paragraphAnalysis.sentimentIntensity}\n`;
-          }
-          if (paragraphAnalysis.sentimentJustification) {
-            paragraphContent += `Justification: ${paragraphAnalysis.sentimentJustification}\n`;
-          }
-          paragraphContent += '\n';
+          paragraphContent += `SENTIMENT:\n${paragraphAnalysis.sentimentLabel}\n\n`;
+        }
+        
+        if (paragraphAnalysis.sentimentIntensity) {
+          paragraphContent += `Intensity: ${paragraphAnalysis.sentimentIntensity}\n\n`;
+        }
+        
+        if (paragraphAnalysis.sentimentJustification) {
+          paragraphContent += `Justification: ${paragraphAnalysis.sentimentJustification}\n\n`;
         }
         
         if (paragraphAnalysis.keywords && paragraphAnalysis.keywords.length > 0) {
@@ -208,22 +209,6 @@ export const useAnalysisActions = ({
         
       default:
         return `ANALYSIS REPORT\n================\n\nGenerated: ${timestamp}\n\n--- End of Report ---`;
-    }
-  }, []);
-
-  // Get the primary text field based on analysis type
-  const getPrimaryText = useCallback((analysisData: AnalysisItem): string => {
-    switch (analysisData.analysisType) {
-      case 'word':
-        return analysisData.word;
-      case 'phrase':
-        return analysisData.phrase;
-      case 'sentence':
-        return analysisData.sentence;
-      case 'paragraph':
-        return analysisData.paragraph;
-      default:
-        return '';
     }
   }, []);
 
@@ -255,7 +240,6 @@ export const useAnalysisActions = ({
       
       toast.success('Đã sao chép thành công');
     } catch (error) {
-      console.error('Copy error:', error);
       toast.error('Không thể sao chép. Vui lòng thử lại.');
     } finally {
       setActionLoading('copy', false);
@@ -276,7 +260,16 @@ export const useAnalysisActions = ({
         const printWindow = window.open('', '_blank');
         
         if (printWindow) {
-          const primaryText = getPrimaryText(analysis);
+          let primaryText = '';
+          if (isWordAnalysis(analysis)) {
+            primaryText = analysis.word;
+          } else if (isPhraseAnalysis(analysis)) {
+            primaryText = analysis.phrase;
+          } else if (isSentenceAnalysis(analysis)) {
+            primaryText = analysis.sentence;
+          } else if (isParagraphAnalysis(analysis)) {
+            primaryText = analysis.paragraph;
+          }
           const title = `${dialogType.charAt(0).toUpperCase() + dialogType.slice(1)} Analysis: ${
             dialogType === 'word' ? primaryText :
             dialogType === 'sentence' ? primaryText.substring(0, 30) + '...' :
@@ -309,12 +302,11 @@ export const useAnalysisActions = ({
       
       toast.success('Đã gửi đến máy in');
     } catch (error) {
-      console.error('Print error:', error);
       toast.error('Không thể in. Vui lòng thử lại.');
     } finally {
       setActionLoading('print', false);
     }
-  }, [setActionLoading, onPrint, analysis, formatAnalysisAsText, getPrimaryText, dialogType]);
+  }, [setActionLoading, onPrint, analysis, formatAnalysisAsText, dialogType]);
 
   // Handle share action
   const handleShare = useCallback(async () => {
@@ -326,7 +318,16 @@ export const useAnalysisActions = ({
         await onShare(analysis);
       } else {
         // Default share implementation
-        const primaryText = getPrimaryText(analysis);
+        let primaryText = '';
+        if (isWordAnalysis(analysis)) {
+          primaryText = analysis.word;
+        } else if (isPhraseAnalysis(analysis)) {
+          primaryText = analysis.phrase;
+        } else if (isSentenceAnalysis(analysis)) {
+          primaryText = analysis.sentence;
+        } else if (isParagraphAnalysis(analysis)) {
+          primaryText = analysis.paragraph;
+        }
         let shareText = '';
         
         switch (analysis.analysisType) {
@@ -346,6 +347,8 @@ export const useAnalysisActions = ({
             const paragraphAnalysis = analysis;
             shareText = `Paragraph: "${paragraphAnalysis.paragraph.substring(0, 100)}..."\nMain Topic: ${paragraphAnalysis.mainTopic || 'N/A'}\nSentiment: ${paragraphAnalysis.sentimentLabel || 'N/A'}`;
             break;
+          default:
+            shareText = primaryText;
         }
         
         const shareUrl = window.location.href;
@@ -374,13 +377,14 @@ export const useAnalysisActions = ({
           toast.success('Đã sao chép link chia sẻ vào clipboard');
         }
       }
+      
+      toast.success('Đã chia sẻ thành công');
     } catch (error) {
-      console.error('Share error:', error);
       toast.error('Không thể chia sẻ. Vui lòng thử lại.');
     } finally {
       setActionLoading('share', false);
     }
-  }, [setActionLoading, onShare, analysis, getPrimaryText, dialogType]);
+  }, [setActionLoading, onShare, analysis, dialogType]);
 
   // Handle export action
   const handleExport = useCallback(async (format: ExportFormat) => {
@@ -393,7 +397,16 @@ export const useAnalysisActions = ({
       } else {
         // Default export implementation
         const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-        const primaryText = getPrimaryText(analysis);
+        let primaryText = '';
+        if (isWordAnalysis(analysis)) {
+          primaryText = analysis.word;
+        } else if (isPhraseAnalysis(analysis)) {
+          primaryText = analysis.phrase;
+        } else if (isSentenceAnalysis(analysis)) {
+          primaryText = analysis.sentence;
+        } else if (isParagraphAnalysis(analysis)) {
+          primaryText = analysis.paragraph;
+        }
         const sanitizedText = primaryText.replace(/[^a-zA-Z0-9]/g, '-');
         const filename = `${dialogType}-analysis-${sanitizedText}-${timestamp}`;
         
@@ -419,12 +432,11 @@ export const useAnalysisActions = ({
         toast.success(`Đã xuất thành công ${format.toUpperCase()}`);
       }
     } catch (error) {
-      console.error('Export error:', error);
       toast.error('Không thể xuất dữ liệu. Vui lòng thử lại.');
     } finally {
       setActionLoading('export', false);
     }
-  }, [setActionLoading, onExport, analysis, formatAnalysisAsText, getPrimaryText, dialogType, downloadFile]);
+  }, [setActionLoading, onExport, analysis, formatAnalysisAsText, dialogType, downloadFile]);
 
   return {
     onCopy: handleCopy,

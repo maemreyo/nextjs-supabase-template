@@ -110,7 +110,6 @@ export const BaseAnalysisDialog = ({
     onPrint: () => window.print(),
     onShare: () => {
       // Share functionality would be implemented by specific dialogs
-      console.log('Share action triggered');
     },
   });
   
@@ -436,7 +435,6 @@ export class DialogErrorBoundary extends React.Component<
   }
   
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Dialog Error Boundary caught an error:', error, errorInfo);
     
     this.setState(DialogErrorBoundary.getDerivedStateFromError(error));
   }

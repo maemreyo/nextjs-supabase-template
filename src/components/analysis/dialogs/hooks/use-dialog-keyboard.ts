@@ -205,7 +205,6 @@ export const useDialogKeyboard = ({
       // Copy functionality - would need access to clipboard API
       if (navigator.clipboard) {
         // This would be implemented by the specific dialog
-        console.log('Copy shortcut triggered');
       }
     },
   };
@@ -225,21 +224,18 @@ export const useGlobalDialogShortcuts = () => {
     if ((event.ctrlKey || event.metaKey) && event.key === 'd') {
       event.preventDefault();
       // This would close all open dialogs
-      console.log('Close all dialogs shortcut triggered');
     }
     
     // Ctrl/Cmd+Shift+D: Reset all dialogs
     if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === 'D') {
       event.preventDefault();
       // This would reset all dialog states
-      console.log('Reset all dialogs shortcut triggered');
     }
     
     // F11: Toggle fullscreen for current dialog
     if (event.key === 'F11') {
       event.preventDefault();
       // This would toggle fullscreen for the active dialog
-      console.log('Toggle fullscreen shortcut triggered');
     }
   }, []);
   
@@ -252,9 +248,9 @@ export const useGlobalDialogShortcuts = () => {
   }, [handleGlobalKeyDown]);
   
   return {
-    closeAll: () => console.log('Close all dialogs'),
-    resetAll: () => console.log('Reset all dialogs'),
-    toggleFullscreen: () => console.log('Toggle fullscreen'),
+    closeAll: () => {},
+    resetAll: () => {},
+    toggleFullscreen: () => {},
   };
 };
 
@@ -371,7 +367,6 @@ export const useKeyboardHelp = (showHelp: boolean = false) => {
   return {
     shortcuts: filteredShortcuts,
     showHelp: () => {
-      console.table(shortcuts);
     },
     getCategoryShortcuts: (category: string) => {
       return shortcuts.filter(shortcut => shortcut.category === category);

@@ -136,7 +136,6 @@ export const dialogUtils = {
    * Handle dialog errors
    */
   handleError: (error: DialogError, context: string): void => {
-    console.error(`Dialog error in ${context}:`, error);
     
     // Emit error event
     // Will be imported from dialog-event-bus to avoid circular dependency
@@ -158,13 +157,11 @@ export const dialogUtils = {
     
     // Validate size
     if (options.size && !['default', 'large', 'xlarge', 'xxlarge', 'fullscreen'].includes(options.size)) {
-      console.error('Invalid dialog size:', options.size);
       return false;
     }
     
     // Validate position
     if (options.position && (typeof options.position.x !== 'number' || typeof options.position.y !== 'number')) {
-      console.error('Invalid dialog position:', options.position);
       return false;
     }
     
@@ -196,12 +193,10 @@ export const dialogUtils = {
     const hasReachedLimit = openDialogs.length >= 3;
     
     if (isAlreadyOpen) {
-      console.warn(`Dialog of type ${type} is already open`);
       return false;
     }
     
     if (hasReachedLimit) {
-      console.warn('Maximum number of open dialogs reached');
       return false;
     }
     

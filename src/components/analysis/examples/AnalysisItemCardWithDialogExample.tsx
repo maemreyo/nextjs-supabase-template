@@ -20,19 +20,19 @@ export const AnalysisItemCardWithDialogExample: React.FC<{
           analysis={analysis}
           enableDialogSystem={true}
           onViewDetails={(analysis) => {
-            console.log('View details:', analysis);
+            
           }}
           onEdit={(analysis) => {
-            console.log('Edit:', analysis);
+            
           }}
           onExport={(analysis, format) => {
-            console.log('Export:', analysis, format);
+            
           }}
           onAddToVocabulary={(analysis) => {
-            console.log('Add to vocabulary:', analysis);
+            
           }}
           onPractice={(analysis) => {
-            console.log('Practice:', analysis);
+            
           }}
           ariaLabels={{
             viewDetails: `Xem chi tiết ${analysis.analysisType}`,
@@ -57,13 +57,13 @@ export const AnalysisItemCardWithDialogExample: React.FC<{
           analysis={analysis}
           enableDialogSystem={false}
           onClick={(analysis) => {
-            console.log('Legacy click:', analysis);
+            
           }}
           onAnalyze={(analysis) => {
-            console.log('Legacy analyze:', analysis);
+            
           }}
           onRemove={(analysisId, analysisType) => {
-            console.log('Legacy remove:', analysisId, analysisType);
+            
           }}
         />
       </div>
@@ -75,14 +75,14 @@ export const AnalysisItemCardWithDialogExample: React.FC<{
           analysis={analysis}
           enableDialogSystem={true}
           onViewDetails={(analysis) => {
-            console.log('Custom view details:', analysis);
+            
           }}
           // Fallback to legacy behavior
           onClick={(analysis) => {
-            console.log('Fallback click:', analysis);
+            
           }}
           onAnalyze={(analysis) => {
-            console.log('Custom analyze:', analysis);
+            
           }}
         />
       </div>
@@ -96,7 +96,7 @@ export const AnalysisItemCardWithDialogExample: React.FC<{
           loading={true}
           error="This is a sample error message"
           onViewDetails={(analysis) => {
-            console.log('View details with loading:', analysis);
+            
           }}
         />
       </div>

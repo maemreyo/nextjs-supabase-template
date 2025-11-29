@@ -1,4 +1,5 @@
 import { QueryClient } from '@tanstack/react-query'
+import { clientLogger } from '@/services/logger'
 
 /**
  * Configuration cho QueryClient với proper defaults
@@ -66,7 +67,7 @@ export function createQueryClient() {
         // Logging cho development
         onMutate: (variables) => {
           if (process.env.NODE_ENV === 'development') {
-            console.log('Mutation Started:', {
+            clientLogger.debug('Mutation Started:', {
               variables,
               timestamp: new Date().toISOString(),
             })
@@ -76,7 +77,7 @@ export function createQueryClient() {
         
         onError: (error, variables, context) => {
           if (process.env.NODE_ENV === 'development') {
-            console.error('Mutation Error:', {
+            clientLogger.error('Mutation Error:', {
               error,
               variables,
               context,
@@ -87,13 +88,19 @@ export function createQueryClient() {
         
         onSuccess: (data, variables, context) => {
           if (process.env.NODE_ENV === 'development') {
-            console.log('Mutation Success:', {
+            clientLogger.debug('Mutation Success:', {
               data,
               variables,
               context,
               timestamp: new Date().toISOString(),
             })
           }
+          clientLogger.debug('Mutation completed', {
+            operation: 'unknown',
+            variables,
+            cacheInvalidated: true,
+            timestamp: new Date().toISOString()
+          });
         },
       },
     },

@@ -12,7 +12,6 @@ export const dialogAnalytics = {
    * Track dialog open
    */
   trackDialogOpen: (type: AnalysisType, data: AnalysisItem): void => {
-    console.log(`Dialog opened: ${type}`, data);
     
     // Could send to analytics service
     if (typeof window !== 'undefined' && 'analytics' in window) {
@@ -28,7 +27,6 @@ export const dialogAnalytics = {
    * Track dialog close
    */
   trackDialogClose: (type: AnalysisType, duration: number): void => {
-    console.log(`Dialog closed: ${type}`, `Duration: ${duration}ms`);
     
     // Could send to analytics service
     if (typeof window !== 'undefined' && 'analytics' in window) {
@@ -44,7 +42,6 @@ export const dialogAnalytics = {
    * Track dialog action
    */
   trackDialogAction: (type: AnalysisType, action: string, data?: unknown): void => {
-    console.log(`Dialog action: ${type}`, action, data);
     
     // Could send to analytics service
     if (typeof window !== 'undefined' && 'analytics' in window) {
@@ -61,7 +58,6 @@ export const dialogAnalytics = {
    * Track dialog error
    */
   trackDialogError: (type: AnalysisType, error: DialogError): void => {
-    console.log(`Dialog error: ${type}`, error);
     
     // Could send to analytics service
     if (typeof window !== 'undefined' && 'analytics' in window) {

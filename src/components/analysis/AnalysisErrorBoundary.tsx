@@ -4,6 +4,7 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { clientLogger } from '@/services/logger';
 
 interface Props {
   children: ReactNode;
@@ -23,19 +24,16 @@ export class AnalysisErrorBoundary extends Component<Props, State> {
   }
 
   static getDerivedStateFromError(error: Error): State {
-    console.error('🔍 [DEBUG] AnalysisErrorBoundary - getDerivedStateFromError:', error);
+    clientLogger.error('AnalysisErrorBoundary', { type: 'error_caught', error: error.message, stack: error.stack });
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('🔍 [DEBUG] AnalysisErrorBoundary - componentDidCatch:', { error, errorInfo });
-    
-    // Log detailed error information
-    console.error('🔍 [DEBUG] AnalysisErrorBoundary - Error details:', {
-      message: error.message,
+    clientLogger.error('AnalysisErrorBoundary', {
+      type: 'component_did_catch',
+      error: error.message,
       stack: error.stack,
-      componentStack: errorInfo.componentStack,
-      errorBoundary: 'AnalysisErrorBoundary'
+      componentStack: errorInfo.componentStack
     });
 
     this.setState({
@@ -45,16 +43,13 @@ export class AnalysisErrorBoundary extends Component<Props, State> {
   }
 
   handleReset = () => {
-    console.log('🔍 [DEBUG] AnalysisErrorBoundary - Resetting error boundary');
+    clientLogger.info('AnalysisErrorBoundary', { type: 'error_boundary_reset' });
     this.setState({ hasError: false, error: undefined, errorInfo: undefined });
   };
 
   render() {
     if (this.state.hasError) {
-      console.log('🔍 [DEBUG] AnalysisErrorBoundary - Rendering error UI', {
-        hasError: this.state.hasError,
-        errorMessage: this.state.error?.message
-      });
+      
 
       if (this.props.fallback) {
         return this.props.fallback;

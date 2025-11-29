@@ -34,6 +34,7 @@ import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis, PhraseAnalysis 
 import { isDirectStructure } from '@/components/analysis/types/analysis-types';
 import { createBreadcrumbItems } from '@/lib/navigation';
 import { Breadcrumb, ResponsiveBreadcrumb, MobileBreadcrumb } from '@/components/ui/breadcrumb';
+import { analysisLogger } from '@/services/logger';
 
 /**
  * Trang cải tiến cho AI Semantic Analysis Editor
@@ -149,32 +150,18 @@ function ImprovedAnalysisPageContent() {
     // Use helper functions for structure detection
     const isDirect = isDirectStructure(analysisItem);
     
-    console.log('🔍 [DEBUG] handleAnalysisClick - Called with:', {
-      analysisItem,
-      structureType: isDirect ? 'direct' : 'unknown',
-      analysisType: analysisItem?.analysisType,
-      // Log structure validation
-      hasValidStructure: isDirect,
-      // Log available data fields for debugging
-      availableFields: {
-        // Direct structure fields
-        word: !!analysisItem?.word,
-        phrase: !!analysisItem?.phrase,
-        sentence: !!analysisItem?.sentence,
-        paragraph: !!analysisItem?.paragraph,
-      }
-    });
+    
     
     // ✅ FIXED: Added comprehensive null/undefined checks
     if (!analysisItem) {
-      console.error('🔍 [DEBUG] handleAnalysisClick - analysisItem is null or undefined');
+      
       return;
     }
     
     // ✅ FIXED: Use analysisType from analysisItem - primary data structure
     if (isDirect && analysisItem.analysisType) {
       const analysisType = analysisItem.analysisType;
-      console.log(`🔍 [DEBUG] handleAnalysisClick - Processing ${analysisType} with direct data structure`);
+      
       
       // Create proper analysis item for dialog dispatcher based on type
       let dialogItem: any;
@@ -209,7 +196,7 @@ function ImprovedAnalysisPageContent() {
           break;
           
         default:
-          console.warn('🔍 [DEBUG] handleAnalysisClick - Unknown analysis type:', analysisType);
+          
           return;
       }
       
@@ -219,8 +206,8 @@ function ImprovedAnalysisPageContent() {
     }
     
     // Invalid data structure - neither direct nor legacy format
-    console.warn('🔍 [DEBUG] handleAnalysisClick - Invalid data structure:', analysisItem);
-    console.log('🔍 [DEBUG] handleAnalysisClick - Expected direct structure (word/phrase/sentence/paragraph)');
+    
+    analysisLogger.debug('handleAnalysisClick - Expected direct structure (word/phrase/sentence/paragraph)');
     // Optional: Show toast notification to user
     return;
   };
@@ -238,7 +225,7 @@ function ImprovedAnalysisPageContent() {
   // Handle word removal from session
   const handleWordRemove = (wordId: string) => {
     // Handle word removal from session
-    console.log('Word removed:', wordId);
+    
   };
 
   // Handle overlay visibility change from BubbleMenu
@@ -300,7 +287,7 @@ function ImprovedAnalysisPageContent() {
             onAnalyze={handleAnalyze}
             onAnalysisComplete={(result) => {
               // Note: This will be handled by the hook
-              console.log('Analysis complete:', result);
+              
             }}
             isAnalyzing={isAnalyzing}
             className="h-full"

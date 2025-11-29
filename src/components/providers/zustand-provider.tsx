@@ -21,16 +21,11 @@ interface ZustandProviderProps {
  * - Sidebar responsive behavior
  */
 export function ZustandProvider({ children }: ZustandProviderProps) {
-  console.log('🔍 [DEBUG] ZustandProvider rendering')
-  
   // Auth hooks - these are now stable with our fixes
-  console.log('🔍 [DEBUG] ZustandProvider calling useAuthInit()')
   useAuthInit()
-  console.log('🔍 [DEBUG] ZustandProvider calling useAuthSessionMonitor()')
   useAuthSessionMonitor()
   
   // UI hooks
-  console.log('🔍 [DEBUG] ZustandProvider calling UI hooks')
   useSystemTheme()
   useResponsiveDetection()
   useNotificationManager()
@@ -41,7 +36,6 @@ export function ZustandProvider({ children }: ZustandProviderProps) {
   // Note: Theme sync removed to prevent loop
   // Components now use next-themes directly
   
-  console.log('🔍 [DEBUG] ZustandProvider rendering children')
   return <>{children}</>
 }
 

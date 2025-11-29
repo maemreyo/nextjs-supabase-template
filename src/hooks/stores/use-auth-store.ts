@@ -209,6 +209,10 @@ export function useAuthSessionMonitor() {
             try {
                 authLogger.start('Periodic session refresh')
                 await useAuthStore.getState().refreshSession()
+                authLogger.info('Token refresh completed', {
+                    userId: user?.id,
+                    newTokenExpiry: new Date(Date.now() + 5*60*1000)
+                })
             } catch (error) {
                 authLogger.error('Session refresh failed', { error: error instanceof Error ? error.message : 'Unknown error' })
                 useAuthStore.getState().clearAuth()
@@ -225,9 +229,16 @@ export function useAuthSessionMonitor() {
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible' && isAuthenticated) {
                 authLogger.start('Session refresh on visibility change')
-                useAuthStore.getState().refreshSession().catch((error) => {
-                    authLogger.error('Visibility change session refresh failed', { error: error instanceof Error ? error.message : 'Unknown error' })
-                })
+                useAuthStore.getState().refreshSession()
+                    .then(() => {
+                        authLogger.info('Token refresh completed', {
+                            userId: user?.id,
+                            newTokenExpiry: new Date(Date.now() + 5*60*1000)
+                        })
+                    })
+                    .catch((error) => {
+                        authLogger.error('Visibility change session refresh failed', { error: error instanceof Error ? error.message : 'Unknown error' })
+                    })
             }
         }
 

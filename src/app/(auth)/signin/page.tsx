@@ -14,6 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useAuth } from '@/hooks/stores/use-auth-store'
 import { EyeIcon, EyeOffIcon, Loader2Icon } from 'lucide-react'
 import { signInSchema, type SignInFormValues } from '@/lib/validations/auth'
+import { authLogger } from '@/services/logger'
 
 function SignInPageContent() {
   const router = useRouter()
@@ -37,7 +38,7 @@ function SignInPageContent() {
       await signIn(data.email, data.password)
       router.push(redirectTo)
     } catch (err) {
-      console.error('Sign in error:', err)
+      authLogger.error('Sign in error:', err)
     }
   }
 

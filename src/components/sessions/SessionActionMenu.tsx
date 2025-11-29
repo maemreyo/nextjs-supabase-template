@@ -115,7 +115,6 @@ export function SessionActionMenu({
       onEdit?.(session);
       success('Đổi tên session thành công');
     } catch (err) {
-      console.error('Failed to rename session:', err);
       error('Không thể đổi tên session. Vui lòng thử lại.', {
         duration: 5000,
         action: {
@@ -165,7 +164,6 @@ export function SessionActionMenu({
       onDuplicate?.(result.data.duplicatedSession);
       success('Nhân bản session thành công');
     } catch (err) {
-      console.error('Failed to duplicate session:', err);
       error('Không thể nhân bản session. Vui lòng thử lại.', {
         duration: 5000,
         action: {
@@ -214,7 +212,6 @@ export function SessionActionMenu({
       onExport?.(session);
       return result.data;
     } catch (error) {
-      console.error('Failed to export session:', error);
       throw error;
     } finally {
       setActionLoading(null);
@@ -248,7 +245,6 @@ export function SessionActionMenu({
       onDelete?.(session);
       success('Xóa session thành công');
     } catch (err) {
-      console.error('Failed to delete session:', err);
       error('Không thể xóa session. Vui lòng thử lại.', {
         duration: 5000,
         action: {

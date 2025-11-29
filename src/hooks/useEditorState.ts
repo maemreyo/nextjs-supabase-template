@@ -187,7 +187,6 @@ export function useEditorState({
       });
       return newSession;
     } catch (error) {
-      console.error('Failed to create session:', error);
       throw error;
     }
   }, [createSession]);

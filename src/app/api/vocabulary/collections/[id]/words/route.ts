@@ -63,7 +63,7 @@ export async function GET(
     });
 
   } catch (error) {
-    console.error('Error in vocabulary collection words GET:', error);
+
     return NextResponse.json(
       { 
         error: error instanceof Error ? error.message : 'Internal server error',
@@ -159,7 +159,7 @@ export async function POST(
     });
 
   } catch (error) {
-    console.error('Error in vocabulary collection words POST:', error);
+
     return NextResponse.json(
       { 
         error: error instanceof Error ? error.message : 'Internal server error',
@@ -244,7 +244,7 @@ export async function DELETE(
     });
 
   } catch (error) {
-    console.error('Error in vocabulary collection words DELETE:', error);
+
     return NextResponse.json(
       { 
         error: error instanceof Error ? error.message : 'Internal server error',

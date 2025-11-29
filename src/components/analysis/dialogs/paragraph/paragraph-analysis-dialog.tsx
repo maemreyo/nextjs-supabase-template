@@ -52,7 +52,6 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
       setPronunciationError(null);
       onPronounce?.(paragraph);
     } catch (error) {
-      console.error('Pronunciation error:', error);
       setPronunciationError('Không thể phát âm đoạn văn này. Vui lòng thử lại.');
     }
   }, [onPronounce]);
@@ -70,7 +69,6 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
         await exportParagraphAnalysis(analysisData, format);
       }
     } catch (error) {
-      console.error('Export error:', error);
       actions.setError('Không thể xuất dữ liệu. Vui lòng thử lại.');
     } finally {
       setActionLoading('export', false);
@@ -186,7 +184,6 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
         await shareParagraphAnalysis(analysisData);
       }
     } catch (error) {
-      console.error('Share error:', error);
       actions.setError('Không thể chia sẻ. Vui lòng thử lại.');
     } finally {
       setActionLoading('share', false);
@@ -209,12 +206,10 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
       } catch (error) {
         // If user cancels or Web Share API fails, fallback to clipboard
         await navigator.clipboard.writeText(`${shareText}\n\nRead more: ${shareUrl}`);
-        console.log('Đã sao chép link chia sẻ vào clipboard');
       }
     } else {
       // Fallback to clipboard
       await navigator.clipboard.writeText(`${shareText}\n\nRead more: ${shareUrl}`);
-      console.log('Đã sao chép link chia sẻ vào clipboard');
     }
   }, []);
 
@@ -231,7 +226,6 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
         printParagraphAnalysis(analysisData);
       }
     } catch (error) {
-      console.error('Print error:', error);
       actions.setError('Không thể in. Vui lòng thử lại.');
     } finally {
       setActionLoading('print', false);
@@ -276,7 +270,6 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
       setIsAnimating(true);
       setTimeout(() => setIsAnimating(false), 1000);
     } catch (error) {
-      console.error('Add to vocabulary error:', error);
       actions.setError('Không thể thêm vào từ vựng. Vui lòng thử lại.');
     } finally {
       actions.setLoading(false);
@@ -295,7 +288,6 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
       await onDelete?.(analysisId);
       onOpenChange(false);
     } catch (error) {
-      console.error('Delete error:', error);
       actions.setError('Không thể xóa. Vui lòng thử lại.');
     } finally {
       actions.setLoading(false);
@@ -328,7 +320,6 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
       setActionLoading('copy', true);
       await navigator.clipboard.writeText(text);
     } catch (error) {
-      console.error('Copy error:', error);
       actions.setError('Không thể sao chép. Vui lòng thử lại.');
     } finally {
       setActionLoading('copy', false);

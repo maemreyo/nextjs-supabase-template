@@ -7,6 +7,7 @@ import Color from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
 import TextAlign from '@tiptap/extension-text-align';
 import Link from '@tiptap/extension-link';
+import { apiLogger } from '@/services/logger';
 
 interface UpdateSessionContentRequest {
   // Primary content data (TipTap JSON format)
@@ -73,7 +74,10 @@ function htmlToPlainText(html: string): string {
 function tiptapToHTML(data: any): string {
   if (!isValidTipTapJSON(data)) return '';
   
-  console.log('🔍 [DEBUG] tiptapToHTML - Input data:', JSON.stringify(data, null, 2));
+  apiLogger.debug('Converting TipTap JSON to HTML', {
+    dataType: typeof data,
+    hasContent: !!data?.content
+  });
   
   try {
     // Use TipTap's official HTML generator with the same extensions as the editor
@@ -89,10 +93,14 @@ function tiptapToHTML(data: any): string {
       Link.configure({ openOnClick: false }),
     ]);
     
-    console.log('🔍 [DEBUG] tiptapToHTML - Output HTML:', html);
+
     return html;
   } catch (error) {
-    console.error('Error converting TipTap to HTML:', error);
+    apiLogger.error('Failed to convert TipTap JSON to HTML', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
+
     return '';
   }
 }
@@ -130,7 +138,11 @@ function tiptapToPlainText(data: any): string {
     
     return renderNode(data).trim();
   } catch (error) {
-    console.error('Error converting TipTap to plain text:', error);
+    apiLogger.error('Failed to convert TipTap JSON to plain text', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
+
     return '';
   }
 }
@@ -138,20 +150,43 @@ function tiptapToPlainText(data: any): string {
 // PATCH /api/sessions/[id]/content - Update session content
 export const PATCH = withAuth(
   async (request, { user, supabase, params }) => {
+    apiLogger.start('Handling PATCH /api/sessions/[id]/content', {
+      userId: user.id,
+      sessionId: params.id,
+      timestamp: new Date().toISOString()
+    })
+    
     // Parse request body
     const body: UpdateSessionContentRequest = await request.json();
-    console.log('🔍 [DEBUG] API content route - Request body keys:', Object.keys(body));
-    console.log('🔍 [DEBUG] API content route - Content format:', body.content_format);
+    
+    apiLogger.info('Session content update request', {
+      userId: user.id,
+      sessionId: params.id,
+      hasContentData: !!body.content_data,
+      hasContentHTML: !!body.content_html,
+      hasContentPlain: !!body.content_plain,
+      contentFormat: body.content_format
+    });
+
 
     // Validate that at least one content format is provided
     const hasContent = body.content_data || body.content_html || body.content_plain || body.content;
     if (!hasContent) {
-      console.error('🔍 [DEBUG] API content route - No content provided');
+      apiLogger.warn('No content provided in session update request', {
+        userId: user.id,
+        sessionId: params.id
+      });
+      
       return createErrorResponse('At least one content format is required', 400);
     }
 
     // Validate TipTap JSON if provided
     if (body.content_data && !isValidTipTapJSON(body.content_data)) {
+      apiLogger.warn('Invalid TipTap JSON structure provided', {
+        userId: user.id,
+        sessionId: params.id
+      });
+      
       return createErrorResponse('Invalid TipTap JSON structure', 400);
     }
 
@@ -205,11 +240,16 @@ export const PATCH = withAuth(
       .single();
 
     if (updateError) {
-      console.error('Error updating session content:', updateError);
+      apiLogger.error('Failed to update session content', {
+        userId: user.id,
+        sessionId: params.id,
+        error: updateError.message
+      });
+
       return createErrorResponse('Failed to update session content', 500);
     }
 
-    console.log(`Session content updated successfully: ${sessionId} with format: ${contentFormat}`);
+
 
     // Prepare response data
     const responseData: any = {
@@ -223,6 +263,12 @@ export const PATCH = withAuth(
     if (updatedSession.content_plain) responseData.content_plain = updatedSession.content_plain;
     if (updatedSession.content) responseData.content = updatedSession.content; // Legacy support
 
+    apiLogger.success('Session content updated successfully', {
+      userId: user.id,
+      sessionId: params.id,
+      contentFormat
+    });
+    
     return createSuccessResponse(responseData);
   }
 );
@@ -231,6 +277,12 @@ export const PATCH = withAuth(
 export const GET = withAuth(
   async (request, { user, supabase, params }) => {
     const { id: sessionId } = params;
+    
+    apiLogger.start('Handling GET /api/sessions/[id]/content', {
+      userId: user.id,
+      sessionId,
+      timestamp: new Date().toISOString()
+    })
 
     if (!sessionId) {
       return createErrorResponse('Session ID is required', 400);
@@ -245,7 +297,12 @@ export const GET = withAuth(
       .single();
 
     if (fetchError) {
-      console.error('Error fetching session content:', fetchError);
+      apiLogger.error('Session not found or access denied', {
+        userId: user.id,
+        sessionId,
+        error: fetchError.message
+      });
+
       return createErrorResponse('Session not found or access denied', 404);
     }
 
@@ -278,11 +335,22 @@ export const GET = withAuth(
           .eq('id', sessionId)
           .eq('user_id', user.id);
       } catch (migrationError) {
-        console.warn('Failed to migrate content formats:', migrationError);
+        apiLogger.error('Failed to migrate legacy content format', {
+          userId: user.id,
+          sessionId,
+          error: migrationError instanceof Error ? migrationError.message : 'Unknown error'
+        });
+        
         // Don't fail the request if migration fails
       }
     }
 
+    apiLogger.success('Session content retrieved successfully', {
+      userId: user.id,
+      sessionId,
+      contentFormat: responseData.content_format
+    });
+    
     return createSuccessResponse(responseData);
   }
 );

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAIServiceServer } from '@/lib/ai/ai-service-server'
 import { AnalyzeWordRequest } from '@/lib/ai/types'
 import { createClient } from '@/lib/supabase/server'
+import { apiLogger } from '@/services/logger'
 
 // Security imports
 import { validateInput, validateWord, securityCheck } from '@/lib/security/input-validator'
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error } = await supabase.auth.getUser(token)
     
     if (error || !user) {
-      console.log('DEBUG: API Route - Invalid token:', error?.message);
+
       return NextResponse.json(
         { error: 'Invalid or expired token' },
         { status: 401 }
@@ -170,7 +171,9 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     timer.end()
-    console.error('Error in analyze-word API:', error)
+    apiLogger.error('Error in analyze-word API', {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    })
     
     return NextResponse.json(
       {
@@ -201,7 +204,7 @@ export async function GET(request: NextRequest) {
     const { data: { user }, error } = await supabase.auth.getUser(token)
     
     if (error || !user) {
-      console.log('DEBUG: API Route GET - Invalid token:', error?.message);
+
       return NextResponse.json(
         { error: 'Invalid or expired token' },
         { status: 401 }
@@ -222,7 +225,9 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error in analyze-word GET API:', error)
+    apiLogger.error('Error in analyze-word GET API', {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    })
     
     return NextResponse.json(
       { 

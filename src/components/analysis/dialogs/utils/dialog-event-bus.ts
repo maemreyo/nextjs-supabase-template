@@ -45,7 +45,6 @@ class DialogEventBus {
         try {
           callback(event);
         } catch (error) {
-          console.error(`Error in dialog event listener for ${eventType}:`, error);
         }
       });
     }

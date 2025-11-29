@@ -74,7 +74,7 @@ export const GET = withAuth(
       });
 
     } catch (error) {
-      console.error('Error in vocabulary words GET:', error);
+
       return createErrorResponse(
         error instanceof Error ? error.message : 'Internal server error',
         500
@@ -135,7 +135,7 @@ export const POST = withAuth(
       return createSuccessResponse(word);
 
     } catch (error) {
-      console.error('Error in vocabulary words POST:', error);
+
       return createErrorResponse(
         error instanceof Error ? error.message : 'Internal server error',
         500

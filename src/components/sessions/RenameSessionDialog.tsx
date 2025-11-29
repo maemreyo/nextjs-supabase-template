@@ -75,7 +75,7 @@ export function RenameSessionDialog({
       await onRename(session.id, title.trim(), description.trim() || undefined);
       onOpenChange(false);
     } catch (error) {
-      console.error('Failed to rename session:', error);
+      
       setTitleError('Không thể đổi tên session. Vui lòng thử lại.');
     }
   };

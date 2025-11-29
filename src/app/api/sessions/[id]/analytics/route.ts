@@ -1,5 +1,6 @@
 import { withAuth, createSuccessResponse, createErrorResponse } from '@/lib/api-client';
 import { Database } from '@/lib/database.types';
+import { apiLogger } from '@/services/logger';
 
 interface SessionAnalyticsResponse {
   success: boolean;
@@ -39,9 +40,19 @@ interface SessionAnalyticsResponse {
 // GET /api/sessions/[id]/analytics - Get analytics for a specific session
 export const GET = withAuth(
   async (request, { user, supabase, params }) => {
+    apiLogger.start('Handling GET /api/sessions/[id]/analytics', {
+      userId: user.id,
+      sessionId: params?.id,
+      timestamp: new Date().toISOString()
+    })
+    
     const sessionId = params?.id;
 
     if (!sessionId) {
+      apiLogger.warn('Session ID is required', {
+        error: 'Missing session ID'
+      })
+      
       return createErrorResponse('Session ID is required', 400);
     }
 
@@ -54,6 +65,12 @@ export const GET = withAuth(
       .single();
 
     if (sessionError || !session) {
+      apiLogger.warn('Session not found or access denied', {
+        userId: user.id,
+        sessionId,
+        error: sessionError?.message || 'Session not found'
+      })
+      
       return createErrorResponse('Session not found or access denied', 404);
     }
 
@@ -71,7 +88,12 @@ export const GET = withAuth(
       .order('created_at', { ascending: false });
 
     if (analysesError) {
-      console.error('Error fetching session analyses:', analysesError);
+      apiLogger.error('Failed to fetch session analyses', {
+        userId: user.id,
+        sessionId,
+        error: analysesError.message
+      })
+
       return createErrorResponse('Failed to fetch session analyses', 500);
     }
 
@@ -152,6 +174,13 @@ export const GET = withAuth(
         recentActivity
       }
     };
+
+    apiLogger.success('Session analytics retrieved successfully', {
+      userId: user.id,
+      sessionId,
+      totalAnalyses,
+      sessionDuration: Math.round(sessionDurationHours * 100) / 100
+    })
 
     return createSuccessResponse(response.data);
   }

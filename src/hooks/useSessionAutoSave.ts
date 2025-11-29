@@ -47,7 +47,6 @@ export function useSessionAutoSave(options: UseSessionAutoSaveOptions = {}) {
 
   const { saveAnalysis, isLoading, isSuccess, error, data } = useAnalysisSave({
     onSuccess: (data) => {
-      console.log('🔍 [DEBUG] useSessionAutoSave - Analysis saved successfully', data);
       setAutoSaveStatus(prev => ({
         ...prev,
         isAutoSaving: false,
@@ -58,7 +57,6 @@ export function useSessionAutoSave(options: UseSessionAutoSaveOptions = {}) {
       onSuccess?.(data);
     },
     onError: (error) => {
-      console.error('🔍 [DEBUG] useSessionAutoSave - Failed to save analysis', error);
       setAutoSaveStatus(prev => ({
         ...prev,
         isAutoSaving: false,
@@ -96,8 +94,6 @@ export function useSessionAutoSave(options: UseSessionAutoSaveOptions = {}) {
     const sessionId = params.sessionId || currentSession?.id;
     
     if (!sessionId) {
-      console.log('🔍 [DEBUG] useSessionAutoSave - No session ID available, skipping force save');
-      return;
     }
 
     // Clear any pending debounce
@@ -106,12 +102,6 @@ export function useSessionAutoSave(options: UseSessionAutoSaveOptions = {}) {
       debounceTimeoutRef.current = null;
     }
 
-    console.log('🔍 [DEBUG] useSessionAutoSave - Executing force save', {
-      type: params.type,
-      textLength: params.text.length,
-      sessionId,
-      autoSaveEnabled: enabled,
-    });
 
     saveAnalysis({
       type: params.type,
@@ -126,7 +116,6 @@ export function useSessionAutoSave(options: UseSessionAutoSaveOptions = {}) {
   // Auto-save function with debounce
   const autoSave = useCallback((params: AutoSaveParams) => {
     if (!enabled) {
-      console.log('🔍 [DEBUG] useSessionAutoSave - Auto-save disabled');
       return;
     }
 
@@ -134,8 +123,6 @@ export function useSessionAutoSave(options: UseSessionAutoSaveOptions = {}) {
     const sessionId = params.sessionId || currentSession?.id;
     
     if (!sessionId) {
-      console.log('🔍 [DEBUG] useSessionAutoSave - No session ID available, skipping auto-save');
-      return;
     }
 
     // Store the latest params
@@ -152,11 +139,6 @@ export function useSessionAutoSave(options: UseSessionAutoSaveOptions = {}) {
     // Set new timeout
     debounceTimeoutRef.current = setTimeout(() => {
       if (pendingSaveRef.current) {
-        console.log('🔍 [DEBUG] useSessionAutoSave - Executing auto-save', {
-          type: pendingSaveRef.current.type,
-          textLength: pendingSaveRef.current.text.length,
-          sessionId: pendingSaveRef.current.sessionId,
-        });
 
         saveAnalysis({
           type: pendingSaveRef.current.type,
@@ -182,10 +164,6 @@ export function useSessionAutoSave(options: UseSessionAutoSaveOptions = {}) {
       return;
     }
 
-    console.log('🔍 [DEBUG] useSessionAutoSave - Performing periodic save', {
-      sessionId: currentSession.id,
-      hasPendingSave: !!pendingSaveRef.current,
-    });
 
     // Update session's last_accessed_at to mark activity
     try {
@@ -203,7 +181,6 @@ export function useSessionAutoSave(options: UseSessionAutoSaveOptions = {}) {
         saveCount: prev.saveCount + 1,
       }));
     } catch (error) {
-      console.error('🔍 [DEBUG] useSessionAutoSave - Periodic save failed', error);
       onError?.(error instanceof Error ? error : new Error('Periodic save failed'));
     }
   }, [enabled, currentSession?.id, updateSession, onError]);
@@ -228,7 +205,6 @@ export function useSessionAutoSave(options: UseSessionAutoSaveOptions = {}) {
 
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChangesRef.current || pendingSaveRef.current) {
-        console.log('🔍 [DEBUG] useSessionAutoSave - Before unload detected, showing warning only');
         
         // Show browser warning without auto-saving
         const message = 'Bạn có các thay đổi chưa được lưu. Mọi thay đổi sẽ bị mất nếu bạn rời đi. Bạn có chắc muốn rời đi?';
@@ -282,7 +258,7 @@ export function useSessionAutoSave(options: UseSessionAutoSaveOptions = {}) {
       debounceTimeoutRef.current = null;
     }
     pendingSaveRef.current = null;
-    console.log('🔍 [DEBUG] useSessionAutoSave - Pending save cancelled');
+
   }, []);
 
   // Cleanup on unmount
@@ -337,8 +313,6 @@ export function useSessionAutoUpdate() {
   // Auto-update session with debounce
   const autoUpdate = useCallback((updates: Record<string, any>) => {
     if (!currentSession) {
-      console.log('🔍 [DEBUG] useSessionAutoUpdate - No current session, skipping update');
-      return;
     }
 
     // Store the latest updates
@@ -355,16 +329,13 @@ export function useSessionAutoUpdate() {
     // Set new timeout
     updateTimeoutRef.current = setTimeout(async () => {
       if (Object.keys(pendingUpdatesRef.current).length > 0) {
-        console.log('🔍 [DEBUG] useSessionAutoUpdate - Executing auto-update', {
-          sessionId: currentSession.id,
-          updates: pendingUpdatesRef.current,
-        });
 
         try {
-          await updateSession(currentSession.id, pendingUpdatesRef.current);
-          pendingUpdatesRef.current = {};
+          if (currentSession) {
+            await updateSession(currentSession.id, pendingUpdatesRef.current);
+            pendingUpdatesRef.current = {};
+          }
         } catch (error) {
-          console.error('🔍 [DEBUG] useSessionAutoUpdate - Failed to update session', error);
         }
       }
     }, 1000); // 1 second debounce
@@ -373,7 +344,6 @@ export function useSessionAutoUpdate() {
   // Force update immediately
   const forceUpdate = useCallback(async (updates: Record<string, any>) => {
     if (!currentSession) {
-      console.log('🔍 [DEBUG] useSessionAutoUpdate - No current session, skipping force update');
       return;
     }
 
@@ -383,16 +353,11 @@ export function useSessionAutoUpdate() {
       updateTimeoutRef.current = null;
     }
 
-    console.log('🔍 [DEBUG] useSessionAutoUpdate - Executing force update', {
-      sessionId: currentSession.id,
-      updates,
-    });
 
     try {
       await updateSession(currentSession.id, updates);
       pendingUpdatesRef.current = {};
     } catch (error) {
-      console.error('🔍 [DEBUG] useSessionAutoUpdate - Failed to force update session', error);
       throw error;
     }
   }, [currentSession, updateSession]);
@@ -404,7 +369,7 @@ export function useSessionAutoUpdate() {
       updateTimeoutRef.current = null;
     }
     pendingUpdatesRef.current = {};
-    console.log('🔍 [DEBUG] useSessionAutoUpdate - Pending update cancelled');
+
   }, []);
 
   // Cleanup on unmount

@@ -98,7 +98,6 @@ export const SentencePronunciationAudioPlayer: React.FC<SentencePronunciationAud
         setIsPlaying(false);
         setIsLoading(false);
         setError('Không thể phát âm. Vui lòng thử lại.');
-        console.error('Speech synthesis error:', event);
       };
       
       utteranceRef.current = utterance;
@@ -113,7 +112,6 @@ export const SentencePronunciationAudioPlayer: React.FC<SentencePronunciationAud
     } catch (error) {
       setIsLoading(false);
       setError('Không thể phát âm. Vui lòng thử lại.');
-      console.error('Pronunciation error:', error);
     }
   }, [sentence, rate, pitch, volume, accent, onPronounce, isSupported]);
 

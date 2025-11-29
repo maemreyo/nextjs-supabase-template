@@ -69,7 +69,6 @@ export const SentenceDialogActions: React.FC<SentenceDialogActionsProps> = ({
       // Reset copied state after 2 seconds
       setTimeout(() => setCopiedText(null), 2000);
     } catch (error) {
-      console.error('Failed to copy text:', error);
     }
   }, [onCopy]);
 

@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { 
-  DataTable, 
-  TableSearch, 
-  TableFilters, 
+import {
+  DataTable,
+  TableSearch,
+  TableFilters,
   TableActions,
   TablePagination,
   ColumnVisibility,
@@ -19,6 +19,7 @@ import { queryKeys } from "@/lib/query-keys"
 import { flexRender } from "@tanstack/react-table"
 import type { ColumnDef } from "@tanstack/react-table"
 import type { Database } from "@/lib/database.types"
+import { interactionLogger, clientLogger } from '@/services/logger'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 
@@ -108,14 +109,14 @@ export function AdvancedTableExample() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => console.log('View:', row.original)}
+          onClick={() => interactionLogger.info('View:', row.original)}
         >
           View
         </Button>
         <Button
           variant="outline"
           size="sm"
-          onClick={() => console.log('Edit:', row.original)}
+          onClick={() => interactionLogger.info('Edit:', row.original)}
         >
           Edit
         </Button>
@@ -133,9 +134,9 @@ export function AdvancedTableExample() {
     enablePagination: true,
     defaultPageSize: 10,
     onRowSelectionChange: setRowSelection,
-    onSortingChange: (sorting) => console.log('Sorting changed:', sorting),
+    onSortingChange: (sorting) => clientLogger.debug('Sorting changed:', sorting),
     onColumnFiltersChange: (filters) => setColumnFilters(filters),
-    onPaginationChange: (pagination) => console.log('Pagination changed:', pagination),
+    onPaginationChange: (pagination) => clientLogger.debug('Pagination changed:', pagination),
   })
 
   const selectedRows = table.selectedRows
@@ -190,7 +191,7 @@ export function AdvancedTableExample() {
               size="sm"
               disabled={selectedCount === 0}
               onClick={() => {
-                console.log('Delete selected:', selectedRows)
+                interactionLogger.info('Delete selected:', selectedRows)
                 // Implement bulk delete logic here
               }}
             >
@@ -244,7 +245,7 @@ export function MutationTableExample() {
       refetch()
     },
     onError: (error) => {
-      console.error('Create error:', error)
+      clientLogger.error('Create error:', error)
       setIsCreating(false)
     },
   })
@@ -255,7 +256,7 @@ export function MutationTableExample() {
       refetch()
     },
     onError: (error) => {
-      console.error('Update error:', error)
+      clientLogger.error('Update error:', error)
     },
   })
 
@@ -265,7 +266,7 @@ export function MutationTableExample() {
       refetch()
     },
     onError: (error) => {
-      console.error('Delete error:', error)
+      clientLogger.error('Delete error:', error)
     },
   })
 
@@ -401,7 +402,7 @@ export function RealTimeTableExample() {
   })
 
   React.useEffect(() => {
-    console.log('Profiles updated:', profiles?.length)
+    clientLogger.debug('Profiles updated:', profiles?.length)
   }, [profiles])
 
   const columns: ColumnDef<Profile>[] = [

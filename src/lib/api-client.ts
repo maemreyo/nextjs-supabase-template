@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import type { User } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
-import { apiLogger } from '@/services/logger';
+import { apiClientLogger } from '@/services/logger';
 
 // Server-side authentication helper
 export async function authenticateRequest(request: Request): Promise<{
@@ -11,7 +11,7 @@ export async function authenticateRequest(request: Request): Promise<{
   const authHeader = request.headers.get('authorization');
   
   if (!authHeader) {
-    apiLogger.warn('Missing authorization header in request');
+    apiClientLogger.warn('Missing authorization header in request');
     throw new Error('Authorization header required');
   }
 
@@ -26,14 +26,14 @@ export async function authenticateRequest(request: Request): Promise<{
   
   while (retryCount < maxRetries && !user) {
     try {
-      apiLogger.start('Token authentication attempt', { attempt: retryCount + 1, maxRetries });
+      apiClientLogger.start('Token authentication attempt', { attempt: retryCount + 1, maxRetries });
       const result = await supabase.auth.getUser(token);
       user = result.data.user;
       error = result.error;
       
       if (error) {
         if (retryCount < maxRetries - 1) {
-          apiLogger.warn('Authentication failed, retrying', { attempt: retryCount + 1, error: error.message });
+          apiClientLogger.warn('Authentication failed, retrying', { attempt: retryCount + 1, error: error.message });
           // Wait before retry
           await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
         }
@@ -41,7 +41,7 @@ export async function authenticateRequest(request: Request): Promise<{
     } catch (err) {
       error = err;
       if (retryCount < maxRetries - 1) {
-        apiLogger.warn('Authentication exception, retrying', { attempt: retryCount + 1, error: err instanceof Error ? err.message : 'Unknown error' });
+        apiClientLogger.warn('Authentication exception, retrying', { attempt: retryCount + 1, error: err instanceof Error ? err.message : 'Unknown error' });
         // Wait before retry
         await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
       }
@@ -50,11 +50,16 @@ export async function authenticateRequest(request: Request): Promise<{
   }
   
   if (error || !user) {
-    apiLogger.error('Authentication failed after retries', { error: error instanceof Error ? error.message : 'Unknown error', retryCount });
+    apiClientLogger.error('Authentication failed after retries', { error: error instanceof Error ? error.message : 'Unknown error', retryCount });
+    apiClientLogger.error('Authentication retry exhausted', {
+      retryCount,
+      lastError: error instanceof Error ? error.message : 'Unknown error',
+      userId: user?.id
+    });
     throw new Error('Invalid or expired token');
   }
 
-  apiLogger.success('Authentication successful', { userId: user.id });
+  apiClientLogger.success('Authentication successful', { userId: user.id });
   return { user, supabase };
 }
 
@@ -92,16 +97,16 @@ export function withAuth<T extends any[]>(
     } catch (error) {
       if (error instanceof Error) {
         if (error.message.includes('Authorization header required')) {
-          apiLogger.warn('Missing authorization header', { error: error.message });
+          apiClientLogger.warn('Missing authorization header', { error: error.message });
           return createErrorResponse(error.message, 401);
         }
         if (error.message.includes('Invalid or expired token')) {
-          apiLogger.warn('Invalid token', { error: error.message });
+          apiClientLogger.warn('Invalid token', { error: error.message });
           return createErrorResponse(error.message, 401);
         }
       }
       
-      apiLogger.error('API handler error', { error: error instanceof Error ? error.message : 'Unknown error' });
+      apiClientLogger.error('API handler error', { error: error instanceof Error ? error.message : 'Unknown error' });
       return createErrorResponse('Internal server error', 500);
     }
   };

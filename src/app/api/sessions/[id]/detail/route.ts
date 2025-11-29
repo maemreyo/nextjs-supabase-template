@@ -1,5 +1,6 @@
 import { withAuth, createSuccessResponse, createErrorResponse } from '@/lib/api-client';
 import { Database } from '@/lib/database.types';
+import { apiLogger } from '@/services/logger';
 
 interface SessionDetailResponse {
   success: boolean;
@@ -14,22 +15,22 @@ interface SessionDetailResponse {
 // GET /api/sessions/[id]/detail - Load session details without analyses (fast)
 export const GET = withAuth(
   async (request, { user, supabase, params }) => {
-    console.log('🔍 [DEBUG] API detail route - Starting request');
+
     
     try {
       // Extract session ID from params (Next.js 16 compatible)
       const sessionId = params?.id;
-      console.log('🔍 [DEBUG] API detail route - Session ID extracted:', sessionId);
+
 
       if (!sessionId) {
-        console.error('🔍 [DEBUG] API detail route - Session ID is empty or undefined');
+
         return createErrorResponse('Session ID is required', 400);
       }
 
-      console.log('🔍 [DEBUG] API detail route - Processing session ID:', sessionId);
+
   
       // Get session details including all content columns
-      console.log('🔍 [DEBUG] API detail route - Fetching session data...');
+
       const { data: session, error: sessionError } = await supabase
         .from('analysis_sessions')
         .select('*')
@@ -37,20 +38,15 @@ export const GET = withAuth(
         .eq('user_id', user.id)
         .single();
   
-      console.log('🔍 [DEBUG] API detail route - Session query result:', {
-        sessionError,
-        hasSession: !!session,
-        sessionId: session?.id,
-        userId: session?.user_id,
-        hasContent: !!session?.content,
-        hasContentHTML: !!session?.content_html,
-        hasContentData: !!session?.content_data,
-        hasContentPlain: !!session?.content_plain,
-        contentFormat: session?.content_format
-      });
+      
   
       if (sessionError || !session) {
-        console.error('🔍 [DEBUG] API detail route - Session not found or error:', { sessionError, sessionId });
+        apiLogger.warn('Session not found or access denied', {
+          userId: user.id,
+          sessionId,
+          error: sessionError?.message || 'Session not found'
+        })
+        
         return createErrorResponse('Session not found or access denied', 404);
       }
 
@@ -63,7 +59,7 @@ export const GET = withAuth(
         .single();
 
       if (settingsError && settingsError.code !== 'PGRST116') {
-        console.error('Error fetching session settings:', settingsError);
+
         // Don't fail the request if settings are not found
       }
 
@@ -87,10 +83,10 @@ export const GET = withAuth(
             tags = tagData || [];
           }
         } else if (tagRelationsError) {
-          console.error('Error fetching session tags:', tagRelationsError);
+
         }
       } catch (error) {
-        console.error('Error fetching session tags:', error);
+
         // Don't fail the request if tags are not found
       }
 
@@ -106,15 +102,24 @@ export const GET = withAuth(
         tags,
       };
 
-      console.log('🔍 [DEBUG] API detail route - Successfully processed session:', sessionId);
+
+      apiLogger.success('Session detail retrieved successfully', {
+        userId: user.id,
+        sessionId,
+        hasSettings: !!settings,
+        tagsCount: tags.length
+      })
+
       return createSuccessResponse(responseData);
       
     } catch (error) {
-      console.error('🔍 [DEBUG] API detail route - Unexpected error:', {
+      apiLogger.error('Error in session detail API', {
+        userId: user?.id,
+        sessionId: params?.id,
         error: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined,
-        sessionId: params?.id || 'unknown'
-      });
+        stack: error instanceof Error ? error.stack : undefined
+      })
+      
       return createErrorResponse('Internal server error', 500);
     }
   }

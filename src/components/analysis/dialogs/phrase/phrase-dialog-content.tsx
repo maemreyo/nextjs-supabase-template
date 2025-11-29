@@ -64,13 +64,7 @@ export const PhraseDialogContent: React.FC<PhraseDialogContentProps> = ({
         // So we can use the full data directly
       };
       
-      console.log('🔍 [DEBUG] PhraseDialogContent - Merged analysis data', {
-        hasSummaryData: !!analysis,
-        hasFullData: !!fullAnalysisData,
-        phrase: fullPhraseAnalysis.phrase,
-        hasNaturalTranslation: !!fullPhraseAnalysis.naturalTranslation,
-        hasContextualMeaning: !!fullPhraseAnalysis.contextualMeaning,
-      });
+      
       
       return fullPhraseAnalysis;
     }
@@ -94,7 +88,6 @@ export const PhraseDialogContent: React.FC<PhraseDialogContentProps> = ({
         }
       }
     } catch (error) {
-      console.error('Error managing loading state in PhraseDialogContent:', error);
       setIsFetchingFullData(false);
     }
   }, [isLoading, mergedAnalysis, actions]);
@@ -102,7 +95,6 @@ export const PhraseDialogContent: React.FC<PhraseDialogContentProps> = ({
   // Handle error state
   useEffect(() => {
     if (isError && error) {
-      console.error('🔍 [DEBUG] PhraseDialogContent - Error fetching full analysis data:', error);
       setFetchError(error instanceof Error ? error.message : 'Failed to fetch full analysis data');
       setIsFetchingFullData(false);
       // Don't clear loading - we still have summary data to show
@@ -131,7 +123,6 @@ export const PhraseDialogContent: React.FC<PhraseDialogContentProps> = ({
       setCopiedSection(section);
       setTimeout(() => setCopiedSection(null), 2000);
     } catch (error) {
-      console.error('Failed to copy:', error);
     }
   }, []);
 

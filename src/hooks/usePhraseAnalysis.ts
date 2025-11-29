@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PhraseAnalysis, AnalyzePhraseRequest, AnalysisResponse } from '@/lib/ai/types';
 import { useSupabase } from '@/components/providers/supabase-provider';
+import { clientLogger } from '@/services/logger';
 
 // Query keys cho phrase analysis
 export const phraseAnalysisKeys = {
@@ -28,12 +29,8 @@ export function usePhraseAnalysis(
     queryKey: phraseAnalysisKeys.detail(phrase, sentenceContext, paragraphContext),
     queryFn: async (): Promise<PhraseAnalysis> => {
       // DEBUG: Log để kiểm tra authentication state
-      console.log('DEBUG: usePhraseAnalysis - Starting API call for phrase:', phrase);
-      
       // Get access token for authentication
       const token = await getAccessToken();
-      console.log('DEBUG: usePhraseAnalysis - Access token exists:', !!token);
-      
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
@@ -41,9 +38,7 @@ export function usePhraseAnalysis(
       // Add authorization header if token is available
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
-        console.log('DEBUG: usePhraseAnalysis - Added Authorization header');
       } else {
-        console.log('DEBUG: usePhraseAnalysis - No access token available');
       }
       
       const response = await fetch('/api/ai/analyze-phrase', {
@@ -56,8 +51,6 @@ export function usePhraseAnalysis(
         } as AnalyzePhraseRequest),
       });
       
-      console.log('DEBUG: usePhraseAnalysis - Response status:', response.status);
-      console.log('DEBUG: usePhraseAnalysis - Response ok:', response.ok);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -92,7 +85,6 @@ export function usePhraseAnalysisMutation() {
 
   return useMutation({
     mutationFn: async (params: AnalyzePhraseRequest): Promise<PhraseAnalysis> => {
-      console.log('DEBUG: usePhraseAnalysisMutation - params received:', params);
       // Get access token for authentication
       const token = await getAccessToken();
       
@@ -131,7 +123,10 @@ export function usePhraseAnalysisMutation() {
       );
     },
     onError: (error) => {
-      console.error('Phrase analysis error:', error);
+      clientLogger.error('Phrase analysis mutation failed', {
+        error: error.message || error,
+        operation: 'phrase-analysis'
+      });
     },
   });
 }

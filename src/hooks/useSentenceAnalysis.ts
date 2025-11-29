@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { SentenceAnalysis, AnalyzeSentenceRequest, AnalysisResponse } from '@/lib/ai/types';
 import { useSupabase } from '@/components/providers/supabase-provider';
+import { clientLogger } from '@/services/logger';
 
 // Query keys cho sentence analysis
 export const sentenceAnalysisKeys = {
@@ -26,13 +27,8 @@ export function useSentenceAnalysis(
   return useQuery({
     queryKey: sentenceAnalysisKeys.detail(sentence, paragraphContext),
     queryFn: async (): Promise<SentenceAnalysis> => {
-      // DEBUG: Log để kiểm tra authentication state
-      console.log('DEBUG: useSentenceAnalysis - Starting API call for sentence:', sentence.substring(0, 50) + '...');
-      
       // Get access token for authentication
       const token = await getAccessToken();
-      console.log('DEBUG: useSentenceAnalysis - Access token exists:', !!token);
-      
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
@@ -40,9 +36,7 @@ export function useSentenceAnalysis(
       // Add authorization header if token is available
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
-        console.log('DEBUG: useSentenceAnalysis - Added Authorization header');
       } else {
-        console.log('DEBUG: useSentenceAnalysis - No access token available');
       }
       
       const response = await fetch('/api/ai/analyze-sentence', {
@@ -54,8 +48,6 @@ export function useSentenceAnalysis(
         } as AnalyzeSentenceRequest),
       });
       
-      console.log('DEBUG: useSentenceAnalysis - Response status:', response.status);
-      console.log('DEBUG: useSentenceAnalysis - Response ok:', response.ok);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -128,7 +120,10 @@ export function useSentenceAnalysisMutation() {
       );
     },
     onError: (error) => {
-      console.error('Sentence analysis error:', error);
+      clientLogger.error('Sentence analysis mutation failed', {
+        error: error.message || error,
+        operation: 'sentence-analysis'
+      });
     },
   });
 }

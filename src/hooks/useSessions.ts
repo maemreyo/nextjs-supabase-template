@@ -162,10 +162,6 @@ export function useSession(sessionId: string, options: UseSessionsOptions = {}) 
     staleTime = 5 * 60 * 1000, // 5 minutes
   } = options;
 
-  console.warn('⚠️ [DEPRECATED] useSession() is deprecated. Use useSessionData() instead which uses parallel detail/analyses APIs.');
-  
-  console.warn('⚠️ [DEPRECATED] useSession() is deprecated. Use useSessionData() instead which uses parallel detail/analyses APIs.');
-  
   const queryKey = queryKeys.api.withParams('/api/sessions/load', { sessionId });
 
   const {
@@ -179,7 +175,6 @@ export function useSession(sessionId: string, options: UseSessionsOptions = {}) 
   } = useQuery({
     queryKey,
     queryFn: async () => {
-      console.log('🔍 [DEBUG] useSession - Fetching session (deprecated)', { sessionId });
 
       try {
         // Use new API client instead of manual fetch
@@ -197,7 +192,6 @@ export function useSession(sessionId: string, options: UseSessionsOptions = {}) 
         
         return result;
       } catch (error) {
-        console.error('🔍 [DEBUG] useSession - Fetch failed', error);
         throw error instanceof Error ? error : new Error('Failed to fetch session');
       }
     },
@@ -232,7 +226,6 @@ export function useCreateSession() {
       description?: string;
       session_type: 'word' | 'sentence' | 'paragraph' | 'mixed';
     }) => {
-      console.log('🔍 [DEBUG] useCreateSession - Creating session', sessionData);
 
       try {
         // Use new API client instead of manual fetch
@@ -245,7 +238,6 @@ export function useCreateSession() {
         clientLogger.success('Session created successfully', { sessionId: result.data.id, title: result.data.title })
         return result.data;
       } catch (error) {
-        console.error('🔍 [DEBUG] useCreateSession - Create failed', error);
         throw error instanceof Error ? error : new Error('Failed to create session');
       }
     },
@@ -259,7 +251,10 @@ export function useCreateSession() {
       return newSession;
     },
     onError: (error) => {
-      console.error('🔍 [DEBUG] useCreateSession - Mutation error', error);
+      clientLogger.error('Create session mutation failed', {
+        error: error.message || error,
+        operation: 'create-session'
+      });
     },
   });
 
@@ -285,7 +280,6 @@ export function useUpdateSession() {
       id: string;
       updates: Partial<AnalysisSession>;
     }) => {
-      console.log('🔍 [DEBUG] useUpdateSession - Updating session', { id, updates });
 
       try {
         // Use new API client instead of manual fetch
@@ -295,15 +289,12 @@ export function useUpdateSession() {
           throw new Error(result.error || 'Failed to update session');
         }
 
-        console.log('🔍 [DEBUG] useUpdateSession - Update successful', result.data);
         return result.data;
       } catch (error) {
-        console.error('🔍 [DEBUG] useUpdateSession - Update failed', error);
         throw error instanceof Error ? error : new Error('Failed to update session');
       }
     },
     onSuccess: (updatedSession) => {
-      console.log('🔍 [DEBUG] useUpdateSession - Invalidating cache');
       // Invalidate sessions list cache and specific session cache
       queryClient.invalidateQueries({
         queryKey: queryKeys.api.endpoint('/api/sessions/list'),
@@ -319,7 +310,10 @@ export function useUpdateSession() {
       return updatedSession;
     },
     onError: (error) => {
-      console.error('🔍 [DEBUG] useUpdateSession - Mutation error', error);
+      clientLogger.error('Update session mutation failed', {
+        error: error.message || error,
+        operation: 'update-session'
+      });
     },
   });
 
@@ -339,7 +333,6 @@ export function useDeleteSession() {
 
   const mutation = useMutation({
     mutationFn: async (sessionId: string) => {
-      console.log('🔍 [DEBUG] useDeleteSession - Deleting session', { sessionId });
 
       try {
         // Use new API client instead of manual fetch
@@ -349,15 +342,12 @@ export function useDeleteSession() {
           throw new Error(result.error || 'Failed to delete session');
         }
 
-        console.log('🔍 [DEBUG] useDeleteSession - Delete successful', { sessionId });
         return sessionId;
       } catch (error) {
-        console.error('🔍 [DEBUG] useDeleteSession - Delete failed', error);
         throw error instanceof Error ? error : new Error('Failed to delete session');
       }
     },
     onSuccess: (deletedSessionId) => {
-      console.log('🔍 [DEBUG] useDeleteSession - Invalidating cache');
       // Invalidate sessions list cache
       queryClient.invalidateQueries({
         queryKey: queryKeys.api.endpoint('/api/sessions/list'),
@@ -375,7 +365,10 @@ export function useDeleteSession() {
       return deletedSessionId;
     },
     onError: (error) => {
-      console.error('🔍 [DEBUG] useDeleteSession - Mutation error', error);
+      clientLogger.error('Delete session mutation failed', {
+        error: error.message || error,
+        operation: 'delete-session'
+      });
     },
   });
 
