@@ -10,4 +10,5 @@ export { RenameSessionDialog } from './RenameSessionDialog';
 export { DeleteSessionDialog } from './DeleteSessionDialog';
 export { DuplicateSessionDialog } from './DuplicateSessionDialog';
 export { ExportSessionDialog } from './ExportSessionDialog';
+export { CreateSessionDialog } from './CreateSessionDialog';
 export { AutoSaveStatusIndicator } from './AutoSaveStatusIndicator';

@@ -27,6 +27,8 @@ const DynamicIslandAnalysis: React.FC<DynamicIslandAnalysisProps> = ({
   className = '',
   ...props
 }) => {
+  // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL LOGIC OR RETURNS
+  
   const hookResult = useAnalysisDynamicIsland(props);
   const {
     current,
@@ -225,134 +227,7 @@ const DynamicIslandAnalysis: React.FC<DynamicIslandAnalysisProps> = ({
     };
   }, []);
   
-  if (!props.isVisible) return null;
-  
-  // If collapsed, show collapsed indicator
-  if (isCollapsed) {
-    return (
-      <>
-        <div
-          className="fixed bottom-6 right-6 z-50 bg-black rounded-full p-3 cursor-pointer shadow-2xl hover:scale-110 transition-transform"
-          onClick={() => {
-            setIsCollapsed(false);
-            if (!props.isAnalyzing) {
-              setIsExpanded(true);
-            }
-          }}
-        >
-          <ChevronUp className="h-5 w-5 text-white" />
-        </div>
-        
-        {/* Popover for collapsed/idle state */}
-        {showPopover && (
-          <div
-            ref={popoverRef}
-            className="fixed top-20 right-6 z-60 animate-in slide-in-from-bottom-5 max-w-xs"
-          >
-            <div className="bg-black rounded-2xl p-4 shadow-2xl border border-white/10">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Lightbulb className="h-5 w-5 text-yellow-400" />
-                  <h3 className="text-white font-medium">Hướng dẫn phân tích</h3>
-                </div>
-                <button
-                  onClick={() => setShowPopover(false)}
-                  className="text-white/60 hover:text-white transition-colors"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-              
-              <p className="text-white/80 text-sm mb-4">
-                Chọn văn bản để phân tích chi tiết. Hệ thống sẽ tự động nhận diện và phân tích các từ, cụm từ, câu và đoạn văn.
-              </p>
-              
-              <div className="flex items-center justify-between">
-                <span className="text-white/60 text-xs">Tự động ẩn sau 5s</span>
-                <button
-                  onClick={() => setShowPopover(false)}
-                  className="bg-white/10 hover:bg-white/20 text-white text-sm px-3 py-1 rounded-lg transition-colors"
-                >
-                  Đã hiểu
-                </button>
-              </div>
-              
-              {/* Arrow pointing down */}
-              <div className="absolute -bottom-2 right-6 w-4 h-4 bg-black rotate-45 border-r border-b border-white/10"></div>
-            </div>
-          </div>
-        )}
-      </>
-    );
-  }
-  
-  if (!current) {
-    // Idle indicator như current component lines 595-617
-    return (
-      <>
-        <div className="fixed top-4 right-4 z-50">
-          <div
-            ref={statusBarRef}
-            className="bg-black rounded-full shadow-2xl backdrop-blur border-zinc-800/50 p-3 cursor-pointer hover:scale-110 transition-transform"
-            onClick={() => {
-              if (!props.isAnalyzing) {
-                setShowPopover(true);
-              }
-            }}
-          >
-            <div className="h-6 w-6 rounded-full bg-gradient-to-r from-gray-600 to-gray-800 animate-pulse relative flex items-center justify-center">
-              <ChevronDown className="h-3 w-3 text-white" />
-            </div>
-          </div>
-        </div>
-        
-        {/* Popover for idle state */}
-        {showPopover && (
-          <div
-            ref={popoverRef}
-            className="fixed top-20 right-6 z-60 animate-in slide-in-from-bottom-5 max-w-xs"
-          >
-            <div className="bg-black rounded-2xl p-4 shadow-2xl border border-white/10">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Lightbulb className="h-5 w-5 text-yellow-400" />
-                  <h3 className="text-white font-medium">Hướng dẫn phân tích</h3>
-                </div>
-                <button
-                  onClick={() => setShowPopover(false)}
-                  className="text-white/60 hover:text-white transition-colors"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-              
-              <p className="text-white/80 text-sm mb-4">
-                Chọn văn bản để phân tích chi tiết. Hệ thống sẽ tự động nhận diện và phân tích các từ, cụm từ, câu và đoạn văn.
-              </p>
-              
-              <div className="flex items-center justify-between">
-                <span className="text-white/60 text-xs">Tự động ẩn sau 5s</span>
-                <button
-                  onClick={() => setShowPopover(false)}
-                  className="bg-white/10 hover:bg-white/20 text-white text-sm px-3 py-1 rounded-lg transition-colors"
-                >
-                  Đã hiểu
-                </button>
-              </div>
-              
-              {/* Arrow pointing down */}
-              <div className="absolute -bottom-2 right-6 w-4 h-4 bg-black rotate-45 border-r border-b border-white/10"></div>
-            </div>
-          </div>
-        )}
-      </>
-    );
-  }
-
-  const positionClass = position === 'top' ? 'top-6' : 'bottom-6';
-  const variantClass = variantStyles[current.variant || 'default'];
-  
-  // Memoize drag calculations for performance
+  // Memoize drag calculations for performance - MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   const dragCalculations = React.useMemo(() => {
     const transform = isDragging ? `translateY(${Math.max(0, currentY - startY)}px)` : '';
     const opacity = isDragging ? Math.max(0.5, 1 - Math.abs(currentY - startY) / 100) : 1;
@@ -360,60 +235,192 @@ const DynamicIslandAnalysis: React.FC<DynamicIslandAnalysisProps> = ({
   }, [isDragging, currentY, startY]);
   
   // Check if analyzing
-  const isAnalyzing = props.isAnalyzing || current.state === 'loading';
+  const isAnalyzing = props.isAnalyzing || (current?.state === 'loading');
+  
+  const positionClass = position === 'top' ? 'top-6' : 'bottom-6';
+  const variantClass = current ? variantStyles[current.variant || 'default'] : variantStyles['default'];
 
+  // SINGLE RETURN WITH CONDITIONAL RENDERING - NO EARLY RETURNS
   return (
-    <motion.div
-      ref={islandRef}
-      className={`fixed ${positionClass} left-1/2 -translate-x-1/2 z-50 ${className}`}
-      initial={{ opacity: 0, scale: 0.8, y: position === 'top' ? -20 : 20 }}
-      animate={{ opacity: dragCalculations.opacity, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.8, y: position === 'top' ? -20 : 20 }}
-      transition={prefersReducedMotion() ? { duration: 0.1 } : { type: 'spring', stiffness: 300, damping: 25 }}
-      style={{ transform: dragCalculations.transform }}
-      role="status"
-      aria-live="polite"
-      aria-expanded={isExpanded}
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' && !isExpanded && !isCollapsed) {
-          setIsExpanded(true);
-        }
-      }}
-      onMouseDown={handleMouseDown}
-      onMouseLeave={() => {
-        if (isDragging) {
-          setIsDragging(false);
-          setCurrentY(0);
-          setStartY(0);
-        }
-      }}
-      onTouchStart={handleTouchStart}
-      onMouseEnter={() => {
-        if (props.expandOnHover && !isExpanded && !isCollapsed && !isDragging && !isAnalyzing) {
-          setIsExpanded(true);
-        }
-      }}
-    >
-      <motion.div
-        layout
-        className={`${variantClass} backdrop-blur-xl border shadow-2xl overflow-hidden ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-        animate={{
-          width: isExpanded ? '380px' : '120px',
-          height: isExpanded ? 'auto' : '37px',
-          borderRadius: isExpanded ? '24px' : '20px',
-        }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      >
-        <AnimatePresence mode="wait">
-          {!isExpanded ? (
-            <CompactView key="compact" item={current} queueLength={0} /> // queue later
+    <>
+      {/* Conditionally render based on visibility */}
+      {props.isVisible && (
+        <>
+          {/* If collapsed, show collapsed indicator */}
+          {isCollapsed ? (
+            <>
+              <div
+                className="fixed bottom-6 right-6 z-50 bg-black rounded-full p-3 cursor-pointer shadow-2xl hover:scale-110 transition-transform"
+                onClick={() => {
+                  setIsCollapsed(false);
+                  if (!props.isAnalyzing) {
+                    setIsExpanded(true);
+                  }
+                }}
+              >
+                <ChevronUp className="h-5 w-5 text-white" />
+              </div>
+              
+              {/* Popover for collapsed/idle state */}
+              {showPopover && (
+                <div
+                  ref={popoverRef}
+                  className="fixed top-20 right-6 z-60 animate-in slide-in-from-bottom-5 max-w-xs"
+                >
+                  <div className="bg-black rounded-2xl p-4 shadow-2xl border border-white/10">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <Lightbulb className="h-5 w-5 text-yellow-400" />
+                        <h3 className="text-white font-medium">Hướng dẫn phân tích</h3>
+                      </div>
+                      <button
+                        onClick={() => setShowPopover(false)}
+                        className="text-white/60 hover:text-white transition-colors"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                    
+                    <p className="text-white/80 text-sm mb-4">
+                      Chọn văn bản để phân tích chi tiết. Hệ thống sẽ tự động nhận diện và phân tích các từ, cụm từ, câu và đoạn văn.
+                    </p>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-white/60 text-xs">Tự động ẩn sau 5s</span>
+                      <button
+                        onClick={() => setShowPopover(false)}
+                        className="bg-white/10 hover:bg-white/20 text-white text-sm px-3 py-1 rounded-lg transition-colors"
+                      >
+                        Đã hiểu
+                      </button>
+                    </div>
+                    
+                    {/* Arrow pointing down */}
+                    <div className="absolute -bottom-2 right-6 w-4 h-4 bg-black rotate-45 border-r border-b border-white/10"></div>
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
-            <ExpandedView key="expanded" item={current} onDismiss={dismissCurrent} />
+            <>
+              {/* If no current analysis, show idle indicator */}
+              {!current ? (
+                <>
+                  <div className="fixed top-4 right-4 z-50">
+                    <div
+                      ref={statusBarRef}
+                      className="bg-black rounded-full shadow-2xl backdrop-blur border-zinc-800/50 p-3 cursor-pointer hover:scale-110 transition-transform"
+                      onClick={() => {
+                        if (!props.isAnalyzing) {
+                          setShowPopover(true);
+                        }
+                      }}
+                    >
+                      <div className="h-6 w-6 rounded-full bg-gradient-to-r from-gray-600 to-gray-800 animate-pulse relative flex items-center justify-center">
+                        <ChevronDown className="h-3 w-3 text-white" />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Popover for idle state */}
+                  {showPopover && (
+                    <div
+                      ref={popoverRef}
+                      className="fixed top-20 right-6 z-60 animate-in slide-in-from-bottom-5 max-w-xs"
+                    >
+                      <div className="bg-black rounded-2xl p-4 shadow-2xl border border-white/10">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <Lightbulb className="h-5 w-5 text-yellow-400" />
+                            <h3 className="text-white font-medium">Hướng dẫn phân tích</h3>
+                          </div>
+                          <button
+                            onClick={() => setShowPopover(false)}
+                            className="text-white/60 hover:text-white transition-colors"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                        
+                        <p className="text-white/80 text-sm mb-4">
+                          Chọn văn bản để phân tích chi tiết. Hệ thống sẽ tự động nhận diện và phân tích các từ, cụm từ, câu và đoạn văn.
+                        </p>
+                        
+                        <div className="flex items-center justify-between">
+                          <span className="text-white/60 text-xs">Tự động ẩn sau 5s</span>
+                          <button
+                            onClick={() => setShowPopover(false)}
+                            className="bg-white/10 hover:bg-white/20 text-white text-sm px-3 py-1 rounded-lg transition-colors"
+                          >
+                            Đã hiểu
+                          </button>
+                        </div>
+                        
+                        {/* Arrow pointing down */}
+                        <div className="absolute -bottom-2 right-6 w-4 h-4 bg-black rotate-45 border-r border-b border-white/10"></div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                /* Main dynamic island component */
+                <motion.div
+                  ref={islandRef}
+                  className={`fixed ${positionClass} left-1/2 -translate-x-1/2 z-50 ${className}`}
+                  initial={{ opacity: 0, scale: 0.8, y: position === 'top' ? -20 : 20 }}
+                  animate={{ opacity: dragCalculations.opacity, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.8, y: position === 'top' ? -20 : 20 }}
+                  transition={prefersReducedMotion() ? { duration: 0.1 } : { type: 'spring', stiffness: 300, damping: 25 }}
+                  style={{ transform: dragCalculations.transform }}
+                  role="status"
+                  aria-live="polite"
+                  aria-expanded={isExpanded}
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !isExpanded && !isCollapsed) {
+                      setIsExpanded(true);
+                    }
+                  }}
+                  onMouseDown={handleMouseDown}
+                  onMouseLeave={() => {
+                    if (isDragging) {
+                      setIsDragging(false);
+                      setCurrentY(0);
+                      setStartY(0);
+                    }
+                  }}
+                  onTouchStart={handleTouchStart}
+                  onMouseEnter={() => {
+                    if (props.expandOnHover && !isExpanded && !isCollapsed && !isDragging && !isAnalyzing) {
+                      setIsExpanded(true);
+                    }
+                  }}
+                >
+                  <motion.div
+                    layout
+                    className={`${variantClass} backdrop-blur-xl border shadow-2xl overflow-hidden ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+                    animate={{
+                      width: isExpanded ? '380px' : '120px',
+                      height: isExpanded ? 'auto' : '37px',
+                      borderRadius: isExpanded ? '24px' : '20px',
+                    }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                  >
+                    <AnimatePresence mode="wait">
+                      {!isExpanded ? (
+                        <CompactView key="compact" item={current} queueLength={0} /> // queue later
+                      ) : (
+                        <ExpandedView key="expanded" item={current} onDismiss={dismissCurrent} />
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                </motion.div>
+              )}
+            </>
           )}
-        </AnimatePresence>
-      </motion.div>
-    </motion.div>
+        </>
+      )}
+    </>
   );
 };
 

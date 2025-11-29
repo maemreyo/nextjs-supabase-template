@@ -23,6 +23,7 @@ export * from './useSentenceAnalyses';
 export * from './useSessionAutoSave';
 export * from './useSessionData';
 export * from './useSessionPageHandling';
+export * from './useSessionPageHandlers';
 export * from './useSessions';
 export * from './useTipTapAutoSave';
 export * from './useTipTapEditor';
