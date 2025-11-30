@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Save,
   FolderOpen,
@@ -17,8 +19,10 @@ import {
   Code,
   Loader2,
   MousePointer,
+  Palette,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { clientLogger } from '@/services/logger';
 import type { Editor } from '@tiptap/react';
 
 interface FormatCommands {
@@ -34,6 +38,10 @@ interface FormatCommands {
   redo: () => void;
   clearFormat: () => void;
   setHighlight: (color: string) => void;
+  setColor: (color: string) => void;
+  unsetColor: () => void;
+  setFontSize: (size: string) => void;
+  unsetFontSize: () => void;
 }
 
 interface ActiveFormats {
@@ -41,6 +49,8 @@ interface ActiveFormats {
   italic: boolean;
   underline: boolean;
   strike: boolean;
+  fontSize: string | null;
+  color: string | null;
 }
 
 interface TextSelection {
@@ -105,6 +115,182 @@ const ToolBtn = ({
   </Button>
 );
 
+// Font size constants
+const FONT_SIZES = [8, 10, 12, 14, 16, 18, 20, 24, 30, 36, 48];
+const MIN_FONT_SIZE = 8;
+const MAX_FONT_SIZE = 72;
+
+// Color presets
+const PRESET_COLORS = [
+  '#000000', '#FFFFFF', '#FF0000', '#00FF00', '#0000FF',
+  '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080'
+];
+
+// Font size dropdown component
+const FontSizeDropdown = ({
+  formatCommands,
+  activeFormats
+}: {
+  formatCommands: FormatCommands;
+  activeFormats: ActiveFormats;
+}) => {
+  const [customSize, setCustomSize] = useState('');
+
+  const handleFontSizeChange = (value: string) => {
+    const size = parseInt(value);
+    if (size >= MIN_FONT_SIZE && size <= MAX_FONT_SIZE) {
+      formatCommands.setFontSize(`${size}px`);
+      clientLogger.debug('Font size changed', { size });
+    } else {
+      clientLogger.warn('Font size out of range', { size, range: `${MIN_FONT_SIZE}-${MAX_FONT_SIZE}px` });
+    }
+  };
+
+  const handleCustomSizeChange = (value: string) => {
+    setCustomSize(value);
+    if (value) {
+      handleFontSizeChange(value);
+    }
+  };
+
+  return (
+    <Select
+      value={activeFormats.fontSize || '20px'}
+      onValueChange={handleFontSizeChange}
+    >
+      <SelectTrigger className="w-20 h-8 text-xs">
+        <SelectValue placeholder="Size" />
+      </SelectTrigger>
+      <SelectContent>
+        {FONT_SIZES.map(size => (
+          <SelectItem key={size} value={`${size}px`} className="text-xs">
+            {size}px
+          </SelectItem>
+        ))}
+        <div className="px-2 py-1 border-t">
+          <input
+            type="number"
+            min={MIN_FONT_SIZE}
+            max={MAX_FONT_SIZE}
+            placeholder="Custom"
+            value={customSize}
+            onChange={(e) => handleCustomSizeChange(e.target.value)}
+            className="w-full text-xs px-2 py-1 border rounded"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      </SelectContent>
+    </Select>
+  );
+};
+
+// Color picker component
+const ColorPickerButton = ({
+  formatCommands,
+  activeFormats
+}: {
+  formatCommands: FormatCommands;
+  activeFormats: ActiveFormats;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const isChangingRef = React.useRef(false);
+
+  const handleColorSelect = (color: string) => {
+    clientLogger.debug('ColorPickerButton: Selecting color', { color, currentOpenState: isOpen });
+    formatCommands.setColor(color);
+    clientLogger.success('ColorPickerButton: Color applied successfully', { color });
+    setIsOpen(false);
+  };
+
+  const handleResetColor = () => {
+    clientLogger.debug('ColorPickerButton: Resetting color', { currentOpenState: isOpen });
+    formatCommands.unsetColor();
+    clientLogger.success('ColorPickerButton: Color reset successfully');
+    setIsOpen(false);
+  };
+
+  const handlePopoverOpenChange = (open: boolean) => {
+    // Prevent rapid state changes that cause flicker
+    if (isChangingRef.current) {
+      clientLogger.debug('ColorPickerButton: Ignoring open change during state transition', {
+        from: isOpen,
+        to: open,
+        trigger: 'onOpenChange callback (blocked)'
+      });
+      return;
+    }
+
+    clientLogger.debug('ColorPickerButton: Popover state changing', {
+      from: isOpen,
+      to: open,
+      trigger: 'onOpenChange callback'
+    });
+
+    // No-op if same state
+    if (open === isOpen) {
+      clientLogger.debug('ColorPickerButton: No state change needed', { currentState: isOpen });
+      return;
+    }
+
+    // Mark as changing to prevent rapid toggles
+    isChangingRef.current = true;
+    setIsOpen(open);
+    
+    // Reset the flag after a short delay
+    setTimeout(() => {
+      isChangingRef.current = false;
+    }, 50);
+  };
+
+  return (
+    <Popover open={isOpen} onOpenChange={handlePopoverOpenChange}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="p-2 h-8 w-8 relative"
+          title="Text color"
+          onMouseDown={(e) => e.preventDefault()} // Prevent focus loss like ToolBtn
+        >
+          <div
+            className="w-4 h-4 rounded border border-gray-300"
+            style={{
+              backgroundColor: activeFormats.color || '#000000',
+            }}
+          />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-48 p-3" align="start">
+        <div className="grid grid-cols-5 gap-2 mb-3">
+          {PRESET_COLORS.map(color => (
+            <button
+              key={color}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleColorSelect(color);
+              }}
+              className="w-7 h-7 rounded border border-gray-300 hover:scale-110 transition-transform"
+              style={{ backgroundColor: color }}
+              title={color}
+            />
+          ))}
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleResetColor();
+          }}
+          className="w-full text-xs h-7"
+        >
+          Reset Color
+        </Button>
+      </PopoverContent>
+    </Popover>
+  );
+};
+
 export function EditorToolbar({
   isSaving,
   hasUnsavedChanges,
@@ -141,6 +327,12 @@ export function EditorToolbar({
         <ToolBtn onClick={() => formatCommands.clearFormat()} title="Clear">
           <Code size={16} />
         </ToolBtn>
+      </div>
+
+      {/* Font Size and Color Controls */}
+      <div className="flex items-center gap-1 border-r pr-2 mr-2">
+        <FontSizeDropdown formatCommands={formatCommands} activeFormats={activeFormats} />
+        <ColorPickerButton formatCommands={formatCommands} activeFormats={activeFormats} />
       </div>
 
       {/* List and Structure Controls */}

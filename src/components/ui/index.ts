@@ -7,3 +7,4 @@ export { StatusToast, StatusToastContainer, useStatusToasts } from './status-toa
 export { LoadingOverlay, LoadingCard, LoadingButton } from './loading-overlay';
 export { Shimmer, ShimmerCard, ShimmerList, ShimmerTable, ShimmerGrid } from './shimmer-effect';
 export { OfflineIndicator, ConnectionStatus, useConnectionStatus } from './offline-indicator';
+export { Popover, PopoverContent, PopoverTrigger } from './popover';

@@ -1,0 +1,160 @@
+## Tổng hợp Nghiên cứu về Tiptap
+
+Sau khi nghiên cứu documentation của Tiptap, tôi đã tìm hiểu được các giải pháp cho 2 vấn đề của bạn:
+
+### **Issue 1: Xử lý màu chữ khi paste (adapt theo theme)**
+
+**Vấn đề:** Khi copy/paste content từ nguồn khác, màu chữ inline styles bị giữ nguyên, làm mất đồng bộ với theme hiện tại.
+
+**Giải pháp:** Sử dụng `editorProps.transformPastedHTML` để loại bỏ màu chữ inline khi paste:
+
+```typescript
+editorProps: {
+  transformPastedHTML(html) {
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    
+    // Loại bỏ color và background-color từ style attribute
+    div.querySelectorAll('[style]').forEach((el) => {
+      const style = el.getAttribute('style');
+      if (style) {
+        // Giữ các style khác, chỉ remove color properties
+        const newStyle = style
+          .split(';')
+          .filter(prop => {
+            const trimmed = prop.trim().toLowerCase();
+            return !trimmed.startsWith('color:') && 
+                   !trimmed.startsWith('background-color:');
+          })
+          .join(';');
+        
+        if (newStyle) {
+          el.setAttribute('style', newStyle);
+        } else {
+          el.removeAttribute('style');
+        }
+      }
+    });
+    
+    return div.innerHTML;
+  }
+}
+```
+
+### **Issue 2: Thêm Toolbar Items cho Font Size và Color**
+
+#### **2a. Font Size với Min/Max Constraints**
+
+Tiptap có extension `FontSize` chính thức, sử dụng `TextStyle` mark và render inline style `font-size`. Bạn cần:
+
+**Cài đặt:**
+```bash
+npm install @tiptap/extension-text-style
+```
+
+**Thêm vào extensions:**
+```typescript
+import { TextStyle } from '@tiptap/extension-text-style'
+import { FontSize } from '@tiptap/extension-text-style/font-size'
+
+const editor = useEditor({
+  extensions: [
+    StarterKit,
+    TextStyle,
+    FontSize,
+    // ... các extensions khác
+  ]
+})
+```
+
+**Tạo Toolbar Item với min/max:**
+```typescript
+const FONT_SIZES = [8, 10, 12, 14, 16, 18, 20, 24, 30, 36, 48];
+const MIN_FONT_SIZE = 8;
+const MAX_FONT_SIZE = 72;
+
+// Component cho font size picker
+const FontSizeDropdown = () => {
+  const handleFontSize = (size: number) => {
+    if (size >= MIN_FONT_SIZE && size <= MAX_FONT_SIZE) {
+      editor.chain().focus().setFontSize(`${size}px`).run();
+    }
+  };
+
+  return (
+    <Select onValueChange={(value) => handleFontSize(Number(value))}>
+      {FONT_SIZES.map(size => (
+        <SelectItem key={size} value={size.toString()}>
+          {size}px
+        </SelectItem>
+      ))}
+    </Select>
+  );
+};
+```
+
+#### **2b. Color Picker**
+
+Extension `Color` cho phép set màu chữ thông qua inline style:
+
+**Thêm vào extensions:**
+```typescript
+import { Color } from '@tiptap/extension-text-style/color'
+
+const editor = useEditor({
+  extensions: [
+    StarterKit,
+    TextStyle,
+    Color,
+    // ...
+  ]
+})
+```
+
+**Tạo Color Picker Toolbar:**
+```typescript
+const PRESET_COLORS = [
+  '#000000', '#FF0000', '#00FF00', '#0000FF',
+  '#FFFF00', '#FF00FF', '#00FFFF', '#FFFFFF'
+];
+
+const ColorPickerButton = () => {
+  return (
+    <Popover>
+      <PopoverTrigger>
+        <Button variant="ghost" size="sm">
+          <PaletteIcon />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent>
+        <div className="grid grid-cols-4 gap-2">
+          {PRESET_COLORS.map(color => (
+            <button
+              key={color}
+              onClick={() => editor.chain().focus().setColor(color).run()}
+              style={{ backgroundColor: color }}
+              className="w-8 h-8 rounded border"
+            />
+          ))}
+        </div>
+        <Button 
+          variant="outline" 
+          onClick={() => editor.chain().focus().unsetColor().run()}
+        >
+          Reset Color
+        </Button>
+      </PopoverContent>
+    </Popover>
+  );
+};
+```
+
+### **Lưu ý quan trọng:**
+
+1. Việc xử lý paste bằng `transformPastedHTML` là cách phổ biến nhất để loại bỏ inline styles không mong muốn
+
+2. Tiptap dựa trên ProseMirror và cần kiểm soát hoàn toàn HTML, nội dung không khớp với schema sẽ bị loại bỏ
+
+3. Font size nên có giới hạn min/max (ví dụ: 8px-72px) để tránh break UI
+
+4. Nên cung cấp cả preset colors và option để unset/reset color về mặc định

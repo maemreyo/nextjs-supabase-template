@@ -8,6 +8,8 @@ import TextAlign from '@tiptap/extension-text-align';
 import CharacterCount from '@tiptap/extension-character-count';
 import Placeholder from '@tiptap/extension-placeholder';
 import Link from '@tiptap/extension-link';
+import { FontSize } from '@/lib/tiptap-extensions/font-size';
+import { clientLogger } from '@/services/logger';
 import { useCallback, useEffect, useState } from 'react';
 
 interface UseTipTapEditorProps {
@@ -60,6 +62,45 @@ export function useTipTapEditor({
       attributes: {
         class: 'focus-visible:outline-none focus:outline-none outline-none',
       },
+      transformPastedHTML(html) {
+        try {
+          const div = document.createElement('div');
+          div.innerHTML = html;
+          
+          // Loại bỏ color và background-color từ style attribute
+          div.querySelectorAll('[style]').forEach((el) => {
+            const style = el.getAttribute('style');
+            if (style) {
+              // Giữ các style khác, chỉ remove color properties
+              const newStyle = style
+                .split(';')
+                .filter(prop => {
+                  const trimmed = prop.trim().toLowerCase();
+                  return !trimmed.startsWith('color:') &&
+                         !trimmed.startsWith('background-color:');
+                })
+                .join(';');
+              
+              if (newStyle) {
+                el.setAttribute('style', newStyle);
+              } else {
+                el.removeAttribute('style');
+              }
+            }
+          });
+          
+          const cleanedHTML = div.innerHTML;
+          clientLogger.debug('Transformed pasted HTML', {
+            originalLength: html.length,
+            cleanedLength: cleanedHTML.length
+          });
+          
+          return cleanedHTML;
+        } catch (error) {
+          clientLogger.error('Error transforming pasted HTML', error);
+          return html; // Fallback to original HTML if transformation fails
+        }
+      },
     },
     extensions: [
       StarterKit.configure({
@@ -73,6 +114,7 @@ export function useTipTapEditor({
       Underline,
       TextStyle,
       Color,
+      FontSize,
       Highlight.configure({
         multicolor: true,
       }),
@@ -152,6 +194,18 @@ export function useTipTapEditor({
     textAlign: (alignment: 'left' | 'center' | 'right' | 'justify') =>
       editor?.chain().focus().setTextAlign(alignment).run(),
     setColor: (color: string) => editor?.chain().focus().setColor(color).run(),
+    unsetColor: () => editor?.chain().focus().unsetColor().run(),
+    setFontSize: (size: string) => {
+      // Validate font size range (8px to 72px)
+      const sizeNum = parseInt(size);
+      if (sizeNum >= 8 && sizeNum <= 72) {
+        return editor?.chain().focus().setFontSize(size).run();
+      } else {
+        clientLogger.warn('Font size out of range', { size, range: '8-72px' });
+        return false;
+      }
+    },
+    unsetFontSize: () => editor?.chain().focus().unsetFontSize().run(),
     setHighlight: (color: string) => editor?.chain().focus().setHighlight({ color }).run(),
     unsetHighlight: () => editor?.chain().focus().unsetHighlight().run(),
     setLink: (href: string) => editor?.chain().focus().setLink({ href }).run(),
@@ -178,6 +232,8 @@ export function useTipTapEditor({
     blockquote: editor?.isActive('blockquote') || false,
     codeBlock: editor?.isActive('codeBlock') || false,
     textAlign: editor?.getAttributes('paragraph')?.textAlign || 'left',
+    fontSize: editor?.getAttributes('textStyle')?.fontSize || '20px',
+    color: editor?.getAttributes('textStyle')?.color || null,
   };
 
   // Content getters
