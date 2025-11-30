@@ -30,7 +30,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto flex h-14 items-center justify-between px-4">
+      <div className="mx-auto flex h-14 items-center justify-between px-8">
         {/* Logo - Left */}
         <div className="flex items-center">
           <Link href="/" className="flex items-center space-x-2">
@@ -42,7 +42,7 @@ export function Header() {
         </div>
 
         {/* Navigation - Center (Desktop) */}
-        <nav className="hidden md:flex items-center space-x-6">
+        {/* <nav className="hidden md:flex items-center space-x-6">
           {navigation.map((item) => (
             <Link
               key={item.name}
@@ -52,7 +52,7 @@ export function Header() {
               {item.name}
             </Link>
           ))}
-        </nav>
+        </nav> */}
 
         {/* Right side - Theme Toggle & User Menu */}
         <div className="flex items-center space-x-2">
