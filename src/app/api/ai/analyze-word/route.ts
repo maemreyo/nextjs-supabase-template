@@ -173,12 +173,34 @@ export async function POST(request: NextRequest) {
     }
 
     // Perform analysis with performance monitoring
+    apiLogger.info('Starting AI word analysis', {
+      userId,
+      word: wordValidation.sanitized || word,
+      hasSessionId: !!sessionId
+    })
+    
     const result = await performanceMonitor.measure(
       () => aiService.analyzeWord(userId, analysisRequest),
       'ai-analyze-word'
     )
 
+    apiLogger.info('AI word analysis completed', {
+      userId,
+      word: wordValidation.sanitized || word,
+      success: result.success,
+      hasError: !!result.error,
+      hasData: !!result.data,
+      processingTime: timer.end()
+    })
+
     if (!result.success) {
+      apiLogger.error('Word analysis failed', {
+        userId,
+        word: wordValidation.sanitized || word,
+        error: result.error,
+        processingTime: timer.end()
+      })
+      
       return NextResponse.json(
         { error: result.error || 'Failed to analyze word' },
         { status: 500 }
@@ -188,15 +210,22 @@ export async function POST(request: NextRequest) {
     // Cache result
     if (result.success && result.data) {
       analysisCache.set(cacheKey, result.data, 30 * 60 * 1000) // 30 minutes
+      
+      apiLogger.debug('Word analysis result cached', {
+        userId,
+        word: wordValidation.sanitized || word,
+        cacheKey
+      })
     }
 
     // Return successful response
     timer.end()
     
-    apiLogger.success('Word analysis completed successfully', {
+    apiLogger.success('Word analysis API completed successfully', {
       userId,
       word: wordValidation.sanitized || word,
-      processingTime: timer.end()
+      processingTime: timer.end(),
+      hasAnalysisId: !!result.metadata?.analysisId
     })
     
     apiLogger.info('Request completed', {

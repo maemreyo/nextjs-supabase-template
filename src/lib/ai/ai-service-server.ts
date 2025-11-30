@@ -693,43 +693,273 @@ export class AIServiceServer {
   private async saveWordAnalysis(userId: string, request: AnalyzeWordRequest, analysis: WordAnalysis): Promise<string | null> {
     const supabase = await createClient()
     let wordAnalysisId: string | null = null
+    const saveStartTime = Date.now()
+    
+    dbLogger.start('Saving word analysis to database', {
+      userId,
+      word: analysis.meta.word,
+      sentenceContextLength: request.sentenceContext?.length || 0,
+      paragraphContextLength: request.paragraphContext?.length || 0,
+      synonymsCount: analysis.relations.synonyms.length,
+      antonymsCount: analysis.relations.antonyms.length,
+      collocationsCount: analysis.usage.collocations.length
+    })
     
     try {
-      // Save main word analysis using upsert with proper constraint handling
-      // Sử dụng constraint name thay vì column list để tránh lỗi 42P10
-      const { data, error } = await supabase
+      // Validate document exists before inserting word analysis
+      const documentId = request.sessionId
+      if (documentId) {
+        dbLogger.debug('Validating document existence', { documentId, userId })
+        
+        const { data: existingDocument, error: documentCheckError } = await supabase
+          .from('documents')
+          .select('id')
+          .eq('id', documentId)
+          .maybeSingle()
+        
+        if (documentCheckError) {
+          dbLogger.error('Failed to check document existence', {
+            documentId,
+            userId,
+            error: documentCheckError.message
+          })
+        }
+        
+        if (!existingDocument || documentCheckError) {
+          dbLogger.info('Document not found, creating new document', {
+            documentId,
+            userId,
+            exists: !!existingDocument
+          })
+          
+          // Auto-create document with minimal fields
+          const documentData = {
+            id: documentId,
+            user_id: userId,
+            title: `AI Analysis Document for "${analysis.meta.word}"`,
+            content: request.sentenceContext || null,
+            created_at: new Date().toISOString()
+          }
+          
+          dbLogger.debug('Creating document with data', {
+            documentId,
+            userId,
+            title: documentData.title,
+            hasContent: !!documentData.content
+          })
+          
+          const { data: newDocument, error: documentCreateError } = await supabase
+            .from('documents')
+            .upsert(documentData)
+            .select()
+            .single()
+          
+          if (documentCreateError) {
+            dbLogger.error('Failed to create document', {
+              documentId,
+              userId,
+              error: documentCreateError.message,
+              errorCode: documentCreateError.code
+            })
+            throw new Error(`Failed to create document: ${documentCreateError.message}`)
+          }
+          
+          dbLogger.success('Document created successfully', {
+            documentId: newDocument.id,
+            userId
+          })
+        } else {
+          dbLogger.info('Document validated successfully', {
+            documentId,
+            userId,
+            exists: true
+          })
+        }
+      }
+      // Check for existing analysis first to handle constraint violations gracefully
+      const existingCheckStartTime = Date.now()
+      
+      dbLogger.debug('Checking for existing word analysis', {
+        userId,
+        word: analysis.meta.word,
+        sentenceContext: request.sentenceContext?.substring(0, 100),
+        documentId: request.sessionId
+      })
+      
+      const { data: existingData, error: checkError } = await supabase
         .from('word_analyses')
-        .upsert({
-          user_id: userId,
+        .select('id')
+        .eq('user_id', userId)
+        .eq('word', analysis.meta.word)
+        .eq('sentence_context', request.sentenceContext || '')
+        .eq('document_id', request.sessionId || null as any)
+        .single()
+      
+      const existingCheckDuration = Date.now() - existingCheckStartTime
+      
+      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned
+        dbLogger.error('Existing analysis check failed', {
+          userId,
           word: analysis.meta.word,
-          ipa: analysis.meta.ipa,
-          pos: analysis.meta.pos,
-          cefr: analysis.meta.cefr,
-          tone: analysis.meta.tone,
-          root_meaning: analysis.definitions.root_meaning,
-          context_meaning: analysis.definitions.context_meaning,
-          vietnamese_translation: analysis.definitions.vietnamese_translation,
-          inference_clues: analysis.inference_strategy.clues,
-          inference_reasoning: analysis.inference_strategy.reasoning,
-          sentence_context: request.sentenceContext || '', // Đảm bảo không null
-          paragraph_context: request.paragraphContext,
-          example_sentence: analysis.usage.example_sentence,
-          example_translation: analysis.usage.example_translation,
-          document_id: request.sessionId || null // Đảm bảo null thay vì rỗng
-        }, {
-          onConflict: 'user_id,word,sentence_context,document_id' // Sử dụng chuỗi cột thay vì array
+          error: checkError.message,
+          errorCode: checkError.code,
+          duration: existingCheckDuration
         })
-        .select()
-        .single();
+        // Continue with upsert even if check fails
+      } else if (existingData) {
+        dbLogger.info('Word analysis already exists, updating existing record', {
+          userId,
+          word: analysis.meta.word,
+          existingId: existingData.id,
+          duration: existingCheckDuration
+        })
+        
+        // Update existing record instead of upsert to avoid constraint issues
+        const updateStartTime = Date.now()
+        const { data: updateData, error: updateError } = await supabase
+          .from('word_analyses')
+          .update({
+            ipa: analysis.meta.ipa,
+            pos: analysis.meta.pos,
+            cefr: analysis.meta.cefr,
+            tone: analysis.meta.tone,
+            root_meaning: analysis.definitions.root_meaning,
+            context_meaning: analysis.definitions.context_meaning,
+            vietnamese_translation: analysis.definitions.vietnamese_translation,
+            inference_clues: analysis.inference_strategy.clues,
+            inference_reasoning: analysis.inference_strategy.reasoning,
+            paragraph_context: request.paragraphContext,
+            example_sentence: analysis.usage.example_sentence,
+            example_translation: analysis.usage.example_translation,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingData.id)
+          .select()
+          .single()
+        
+        const updateDuration = Date.now() - updateStartTime
+        
+        if (updateError) {
+          dbLogger.error('Word analysis update failed', {
+            userId,
+            word: analysis.meta.word,
+            existingId: existingData.id,
+            error: updateError.message,
+            errorCode: updateError.code,
+            duration: updateDuration
+          })
+          throw new Error(`Failed to update word analysis: ${updateError.message}`)
+        }
+        
+        dbLogger.success('Word analysis updated successfully', {
+          userId,
+          word: analysis.meta.word,
+          analysisId: existingData.id,
+          duration: updateDuration
+        })
+        
+        wordAnalysisId = existingData.id
+      } else {
+        // Insert new record
+        const mainAnalysisStartTime = Date.now()
+        
+        dbLogger.debug('Inserting new word analysis', {
+          userId,
+          word: analysis.meta.word,
+          constraint: 'user_id,word,sentence_context,document_id'
+        })
+        
+        const { data: insertData, error: insertError } = await supabase
+          .from('word_analyses')
+          .insert({
+            user_id: userId,
+            word: analysis.meta.word,
+            ipa: analysis.meta.ipa,
+            pos: analysis.meta.pos,
+            cefr: analysis.meta.cefr,
+            tone: analysis.meta.tone,
+            root_meaning: analysis.definitions.root_meaning,
+            context_meaning: analysis.definitions.context_meaning,
+            vietnamese_translation: analysis.definitions.vietnamese_translation,
+            inference_clues: analysis.inference_strategy.clues,
+            inference_reasoning: analysis.inference_strategy.reasoning,
+            sentence_context: request.sentenceContext || '', // Đảm bảo không null
+            paragraph_context: request.paragraphContext,
+            example_sentence: analysis.usage.example_sentence,
+            example_translation: analysis.usage.example_translation,
+            document_id: request.sessionId || null // Đảm bảo null thay vì rỗng
+          })
+          .select()
+          .single();
 
-      if (error) {
-        throw new Error('Failed to save word analysis')
+        const mainAnalysisDuration = Date.now() - mainAnalysisStartTime
+        
+        if (insertError) {
+          dbLogger.error('Word analysis insert failed', {
+            userId,
+            word: analysis.meta.word,
+            error: insertError.message,
+            errorDetails: insertError,
+            duration: mainAnalysisDuration,
+            errorCode: insertError.code,
+            constraint: 'user_id,word,sentence_context,document_id'
+          })
+          
+          // Handle specific constraint violation errors
+          if (insertError.code === '23505') { // Unique violation
+            dbLogger.warn('Unique constraint violation, attempting to find existing record', {
+              userId,
+              word: analysis.meta.word,
+              sentenceContext: request.sentenceContext?.substring(0, 100)
+            })
+            
+            // Try one more time to get existing record
+            const { data: retryData, error: retryError } = await supabase
+              .from('word_analyses')
+              .select('id')
+              .eq('user_id', userId)
+              .eq('word', analysis.meta.word)
+              .eq('sentence_context', request.sentenceContext || '')
+              .eq('document_id', request.sessionId || null as any)
+              .single()
+            
+            if (retryError) {
+              throw new Error(`Failed to save word analysis due to constraint violation: ${insertError.message}`)
+            } else if (retryData) {
+              dbLogger.info('Found existing record after constraint violation', {
+                userId,
+                word: analysis.meta.word,
+                existingId: retryData.id
+              })
+              wordAnalysisId = retryData.id
+            } else {
+              throw new Error(`Failed to save word analysis due to constraint violation: ${insertError.message}`)
+            }
+          } else {
+            throw new Error(`Failed to save word analysis: ${insertError.message}`)
+          }
+        } else {
+          dbLogger.success('Word analysis inserted successfully', {
+            userId,
+            word: analysis.meta.word,
+            analysisId: insertData.id,
+            duration: mainAnalysisDuration
+          })
+          
+          wordAnalysisId = insertData.id
+        }
       }
 
-      wordAnalysisId = data.id;
-
-      // Save synonyms
+      // Save synonyms with detailed logging
       if (analysis.relations.synonyms.length > 0) {
+        const synonymsStartTime = Date.now()
+        
+        dbLogger.debug('Saving synonyms', {
+          wordAnalysisId,
+          synonymsCount: analysis.relations.synonyms.length,
+          firstSynonym: analysis.relations.synonyms[0]?.word
+        })
+        
         const synonymsToInsert = analysis.relations.synonyms.map(synonym => ({
           word_analysis_id: wordAnalysisId,
           synonym_word: synonym.word,
@@ -738,11 +968,45 @@ export class AIServiceServer {
           meaning_vi: synonym.meaning_vi
         }))
 
-        await supabase.from('word_synonyms').insert(synonymsToInsert)
+        try {
+          const { error: synonymError } = await supabase.from('word_synonyms').insert(synonymsToInsert)
+          
+          if (synonymError) {
+            dbLogger.error('Failed to save synonyms', {
+              wordAnalysisId,
+              error: synonymError.message,
+              errorDetails: synonymError,
+              synonymsCount: analysis.relations.synonyms.length
+            })
+            throw new Error(`Failed to save synonyms: ${synonymError.message}`)
+          }
+          
+          dbLogger.success('Synonyms saved successfully', {
+            wordAnalysisId,
+            synonymsCount: analysis.relations.synonyms.length,
+            duration: Date.now() - synonymsStartTime
+          })
+        } catch (insertError) {
+          dbLogger.error('Exception during synonyms insert', {
+            wordAnalysisId,
+            error: insertError instanceof Error ? insertError.message : 'Unknown error',
+            stack: insertError instanceof Error ? insertError.stack : undefined,
+            synonymsCount: analysis.relations.synonyms.length
+          })
+          throw insertError
+        }
       }
 
-      // Save antonyms
+      // Save antonyms with detailed logging
       if (analysis.relations.antonyms.length > 0) {
+        const antonymsStartTime = Date.now()
+        
+        dbLogger.debug('Saving antonyms', {
+          wordAnalysisId,
+          antonymsCount: analysis.relations.antonyms.length,
+          firstAntonym: analysis.relations.antonyms[0]?.word
+        })
+        
         const antonymsToInsert = analysis.relations.antonyms.map(antonym => ({
           word_analysis_id: wordAnalysisId,
           antonym_word: antonym.word,
@@ -751,11 +1015,45 @@ export class AIServiceServer {
           meaning_vi: antonym.meaning_vi
         }))
 
-        await supabase.from('word_antonyms').insert(antonymsToInsert)
+        try {
+          const { error: antonymError } = await supabase.from('word_antonyms').insert(antonymsToInsert)
+          
+          if (antonymError) {
+            dbLogger.error('Failed to save antonyms', {
+              wordAnalysisId,
+              error: antonymError.message,
+              errorDetails: antonymError,
+              antonymsCount: analysis.relations.antonyms.length
+            })
+            throw new Error(`Failed to save antonyms: ${antonymError.message}`)
+          }
+          
+          dbLogger.success('Antonyms saved successfully', {
+            wordAnalysisId,
+            antonymsCount: analysis.relations.antonyms.length,
+            duration: Date.now() - antonymsStartTime
+          })
+        } catch (insertError) {
+          dbLogger.error('Exception during antonyms insert', {
+            wordAnalysisId,
+            error: insertError instanceof Error ? insertError.message : 'Unknown error',
+            stack: insertError instanceof Error ? insertError.stack : undefined,
+            antonymsCount: analysis.relations.antonyms.length
+          })
+          throw insertError
+        }
       }
 
-      // Save collocations
+      // Save collocations with detailed logging
       if (analysis.usage.collocations.length > 0) {
+        const collocationsStartTime = Date.now()
+        
+        dbLogger.debug('Saving collocations', {
+          wordAnalysisId,
+          collocationsCount: analysis.usage.collocations.length,
+          firstCollocation: analysis.usage.collocations[0]?.phrase
+        })
+        
         const collocationsToInsert = analysis.usage.collocations.map(collocation => ({
           word_analysis_id: wordAnalysisId,
           phrase: collocation.phrase,
@@ -764,10 +1062,94 @@ export class AIServiceServer {
           frequency_level: collocation.frequency_level
         }))
 
-        await supabase.from('word_collocations').insert(collocationsToInsert)
+        try {
+          let retryCount = 0
+          const maxRetries = 3
+          let collocationError = null
+          
+          while (retryCount < maxRetries) {
+            try {
+              const result = await supabase.from('word_collocations').insert(collocationsToInsert)
+              collocationError = result.error
+              
+              if (!collocationError) {
+                break // Success, exit retry loop
+              }
+            } catch (retryErr) {
+              collocationError = retryErr
+            }
+            
+            retryCount++
+            
+            if (retryCount < maxRetries && collocationError) {
+              dbLogger.warn(`Collocations insert retry ${retryCount}/${maxRetries}`, {
+                wordAnalysisId,
+                error: collocationError instanceof Error ? collocationError.message : String(collocationError),
+                errorCode: (collocationError as any)?.code,
+                collocationsCount: analysis.usage.collocations.length,
+                waitTime: retryCount * 1000 // Exponential backoff
+              })
+              
+              // Wait before retry with exponential backoff
+              await new Promise(resolve => setTimeout(resolve, retryCount * 1000))
+            }
+          }
+          
+          if (collocationError) {
+            dbLogger.error('Failed to save collocations after retries', {
+              wordAnalysisId,
+              error: collocationError instanceof Error ? collocationError.message : String(collocationError),
+              errorDetails: collocationError,
+              errorCode: (collocationError as any)?.code,
+              retriesAttempted: retryCount,
+              collocationsCount: analysis.usage.collocations.length
+            })
+            throw new Error(`Failed to save collocations after ${retryCount} attempts: ${collocationError instanceof Error ? collocationError.message : String(collocationError)}`)
+          }
+          
+          dbLogger.success('Collocations saved successfully', {
+            wordAnalysisId,
+            collocationsCount: analysis.usage.collocations.length,
+            duration: Date.now() - collocationsStartTime,
+            retriesAttempted: retryCount
+          })
+        } catch (insertError) {
+          dbLogger.error('Exception during collocations insert', {
+            wordAnalysisId,
+            error: insertError instanceof Error ? insertError.message : 'Unknown error',
+            stack: insertError instanceof Error ? insertError.stack : undefined,
+            collocationsCount: analysis.usage.collocations.length
+          })
+          throw insertError
+        }
       }
       
+      const totalSaveDuration = Date.now() - saveStartTime
+      
+      dbLogger.success('Word analysis save completed successfully', {
+        userId,
+        word: analysis.meta.word,
+        wordAnalysisId,
+        totalDuration: totalSaveDuration,
+        synonymsCount: analysis.relations.synonyms.length,
+        antonymsCount: analysis.relations.antonyms.length,
+        collocationsCount: analysis.usage.collocations.length
+      })
+      
     } catch (error) {
+      const totalSaveDuration = Date.now() - saveStartTime
+      
+      dbLogger.error('Word analysis save failed', {
+        userId,
+        word: analysis.meta.word,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        totalSaveDuration,
+        synonymsCount: analysis.relations.synonyms.length,
+        antonymsCount: analysis.relations.antonyms.length,
+        collocationsCount: analysis.usage.collocations.length
+      })
+      
       throw error
     }
 

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PhraseAnalysis, AnalyzePhraseRequest, AnalysisResponse } from '@/lib/ai/types';
 import { useSupabase } from '@/components/providers/supabase-provider';
-import { clientLogger } from '@/services/logger';
+import { clientLogger, analysisLogger } from '@/services/logger';
 
 // Query keys cho phrase analysis
 export const phraseAnalysisKeys = {
@@ -79,9 +79,13 @@ export function usePhraseAnalysis(
 /**
  * Hook để phân tích cụm từ với mutation
  */
-export function usePhraseAnalysisMutation() {
+export function usePhraseAnalysisMutation(options?: {
+  onSuccess?: (data: PhraseAnalysis, variables: AnalyzePhraseRequest) => void;
+  onSwitchToTab?: (analysisType: 'word' | 'phrase' | 'sentence' | 'paragraph') => void;
+}) {
   const queryClient = useQueryClient();
   const { getAccessToken } = useSupabase();
+  const { onSuccess, onSwitchToTab } = options || {};
 
   return useMutation({
     mutationFn: async (params: AnalyzePhraseRequest): Promise<PhraseAnalysis> => {
@@ -121,6 +125,31 @@ export function usePhraseAnalysisMutation() {
         phraseAnalysisKeys.detail(variables.phrase, variables.sentenceContext, variables.paragraphContext),
         data
       );
+      
+      // Invalidate phrase analyses queries to refresh the list
+      queryClient.invalidateQueries({
+        queryKey: ['phrase-analyses'],
+        refetchType: 'active'
+      });
+      
+      // Log success
+      analysisLogger.success('Phrase analysis completed successfully', {
+        phrase: variables.phrase,
+        analysisType: 'phrase'
+      });
+      
+      // Call custom onSuccess callback if provided
+      if (onSuccess) {
+        onSuccess(data, variables);
+      }
+      
+      // Auto-switch to phrase tab on success if callback provided
+      if (onSwitchToTab) {
+        onSwitchToTab('phrase');
+        analysisLogger.info('Auto-switched to phrase tab after successful analysis', {
+          phrase: variables.phrase
+        });
+      }
     },
     onError: (error) => {
       clientLogger.error('Phrase analysis mutation failed', {

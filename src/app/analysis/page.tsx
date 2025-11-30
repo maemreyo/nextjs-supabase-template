@@ -35,6 +35,7 @@ import { isDirectStructure } from '@/components/analysis/types/analysis-types';
 import { createBreadcrumbItems } from '@/lib/navigation';
 import { Breadcrumb, ResponsiveBreadcrumb, MobileBreadcrumb } from '@/components/ui/breadcrumb';
 import { analysisLogger } from '@/services/logger';
+import { api } from '@/lib/api-client-client';
 
 /**
  * Trang cải tiến cho AI Semantic Analysis Editor
@@ -145,16 +146,55 @@ function ImprovedAnalysisPageContent() {
     // Note: analysisResult will be set by the hook when needed
   };
 
+  // Function to fetch detailed analysis data for non-word types
+  const fetchDetailedAnalysisData = async (
+    analysisType: 'phrase' | 'sentence' | 'paragraph',
+    analysisId: string
+  ): Promise<PhraseAnalysis | SentenceAnalysis | ParagraphAnalysis> => {
+    try {
+      analysisLogger.info('Fetching detailed analysis data', { analysisType, analysisId });
+      
+      // Use the new detail method with type parameter
+      const response = await api.analyses.detail(analysisId, {
+        params: { type: analysisType }
+      });
+      
+      if (response.success && response.data) {
+        analysisLogger.success('Successfully fetched detailed analysis data', { analysisType, analysisId });
+        return response.data as PhraseAnalysis | SentenceAnalysis | ParagraphAnalysis;
+      } else {
+        const errorMessage = response.error?.message || 'Failed to fetch analysis data';
+        analysisLogger.error('Failed to fetch detailed analysis data', {
+          analysisType,
+          analysisId,
+          error: errorMessage
+        });
+        throw new Error(errorMessage);
+      }
+    } catch (error) {
+      analysisLogger.error('Error fetching detailed analysis data', {
+        analysisType,
+        analysisId,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      throw error;
+    }
+  };
+
   // Handle analysis click in session - unified handler for all analysis types
   const handleAnalysisClick = (analysisItem: any) => {
     // Use helper functions for structure detection
     const isDirect = isDirectStructure(analysisItem);
     
-    
+    analysisLogger.info('Opening analysis detail', {
+      analysisType: analysisItem?.analysisType,
+      analysisId: analysisItem?.analysisId,
+      isDirect
+    });
     
     // ✅ FIXED: Added comprehensive null/undefined checks
     if (!analysisItem) {
-      
+      analysisLogger.warn('Analysis item is null or undefined');
       return;
     }
     
@@ -162,6 +202,20 @@ function ImprovedAnalysisPageContent() {
     if (isDirect && analysisItem.analysisType) {
       const analysisType = analysisItem.analysisType;
       
+      // Extract real ID from prefixed IDs for non-word types
+      let realAnalysisId = analysisItem.analysisId;
+      if (analysisType !== 'word' && typeof analysisItem.analysisId === 'string') {
+        // Handle prefixed IDs like "phrase_123", "sentence_456", "paragraph_789"
+        const idMatch = analysisItem.analysisId.match(/^(word|phrase|sentence|paragraph)_(.+)$/);
+        if (idMatch && idMatch[2]) {
+          realAnalysisId = idMatch[2]; // Extract the actual ID part
+          analysisLogger.debug('Extracted real ID from prefixed ID', {
+            originalId: analysisItem.analysisId,
+            extractedId: realAnalysisId,
+            analysisType
+          });
+        }
+      }
       
       // Create proper analysis item for dialog dispatcher based on type
       let dialogItem: any;
@@ -196,18 +250,51 @@ function ImprovedAnalysisPageContent() {
           break;
           
         default:
-          
+          analysisLogger.warn('Unknown analysis type', { analysisType });
           return;
       }
       
       // Use dialogDispatcher to open view details dialog
-      DialogDispatcher.openViewDetails(dialogItem);
+      // For all types, use the real ID for API calls
+      const tempDialogItem = {
+        ...dialogItem,
+        analysisId: realAnalysisId // Use the real ID for API call
+      };
+      
+      // Open dialog with loading state
+      DialogDispatcher.openViewDetails(tempDialogItem);
+      
+      // For non-word types, fetch detailed data in the background
+      if (analysisType !== 'word') {
+        fetchDetailedAnalysisData(analysisType, realAnalysisId)
+          .then((detailedData: PhraseAnalysis | SentenceAnalysis | ParagraphAnalysis) => {
+            // Update dialog with complete data
+            const completeDialogItem = {
+              ...dialogItem,
+              [analysisType]: detailedData
+            };
+            DialogDispatcher.openViewDetails(completeDialogItem);
+            analysisLogger.success('Successfully fetched detailed analysis data', {
+              analysisType,
+              analysisId: realAnalysisId
+            });
+          })
+          .catch((error: any) => {
+            analysisLogger.error('Failed to fetch detailed analysis data', {
+              analysisType,
+              analysisId: realAnalysisId,
+              error
+            });
+          });
+      }
+      
       return;
     }
     
     // Invalid data structure - neither direct nor legacy format
-    
-    analysisLogger.debug('handleAnalysisClick - Expected direct structure (word/phrase/sentence/paragraph)');
+    analysisLogger.warn('handleAnalysisClick - Expected direct structure (word/phrase/sentence/paragraph)', {
+      analysisItem: JSON.stringify(analysisItem)
+    });
     // Optional: Show toast notification to user
     return;
   };

@@ -19,12 +19,14 @@ import { useDeleteAnalysis } from '@/hooks/useDeleteAnalysis';
 import { WordAnalysisDisplay } from './WordAnalysisDisplay';
 import { SentenceAnalysisDisplay } from './SentenceAnalysisDisplay';
 import { ParagraphAnalysisDisplay } from './ParagraphAnalysisDisplay';
-import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis } from '@/lib/ai/types';
+import { PhraseAnalysisView } from './PhraseAnalysisView';
+import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis, PhraseAnalysis } from '@/lib/ai/types';
 
 interface SavedAnalysisDetailProps {
   isOpen: boolean;
   onClose: () => void;
   analysisId: string | null;
+  analysisType?: 'word' | 'sentence' | 'paragraph' | 'phrase';
   onDeleteSuccess?: () => void;
 }
 
@@ -38,9 +40,26 @@ export function SavedAnalysisDetail({
   analysisId, 
   onDeleteSuccess 
 }: SavedAnalysisDetailProps) {
+  // Extract analysis type from ID if it has a prefix
+  let analysisType: 'word' | 'sentence' | 'paragraph' | 'phrase' | undefined;
+  if (analysisId) {
+    if (analysisId.startsWith('phrase_')) {
+      analysisType = 'phrase';
+    } else if (analysisId.startsWith('sentence_')) {
+      analysisType = 'sentence';
+    } else if (analysisId.startsWith('paragraph_')) {
+      analysisType = 'paragraph';
+    } else {
+      analysisType = 'word';
+    }
+  }
+
   const { analysis, isLoading, isError, error } = useSavedAnalysisDetail(
     analysisId,
-    { enabled: isOpen && !!analysisId }
+    {
+      enabled: isOpen && !!analysisId,
+      analysisType
+    }
   );
   
   const { deleteAnalysis, isLoading: isDeleting } = useDeleteAnalysis({
@@ -64,6 +83,8 @@ export function SavedAnalysisDetail({
         return <FileText className="h-4 w-4" />;
       case 'paragraph':
         return <FilePlus className="h-4 w-4" />;
+      case 'phrase':
+        return <FileText className="h-4 w-4" />;
       default:
         return <FileText className="h-4 w-4" />;
     }
@@ -77,6 +98,8 @@ export function SavedAnalysisDetail({
         return 'Phân tích câu';
       case 'paragraph':
         return 'Phân tích đoạn văn';
+      case 'phrase':
+        return 'Phân tích cụm từ';
       default:
         return 'Phân tích';
     }
@@ -90,6 +113,8 @@ export function SavedAnalysisDetail({
         return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 border-green-200 dark:border-green-800';
       case 'paragraph':
         return 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 border-purple-200 dark:border-purple-800';
+      case 'phrase':
+        return 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 border-orange-200 dark:border-orange-800';
       default:
         return 'bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-800';
     }
@@ -144,6 +169,75 @@ export function SavedAnalysisDetail({
         }
       };
       return wordAnalysis;
+    }
+
+    // Transform phrase analysis
+    if (analysis.analysis_type === 'phrase') {
+      const phraseAnalysis: PhraseAnalysis = {
+        meta: {
+          phrase: analysis.phrase,
+          ipa: analysis.ipa_pronunciation,
+          pos: analysis.part_of_speech,
+          type: analysis.phrase_type,
+          cefr: analysis.cefr_level,
+          tone: analysis.tone,
+          register: analysis.register
+        },
+        definitions: {
+          literal_meaning: analysis.literal_meaning,
+          figurative_meaning: analysis.figurative_meaning,
+          vietnamese_translation: analysis.vietnamese_translation,
+          usage_notes: analysis.usage_notes
+        },
+        components: {
+          words: analysis.phrase_components?.map((c: any) => ({
+            word: c.word,
+            ipa: c.ipa_pronunciation,
+            meaning: c.meaning,
+            role: c.role
+          })) || []
+        },
+        grammar_and_structure: {
+          pattern: analysis.grammar_pattern,
+          variations: analysis.phrase_variations?.map((v: any) => ({
+            phrase: v.variation_phrase,
+            meaning: v.meaning,
+            usage_example: v.usage_example
+          })) || []
+        },
+        usage: {
+          collocations: analysis.phrase_collocations?.map((c: any) => ({
+            phrase: c.collocation_phrase,
+            meaning: c.meaning,
+            usage_example: c.usage_example,
+            frequency_level: c.frequency_level
+          })) || [],
+          example_sentences: analysis.phrase_examples?.map((e: any) => ({
+            sentence: e.example_sentence,
+            translation: e.translation,
+            context: e.context
+          })) || []
+        },
+        pragmatics_and_culture: {
+          formality_level: analysis.formality_level,
+          register_appropriateness: analysis.register_appropriateness,
+          cultural_notes: analysis.cultural_notes,
+          common_mistakes: analysis.common_mistakes?.map((m: any) => ({
+            mistake: m.mistake,
+            correction: m.correction,
+            explanation: m.explanation
+          })) || []
+        },
+        learning_aids: {
+          memory_tips: analysis.memory_tips,
+          pronunciation_tips: analysis.pronunciation_tips,
+          practice_suggestions: analysis.practice_suggestions?.map((s: any) => ({
+            exercise: s.exercise,
+            instruction: s.instruction
+          })) || []
+        }
+      };
+      return phraseAnalysis;
     }
 
     // Transform sentence analysis
@@ -306,6 +400,10 @@ export function SavedAnalysisDetail({
             <div className="space-y-6">
               {analysis.analysis_type === 'word' && (
                 <WordAnalysisDisplay analysis={transformedData as WordAnalysis} />
+              )}
+              
+              {analysis.analysis_type === 'phrase' && (
+                <PhraseAnalysisView data={transformedData as PhraseAnalysis} />
               )}
               
               {analysis.analysis_type === 'sentence' && (

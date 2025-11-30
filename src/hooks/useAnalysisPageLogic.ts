@@ -12,6 +12,7 @@ import { useSavedAnalysisByWord } from '@/hooks/useSavedAnalysis';
 import { api } from '@/lib/api-client-client';
 import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis, PhraseAnalysis } from '@/lib/ai/types';
 import type { SelectionInfo } from '@/hooks/useTipTapSelection';
+import { analysisLogger } from '@/services/logger';
 
 export interface UseAnalysisPageLogicProps {
   sessionId?: string;
@@ -130,7 +131,15 @@ export function useAnalysisPageLogic({ sessionId, editor }: UseAnalysisPageLogic
   const wordAnalysisMutation = useWordAnalysisMutation();
   const sentenceAnalysisMutation = useSentenceAnalysisMutation();
   const paragraphAnalysisMutation = useParagraphAnalysisMutation();
-  const phraseAnalysisMutation = usePhraseAnalysisMutation();
+  const phraseAnalysisMutation = usePhraseAnalysisMutation({
+    onSwitchToTab: (analysisType) => {
+      setActiveTabState(analysisType);
+      analysisLogger.info('Tab switched via phrase analysis callback', {
+        analysisType,
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
 
   // Sync local state với store state
   const syncWithStore = useCallback(() => {

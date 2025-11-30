@@ -42,7 +42,10 @@ export const SentenceDialogContent: React.FC<SentenceDialogContentProps> = ({
   // Fetch full analysis data using analysis.id
   const { analysis: fullAnalysisData, isLoading, isError, error } = useSavedAnalysisDetail(
     analysis?.id || null,
-    { enabled: !!analysis?.id }
+    {
+      enabled: !!analysis?.id,
+      analysisType: 'sentence'
+    }
   );
 
   // Merge summary data with full data, prioritizing full data

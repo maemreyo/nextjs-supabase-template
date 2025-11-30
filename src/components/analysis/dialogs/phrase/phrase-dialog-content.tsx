@@ -46,7 +46,10 @@ export const PhraseDialogContent: React.FC<PhraseDialogContentProps> = ({
   // Fetch full analysis data using analysis.id
   const { analysis: fullAnalysisData, isLoading, isError, error } = useSavedAnalysisDetail(
     analysis?.id || null,
-    { enabled: !!analysis?.id }
+    {
+      enabled: !!analysis?.id,
+      analysisType: 'phrase'
+    }
   );
 
   // Merge summary data with full data, prioritizing full data

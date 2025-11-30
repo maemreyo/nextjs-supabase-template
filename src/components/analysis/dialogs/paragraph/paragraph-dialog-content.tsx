@@ -77,7 +77,10 @@ export const ParagraphDialogContent: React.FC<ParagraphDialogContentProps> = ({
   // Fetch full analysis data using analysis.id
   const { analysis: fullAnalysisData, isLoading, isError, error } = useSavedAnalysisDetail(
     analysis?.id || null,
-    { enabled: !!analysis?.id }
+    {
+      enabled: !!analysis?.id,
+      analysisType: 'paragraph'
+    }
   );
 
   // Merge summary data with full data, prioritizing full data

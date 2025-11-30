@@ -58,7 +58,7 @@ export async function DELETE(
     }
 
     // Find the analysis in all three tables to determine its type
-    let analysisType: 'word' | 'sentence' | 'paragraph' | null = null;
+    let analysisType: 'word' | 'phrase' | 'sentence' | 'paragraph' | null = null;
     let analysisData: any = null;
 
     // Check word_analyses table
@@ -85,17 +85,34 @@ export async function DELETE(
         analysisType = 'sentence';
         analysisData = sentenceAnalysis;
       } else {
-        // Check paragraph_analyses table
-        const { data: paragraphAnalysis, error: paragraphError } = await supabase
-          .from('paragraph_analyses')
+        // Check phrase_analyses table
+        const { data: phraseAnalysis, error: phraseError } = await supabase
+          .from('phrase_analyses')
           .select('*')
           .eq('id', analysisId)
           .eq('user_id', user.id)
           .single();
 
-        if (!paragraphError && paragraphAnalysis) {
-          analysisType = 'paragraph';
-          analysisData = paragraphAnalysis;
+        if (!phraseError && phraseAnalysis) {
+          analysisType = 'phrase';
+          analysisData = phraseAnalysis;
+        } else {
+          // Check paragraph_analyses table
+          const { data: paragraphAnalysis, error: paragraphError } = await supabase
+            .from('paragraph_analyses')
+            .select(`
+              *,
+              paragraph_structure_breakdown(*),
+              paragraph_constructive_feedback(*)
+            `)
+            .eq('id', analysisId)
+            .eq('user_id', user.id)
+            .single();
+
+          if (!paragraphError && paragraphAnalysis) {
+            analysisType = 'paragraph';
+            analysisData = paragraphAnalysis;
+          }
         }
       }
     }
@@ -186,6 +203,18 @@ export async function DELETE(
 
       if (deleteError) {
 
+        throw deleteError;
+      }
+
+    } else if (analysisType === 'phrase') {
+      // Delete the main phrase analysis
+      const { error: deleteError } = await supabase
+        .from('phrase_analyses')
+        .delete()
+        .eq('id', analysisId)
+        .eq('user_id', user.id);
+
+      if (deleteError) {
         throw deleteError;
       }
 
@@ -341,51 +370,63 @@ export async function DELETE(
 
 // GET /api/analyses/[id] - Get analysis by ID
 export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+request: NextRequest,
+{ params }: { params: Promise<{ id: string }> }
 ) {
-  apiLogger.start('Handling GET /api/analyses/[id]', {
-    timestamp: new Date().toISOString()
-  })
+apiLogger.start('Handling GET /api/analyses/[id]', {
+  timestamp: new Date().toISOString(),
+  analysisId: (await params).id
+})
+
+try {
+  // Get user ID from authentication
+  const authHeader = request.headers.get('authorization');
+  if (!authHeader) {
+    return NextResponse.json(
+      { error: 'Authorization header required' },
+      { status: 401 }
+    );
+  }
+
+  const supabase = await createClient();
+  const token = authHeader.replace('Bearer ', '');
   
-  try {
-    // Get user ID from authentication
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: 'Authorization header required' },
-        { status: 401 }
-      );
-    }
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  
+  if (error || !user) {
+    return NextResponse.json(
+      { error: 'Invalid or expired token' },
+      { status: 401 }
+    );
+  }
 
-    const supabase = await createClient();
-    const token = authHeader.replace('Bearer ', '');
+  const { id: analysisId } = await params;
+  const searchParams = request.nextUrl.searchParams;
+  const analysisTypeFromParam = searchParams.get('type') as 'word' | 'sentence' | 'paragraph' | 'phrase' | null;
+
+  if (!analysisId) {
+    apiLogger.warn('Analysis ID is required', {
+      error: 'Missing analysis ID'
+    })
     
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    
-    if (error || !user) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      );
-    }
+    return NextResponse.json(
+      { error: 'Analysis ID is required' },
+      { status: 400 }
+    );
+  }
 
-    const { id: analysisId } = await params;
-
-    if (!analysisId) {
-      apiLogger.warn('Analysis ID is required', {
-        error: 'Missing analysis ID'
-      })
-      
-      return NextResponse.json(
-        { error: 'Analysis ID is required' },
-        { status: 400 }
-      );
-    }
-
-    // Find the analysis in all three tables
-    let analysisData: any = null;
-    let analysisType: 'word' | 'sentence' | 'paragraph' | null = null;
+  // Find the analysis in all three tables
+  let analysisData: any = null;
+  let analysisType: 'word' | 'sentence' | 'paragraph' | 'phrase' | null = null;
+  
+  // Use analysis type from URL parameter if provided
+  if (analysisTypeFromParam) {
+    analysisType = analysisTypeFromParam;
+    apiLogger.info('Using analysis type from URL parameter', {
+      analysisType: analysisTypeFromParam,
+      analysisId
+    });
+  }
 
     // Check word_analyses table
     const { data: wordAnalysis, error: wordError } = await supabase
@@ -418,20 +459,32 @@ export async function GET(
       if (!sentenceError && sentenceAnalysis) {
         analysisData = { ...sentenceAnalysis, analysis_type: 'sentence' };
       } else {
-        // Check paragraph_analyses table
-        const { data: paragraphAnalysis, error: paragraphError } = await supabase
-          .from('paragraph_analyses')
-          .select(`
-            *,
-            paragraph_structure_breakdown(*),
-            paragraph_constructive_feedback(*)
-          `)
+        // Check phrase_analyses table
+        const { data: phraseAnalysis, error: phraseError } = await supabase
+          .from('phrase_analyses')
+          .select('*')
           .eq('id', analysisId)
           .eq('user_id', user.id)
           .single();
 
-        if (!paragraphError && paragraphAnalysis) {
-          analysisData = { ...paragraphAnalysis, analysis_type: 'paragraph' };
+        if (!phraseError && phraseAnalysis) {
+          analysisData = { ...phraseAnalysis, analysis_type: 'phrase' };
+        } else {
+          // Check paragraph_analyses table
+          const { data: paragraphAnalysis, error: paragraphError } = await supabase
+            .from('paragraph_analyses')
+            .select(`
+              *,
+              paragraph_structure_breakdown(*),
+              paragraph_constructive_feedback(*)
+            `)
+            .eq('id', analysisId)
+            .eq('user_id', user.id)
+            .single();
+
+          if (!paragraphError && paragraphAnalysis) {
+            analysisData = { ...paragraphAnalysis, analysis_type: 'paragraph' };
+          }
         }
       }
     }

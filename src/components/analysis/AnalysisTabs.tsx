@@ -13,6 +13,7 @@ import useWordAnalyses from '@/hooks/useWordAnalyses';
 import usePhraseAnalyses from '@/hooks/usePhraseAnalyses';
 import useSentenceAnalyses from '@/hooks/useSentenceAnalyses';
 import useParagraphAnalyses from '@/hooks/useParagraphAnalyses';
+import { analysisLogger } from '@/services/logger';
 
 // Fixed heights for consistent layout (all items same height)
 const ANALYSIS_HEIGHTS = {
@@ -278,7 +279,7 @@ export const AnalysisTabs = memo(function AnalysisTabs({
   const phraseQuery = usePhraseAnalyses({
     sessionId,
     pageSize: 15,
-    enabled: activeTab === 'phrase', // Only fetch when active
+    enabled: true, // Always enabled to prevent empty data on tab switch
     invalidateOnMount: false,
     staleTime: 5 * 60 * 1000,
   });
@@ -308,6 +309,17 @@ export const AnalysisTabs = memo(function AnalysisTabs({
       paragraph: paragraphQuery,
     };
   }, [wordQuery, phraseQuery, sentenceQuery, paragraphQuery]);
+  
+  // Refetch data when tab changes to ensure fresh data
+  useEffect(() => {
+    if (activeTab === 'phrase' && phraseQuery.refetch) {
+      analysisLogger.info('Switched to phrase tab, refetching data', {
+        sessionId,
+        currentCount: phraseQuery.data?.totalCount || 0
+      });
+      phraseQuery.refetch();
+    }
+  }, [activeTab, sessionId, phraseQuery.refetch, phraseQuery.data?.totalCount]);
 
   const tabConfig = [
     { value: 'word' as AnalysisType, label: 'Từ', icon: Type },

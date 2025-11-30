@@ -208,6 +208,13 @@ export const api = {
     
     get: (id: string) => ApiClient.get(`/api/analyses/${id}`),
     
+    detail: (id: string, options?: { params?: Record<string, string> }) => {
+      const queryString = options?.params
+        ? `?${new URLSearchParams(options.params).toString()}`
+        : '';
+      return ApiClient.get(`/api/analyses/${id}${queryString}`);
+    },
+    
     list: (params?: any) => {
       const queryString = params ? `?${new URLSearchParams(params).toString()}` : '';
       return ApiClient.get(`/api/analyses/list${queryString}`);

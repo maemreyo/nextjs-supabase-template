@@ -20,17 +20,18 @@ interface UseSavedAnalysisDetailOptions {
  */
 export function useSavedAnalysisDetail(
   id: string | null,
-  options: UseSavedAnalysisDetailOptions = {}
+  options: UseSavedAnalysisDetailOptions & { analysisType?: 'word' | 'sentence' | 'paragraph' | 'phrase' } = {}
 ) {
   const {
     enabled = true,
     refetchOnWindowFocus = false,
     staleTime = 5 * 60 * 1000, // 5 minutes
+    analysisType,
   } = options;
 
   const { getAccessToken } = useSupabase();
 
-  const queryKey = queryKeys.api.withParams('/api/analyses/[id]', { id });
+  const queryKey = queryKeys.api.withParams('/api/analyses/[id]', { id, type: analysisType });
 
   const {
     data,
@@ -61,7 +62,12 @@ export function useSavedAnalysisDetail(
           headers['Authorization'] = `Bearer ${token}`;
         }
 
-        const response = await fetch(`/api/analyses/${id}`, {
+        // Build URL with type parameter if provided
+        const url = analysisType
+          ? `/api/analyses/${id}?type=${analysisType}`
+          : `/api/analyses/${id}`;
+        
+        const response = await fetch(url, {
           method: 'GET',
           headers,
         });

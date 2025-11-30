@@ -44,7 +44,10 @@ export const WordDialogContent: React.FC<WordDialogContentProps> = ({
   // Fetch full analysis data using analysis.id
   const { analysis: fullAnalysisData, isLoading: isFetchingFullData, isError, error: fetchError } = useSavedAnalysisDetail(
     analysis?.id || null,
-    { enabled: !!analysis?.id }
+    {
+      enabled: !!analysis?.id,
+      analysisType: 'word'
+    }
   );
 
   // Merge summary data with full data, prioritizing full data
