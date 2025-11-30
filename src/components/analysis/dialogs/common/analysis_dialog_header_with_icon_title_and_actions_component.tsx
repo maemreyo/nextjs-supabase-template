@@ -2,6 +2,7 @@ import React from 'react';
 import { Maximize2, Minimize2, Download, Share2, Printer, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ExportFormat } from '../types/dialog-types';
+import { clientLogger } from '@/services/logger';
 
 interface AnalysisDialogHeaderWithIconTitleAndActionsComponentProps {
   title: string;
@@ -70,9 +71,19 @@ export const AnalysisDialogHeaderWithIconTitleAndActionsComponent: React.FC<Anal
             e.stopPropagation();
             
             if (onExport && analysis) {
-              onExport(analysis, 'json' as ExportFormat); // Default format to JSON
+              // Ensure we're passing a valid analysis object
+              const analysisData = {
+                id: analysis.id,
+                analysis_type: analysis.analysis_type,
+                // Extract specific properties based on analysis type
+                ...(analysis.word && { word: analysis.word }),
+                ...(analysis.sentence && { sentence: analysis.sentence }),
+                ...(analysis.phrase && { phrase: analysis.phrase }),
+                ...(analysis.paragraph && { paragraph: analysis.paragraph }),
+              };
+              onExport(analysisData, 'json' as ExportFormat); // Default format to JSON
             } else {
-             
+              clientLogger.warn('Export called without analysis data');
             }
           }}
           aria-label="Export"
@@ -85,12 +96,22 @@ export const AnalysisDialogHeaderWithIconTitleAndActionsComponent: React.FC<Anal
           variant="ghost"
           size="icon"
           onClick={(e) => {
-            
             e.stopPropagation();
             
             if (onShare && analysis) {
-              onShare(analysis);
+              // Ensure we're passing a valid analysis object
+              const analysisData = {
+                id: analysis.id,
+                analysis_type: analysis.analysis_type,
+                // Extract specific properties based on analysis type
+                ...(analysis.word && { word: analysis.word }),
+                ...(analysis.sentence && { sentence: analysis.sentence }),
+                ...(analysis.phrase && { phrase: analysis.phrase }),
+                ...(analysis.paragraph && { paragraph: analysis.paragraph }),
+              };
+              onShare(analysisData);
             } else {
+              clientLogger.warn('Share called without analysis data');
             }
           }}
           aria-label="Share"
@@ -106,8 +127,19 @@ export const AnalysisDialogHeaderWithIconTitleAndActionsComponent: React.FC<Anal
             e.stopPropagation();
             
             if (onPrint && analysis) {
-              onPrint(analysis);
+              // Ensure we're passing a valid analysis object
+              const analysisData = {
+                id: analysis.id,
+                analysis_type: analysis.analysis_type,
+                // Extract specific properties based on analysis type
+                ...(analysis.word && { word: analysis.word }),
+                ...(analysis.sentence && { sentence: analysis.sentence }),
+                ...(analysis.phrase && { phrase: analysis.phrase }),
+                ...(analysis.paragraph && { paragraph: analysis.paragraph }),
+              };
+              onPrint(analysisData);
             } else {
+              clientLogger.warn('Print called without analysis data, using fallback');
               window.print(); // Fallback to default print
             }
           }}

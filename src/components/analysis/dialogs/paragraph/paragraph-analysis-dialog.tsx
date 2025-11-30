@@ -12,6 +12,7 @@ import { useDialogLoading } from '../hooks/use-dialog-loading';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { cn } from '@/lib/utils';
+import { clientLogger } from '@/services/logger';
 
 /**
  * Paragraph Analysis Dialog Component
@@ -450,11 +451,49 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
       )}
       onExport={(analysisData, format) => {
         if (analysisData && format) {
-          handleExport(analysisData, format);
+          // Ensure we're passing a valid analysis object
+          const validAnalysisData = {
+            id: analysisData.id,
+            analysis_type: analysisData.analysis_type,
+            // Extract specific properties based on analysis type
+            ...(analysisData.word && { word: analysisData.word }),
+            ...(analysisData.sentence && { sentence: analysisData.sentence }),
+            ...(analysisData.phrase && { phrase: analysisData.phrase }),
+            ...(analysisData.paragraph && { paragraph: analysisData.paragraph }),
+          };
+          handleExport(validAnalysisData, format);
         }
       }}
-      onShare={handleShare}
-      onPrint={handlePrint}
+      onShare={(analysisData) => {
+        if (analysisData) {
+          // Ensure we're passing a valid analysis object
+          const validAnalysisData = {
+            id: analysisData.id,
+            analysis_type: analysisData.analysis_type,
+            // Extract specific properties based on analysis type
+            ...(analysisData.word && { word: analysisData.word }),
+            ...(analysisData.sentence && { sentence: analysisData.sentence }),
+            ...(analysisData.phrase && { phrase: analysisData.phrase }),
+            ...(analysisData.paragraph && { paragraph: analysisData.paragraph }),
+          };
+          handleShare(validAnalysisData);
+        }
+      }}
+      onPrint={(analysisData) => {
+        if (analysisData) {
+          // Ensure we're passing a valid analysis object
+          const validAnalysisData = {
+            id: analysisData.id,
+            analysis_type: analysisData.analysis_type,
+            // Extract specific properties based on analysis type
+            ...(analysisData.word && { word: analysisData.word }),
+            ...(analysisData.sentence && { sentence: analysisData.sentence }),
+            ...(analysisData.phrase && { phrase: analysisData.phrase }),
+            ...(analysisData.paragraph && { paragraph: analysisData.paragraph }),
+          };
+          handlePrint(validAnalysisData);
+        }
+      }}
       onCopy={handleCopy}
       analysis={analysis}
     >
