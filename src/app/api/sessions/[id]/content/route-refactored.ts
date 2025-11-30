@@ -8,6 +8,7 @@ import Color from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
 import TextAlign from '@tiptap/extension-text-align';
 import Link from '@tiptap/extension-link';
+import { FontSize } from '@/lib/tiptap-extensions/font-size';
 import { withAuth, createSuccessResponse, createErrorResponse } from '@/lib/api-client';
 import { apiLogger } from '@/services/logger';
 
@@ -59,6 +60,7 @@ function tiptapToHTML(data: any): string {
       Underline,
       TextStyle,
       Color,
+      FontSize,
       Highlight.configure({ multicolor: true }),
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       Link.configure({ openOnClick: false }),

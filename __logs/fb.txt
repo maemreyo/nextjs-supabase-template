@@ -1,160 +1,138 @@
-## Tổng hợp Nghiên cứu về Tiptap
+Vấn đề là bạn đang tạo một **Extension** nhưng lại cần một **Mark**. TextStyle trong Tiptap là một Mark, không phải Extension.
 
-Sau khi nghiên cứu documentation của Tiptap, tôi đã tìm hiểu được các giải pháp cho 2 vấn đề của bạn:
+## **Giải pháp: Sử dụng đúng các extension có sẵn**
 
-### **Issue 1: Xử lý màu chữ khi paste (adapt theo theme)**
+Thay vì tạo custom extension phức tạp, hãy sử dụng các extension chính thức từ Tiptap:Giờ tôi hiểu rõ vấn đề rồi! Đây là cách đúng để implement:
 
-**Vấn đề:** Khi copy/paste content từ nguồn khác, màu chữ inline styles bị giữ nguyên, làm mất đồng bộ với theme hiện tại.
+## **Giải pháp đơn giản: Dùng các extension chính thức**
 
-**Giải pháp:** Sử dụng `editorProps.transformPastedHTML` để loại bỏ màu chữ inline khi paste:
+Bạn **KHÔNG cần** tạo custom extension phức tạp. Chỉ cần sử dụng các extension có sẵn:
 
 ```typescript
-editorProps: {
-  transformPastedHTML(html) {
-    const div = document.createElement('div');
-    div.innerHTML = html;
-    
-    // Loại bỏ color và background-color từ style attribute
-    div.querySelectorAll('[style]').forEach((el) => {
-      const style = el.getAttribute('style');
-      if (style) {
-        // Giữ các style khác, chỉ remove color properties
-        const newStyle = style
-          .split(';')
-          .filter(prop => {
-            const trimmed = prop.trim().toLowerCase();
-            return !trimmed.startsWith('color:') && 
-                   !trimmed.startsWith('background-color:');
-          })
-          .join(';');
-        
-        if (newStyle) {
-          el.setAttribute('style', newStyle);
-        } else {
-          el.removeAttribute('style');
+// Trong file editor config của bạn
+import { useEditor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Underline from '@tiptap/extension-underline';
+import TextStyle from '@tiptap/extension-text-style';
+import { Color } from '@tiptap/extension-color';
+import { FontSize } from '@tiptap/extension-font-size'; // Nếu có package này
+
+const editor = useEditor({
+  extensions: [
+    StarterKit,
+    Underline,
+    TextStyle, // Đây là Mark, không phải Extension
+    Color,     // Extends TextStyle
+    // FontSize nếu có
+  ],
+  // ... other config
+});
+```
+
+## **Nếu cần custom FontSize (vì không có package chính thức)**
+
+Tạo một **Extension** để add attribute vào TextStyle **Mark** có sẵn:
+
+```typescript
+import { Extension } from '@tiptap/core';
+
+export const FontSize = Extension.create({
+  name: 'fontSize',
+
+  addOptions() {
+    return {
+      types: ['textStyle'],
+    };
+  },
+
+  addGlobalAttributes() {
+    return [
+      {
+        types: this.options.types,
+        attributes: {
+          fontSize: {
+            default: null,
+            parseHTML: element => element.style.fontSize || null,
+            renderHTML: attributes => {
+              if (!attributes.fontSize) {
+                return {};
+              }
+              return {
+                style: `font-size: ${attributes.fontSize}`,
+              };
+            },
+          },
+        },
+      },
+    ];
+  },
+
+  addCommands() {
+    return {
+      setFontSize: (fontSize: string) => ({ chain }) => {
+        return chain().setMark('textStyle', { fontSize }).run();
+      },
+      unsetFontSize: () => ({ chain }) => {
+        return chain().setMark('textStyle', { fontSize: null }).run();
+      },
+    };
+  },
+});
+```
+
+## **Cấu trúc đúng trong editor:**
+
+```typescript
+import { useEditor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Underline from '@tiptap/extension-underline';
+import TextStyle from '@tiptap/extension-text-style';
+import { Color } from '@tiptap/extension-color';
+import { FontSize } from './extensions/FontSize'; // Custom extension của bạn
+
+const editor = useEditor({
+  extensions: [
+    StarterKit,
+    Underline,
+    TextStyle,  // MARK - phải có trước
+    Color,      // Extension adds attribute to TextStyle mark
+    FontSize,   // Extension adds attribute to TextStyle mark
+  ],
+  editorProps: {
+    transformPastedHTML(html) {
+      // Xử lý paste để remove color
+      const div = document.createElement('div');
+      div.innerHTML = html;
+      
+      div.querySelectorAll('[style]').forEach((el) => {
+        const style = el.getAttribute('style');
+        if (style) {
+          const newStyle = style
+            .split(';')
+            .filter(prop => {
+              const trimmed = prop.trim().toLowerCase();
+              return !trimmed.startsWith('color:') && 
+                     !trimmed.startsWith('background-color:');
+            })
+            .join(';');
+          
+          if (newStyle) {
+            el.setAttribute('style', newStyle);
+          } else {
+            el.removeAttribute('style');
+          }
         }
-      }
-    });
-    
-    return div.innerHTML;
-  }
-}
-```
-
-### **Issue 2: Thêm Toolbar Items cho Font Size và Color**
-
-#### **2a. Font Size với Min/Max Constraints**
-
-Tiptap có extension `FontSize` chính thức, sử dụng `TextStyle` mark và render inline style `font-size`. Bạn cần:
-
-**Cài đặt:**
-```bash
-npm install @tiptap/extension-text-style
-```
-
-**Thêm vào extensions:**
-```typescript
-import { TextStyle } from '@tiptap/extension-text-style'
-import { FontSize } from '@tiptap/extension-text-style/font-size'
-
-const editor = useEditor({
-  extensions: [
-    StarterKit,
-    TextStyle,
-    FontSize,
-    // ... các extensions khác
-  ]
-})
-```
-
-**Tạo Toolbar Item với min/max:**
-```typescript
-const FONT_SIZES = [8, 10, 12, 14, 16, 18, 20, 24, 30, 36, 48];
-const MIN_FONT_SIZE = 8;
-const MAX_FONT_SIZE = 72;
-
-// Component cho font size picker
-const FontSizeDropdown = () => {
-  const handleFontSize = (size: number) => {
-    if (size >= MIN_FONT_SIZE && size <= MAX_FONT_SIZE) {
-      editor.chain().focus().setFontSize(`${size}px`).run();
+      });
+      
+      return div.innerHTML;
     }
-  };
-
-  return (
-    <Select onValueChange={(value) => handleFontSize(Number(value))}>
-      {FONT_SIZES.map(size => (
-        <SelectItem key={size} value={size.toString()}>
-          {size}px
-        </SelectItem>
-      ))}
-    </Select>
-  );
-};
+  },
+  content: '<p>Your content here</p>',
+});
 ```
 
-#### **2b. Color Picker**
+## **Tại sao error "no mark type named 'textStyle'"?**
 
-Extension `Color` cho phép set màu chữ thông qua inline style:
+Vì bạn đang tạo một `Extension.create()` với name là `'textStyle'`, nhưng Tiptap cần một **Mark** (dùng `Mark.create()`), không phải Extension. TextStyle là một mark renders thẻ span và cho phép thêm styling attributes.
 
-**Thêm vào extensions:**
-```typescript
-import { Color } from '@tiptap/extension-text-style/color'
-
-const editor = useEditor({
-  extensions: [
-    StarterKit,
-    TextStyle,
-    Color,
-    // ...
-  ]
-})
-```
-
-**Tạo Color Picker Toolbar:**
-```typescript
-const PRESET_COLORS = [
-  '#000000', '#FF0000', '#00FF00', '#0000FF',
-  '#FFFF00', '#FF00FF', '#00FFFF', '#FFFFFF'
-];
-
-const ColorPickerButton = () => {
-  return (
-    <Popover>
-      <PopoverTrigger>
-        <Button variant="ghost" size="sm">
-          <PaletteIcon />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent>
-        <div className="grid grid-cols-4 gap-2">
-          {PRESET_COLORS.map(color => (
-            <button
-              key={color}
-              onClick={() => editor.chain().focus().setColor(color).run()}
-              style={{ backgroundColor: color }}
-              className="w-8 h-8 rounded border"
-            />
-          ))}
-        </div>
-        <Button 
-          variant="outline" 
-          onClick={() => editor.chain().focus().unsetColor().run()}
-        >
-          Reset Color
-        </Button>
-      </PopoverContent>
-    </Popover>
-  );
-};
-```
-
-### **Lưu ý quan trọng:**
-
-1. Việc xử lý paste bằng `transformPastedHTML` là cách phổ biến nhất để loại bỏ inline styles không mong muốn
-
-2. Tiptap dựa trên ProseMirror và cần kiểm soát hoàn toàn HTML, nội dung không khớp với schema sẽ bị loại bỏ
-
-3. Font size nên có giới hạn min/max (ví dụ: 8px-72px) để tránh break UI
-
-4. Nên cung cấp cả preset colors và option để unset/reset color về mặc định
+**Giải pháp:** Import `TextStyle` mark chính thức và dùng `Extension` để add attributes vào nó thông qua `addGlobalAttributes()`.

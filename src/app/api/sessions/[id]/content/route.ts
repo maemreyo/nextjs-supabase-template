@@ -7,6 +7,8 @@ import Color from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
 import TextAlign from '@tiptap/extension-text-align';
 import Link from '@tiptap/extension-link';
+import { FontSize } from '@/lib/tiptap-extensions/font-size';
+// import { TextStyleWithColor } from '@/lib/tiptap-extensions/text-style-with-color'; // Deprecated
 import { apiLogger } from '@/services/logger';
 
 interface UpdateSessionContentRequest {
@@ -79,6 +81,40 @@ function tiptapToHTML(data: any): string {
     hasContent: !!data?.content
   });
   
+  // Debug textStyle marks to understand fontSize/color serialization
+  if (data?.content) {
+    const textNodesWithMarks: Array<{text: string, marks: Array<any>}> = [];
+    const findTextNodes = (nodes: any[]) => {
+      nodes.forEach(node => {
+        if (node.type === 'text' && node.marks) {
+          textNodesWithMarks.push({
+            text: node.text,
+            marks: node.marks
+          });
+        }
+        if (node.content) {
+          findTextNodes(node.content);
+        }
+      });
+    };
+    findTextNodes(data.content);
+    
+    // Log textStyle marks specifically to check fontSize and color
+    const textStyleMarks = textNodesWithMarks.flatMap(node =>
+      node.marks.filter(mark => mark.type === 'textStyle')
+    );
+    
+    apiLogger.debug('TipTap text nodes with marks', {
+      textNodesCount: textNodesWithMarks.length,
+      textStyleMarksCount: textStyleMarks.length,
+      sampleTextStyleMarks: textStyleMarks.slice(0, 3).map(mark => ({
+        type: mark.type,
+        attrs: mark.attrs
+      })),
+      sampleNodes: textNodesWithMarks.slice(0, 3) // Log first 3 nodes for debugging
+    });
+  }
+  
   try {
     // Use TipTap's official HTML generator with the same extensions as the editor
     const html = generateHTML(data, [
@@ -86,13 +122,29 @@ function tiptapToHTML(data: any): string {
       StarterKit,
       // Additional extensions used in editor
       Underline,
-      TextStyle,
+      TextStyle, // Use official TextStyle Mark
       Color,
+      FontSize,
       Highlight.configure({ multicolor: true }),
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       Link.configure({ openOnClick: false }),
     ]);
     
+    // Check if HTML contains font-size style
+    const hasFontSize = html.includes('font-size:');
+    const hasColorStyle = html.includes('color:');
+    
+    apiLogger.debug('HTML generation results', {
+      htmlLength: html.length,
+      hasFontSize,
+      hasColorStyle,
+      htmlPreview: html.substring(0, 300) + '...'
+    });
+    
+    apiLogger.debug('TipTap HTML generation successful', {
+      htmlLength: html.length,
+      htmlPreview: html.substring(0, 200) + '...'
+    });
 
     return html;
   } catch (error) {

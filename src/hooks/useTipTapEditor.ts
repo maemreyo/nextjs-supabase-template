@@ -2,7 +2,7 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import { TextStyle } from '@tiptap/extension-text-style';
-import Color from '@tiptap/extension-color';
+import { Color } from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
 import TextAlign from '@tiptap/extension-text-align';
 import CharacterCount from '@tiptap/extension-character-count';
@@ -112,9 +112,9 @@ export function useTipTapEditor({
         // Underline is not in StarterKit by default, so we can add it separately
       }),
       Underline,
-      TextStyle,
-      Color,
-      FontSize,
+      TextStyle, // This is a Mark, not an Extension
+      Color,     // Extension adds attribute to TextStyle mark
+      FontSize,  // Extension adds attribute to TextStyle mark
       Highlight.configure({
         multicolor: true,
       }),
