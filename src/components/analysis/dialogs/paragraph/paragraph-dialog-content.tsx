@@ -46,6 +46,7 @@ import { Progress } from '../../../ui/progress';
 import { cn } from '@/lib/utils';
 import { useDialogState } from '../hooks/use-dialog-state';
 import { useSavedAnalysisDetail } from '@/hooks/useSavedAnalysisDetail';
+import { analysisLogger } from '@/services/logger';
 
 // Import new modular components
 import { ParagraphPrimaryInformationDisplayCard } from './paragraph-primary-information-display-card';
@@ -82,13 +83,23 @@ export const ParagraphDialogContent: React.FC<ParagraphDialogContentProps> = ({
       analysisType: 'paragraph'
     }
   );
+  
+  // Debug logging
+  analysisLogger.debug('Paragraph dialog loading state', {
+    id: analysis?.id,
+    isLoading,
+    isError,
+    error: error?.message,
+    hasFullData: !!fullAnalysisData,
+    analysisType: fullAnalysisData?.analysis_type
+  });
 
   // Merge summary data with full data, prioritizing full data
   const mergedAnalysis = React.useMemo(() => {
     if (!analysis) return null;
     
     // If we have full data, merge it with summary data
-    if (fullAnalysisData && fullAnalysisData.analysis_type === 'paragraph') {
+    if (fullAnalysisData) {
       // Transform full data to match ParagraphAnalysis interface
       const fullParagraphAnalysis = {
         ...analysis,
@@ -99,7 +110,12 @@ export const ParagraphDialogContent: React.FC<ParagraphDialogContentProps> = ({
         constructiveFeedback: fullAnalysisData.paragraph_constructive_feedback || [],
       };
       
-      
+      analysisLogger.debug('Paragraph dialog merged data', {
+        originalData: Object.keys(analysis),
+        fullDataKeys: Object.keys(fullAnalysisData),
+        mergedKeys: Object.keys(fullParagraphAnalysis),
+        analysisType: fullAnalysisData.analysis_type
+      });
       
       return fullParagraphAnalysis;
     }
@@ -107,6 +123,18 @@ export const ParagraphDialogContent: React.FC<ParagraphDialogContentProps> = ({
     // Fallback to summary data if full data is not available
     return analysis;
   }, [analysis, fullAnalysisData]);
+  
+  // Debug logging for merged analysis
+  React.useEffect(() => {
+    analysisLogger.debug('Paragraph dialog state', {
+      hasAnalysis: !!analysis,
+      hasFullData: !!fullAnalysisData,
+      hasMergedData: !!mergedAnalysis,
+      isLoading,
+      isFetchingFullData,
+      analysisType: fullAnalysisData?.analysis_type
+    });
+  }, [analysis, fullAnalysisData, mergedAnalysis, isLoading, isFetchingFullData, fullAnalysisData?.analysis_type]);
 
   // Update loading states
   useEffect(() => {
@@ -117,15 +145,16 @@ export const ParagraphDialogContent: React.FC<ParagraphDialogContentProps> = ({
         actions.setLoading(true);
       } else {
         setIsFetchingFullData(false);
-        // Clear loading when we have merged data
-        if (mergedAnalysis) {
+        // Clear loading when not fetching and we have either analysis or merged data
+        if (analysis || mergedAnalysis) {
           actions.setLoading(false);
         }
       }
     } catch (error) {
       setIsFetchingFullData(false);
+      actions.setLoading(false);
     }
-  }, [isLoading, mergedAnalysis, actions]);
+  }, [isLoading, actions, analysis, mergedAnalysis]);
 
   // Handle error state
   useEffect(() => {
@@ -208,8 +237,8 @@ export const ParagraphDialogContent: React.FC<ParagraphDialogContentProps> = ({
     );
   }
 
-  // Show loading state while fetching full data
-  if (isFetchingFullData && !mergedAnalysis) {
+  // Show loading state only when we don't have any data yet
+  if (isFetchingFullData && !analysis && !mergedAnalysis) {
     return (
       <div className={cn('space-y-4', className)}>
         <div className="animate-pulse space-y-4">

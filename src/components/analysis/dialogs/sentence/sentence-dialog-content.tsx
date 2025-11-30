@@ -21,6 +21,7 @@ import { Button } from '../../../ui/button';
 import { cn } from '@/lib/utils';
 import { useDialogState } from '../hooks/use-dialog-state';
 import { useSavedAnalysisDetail } from '@/hooks/useSavedAnalysisDetail';
+import { analysisLogger } from '@/services/logger';
 
 /**
  * Main Sentence Dialog Content Component
@@ -47,13 +48,23 @@ export const SentenceDialogContent: React.FC<SentenceDialogContentProps> = ({
       analysisType: 'sentence'
     }
   );
+  
+  // Debug logging
+  analysisLogger.debug('Sentence dialog loading state', {
+    id: analysis?.id,
+    isLoading,
+    isError,
+    error: error?.message,
+    hasFullData: !!fullAnalysisData,
+    analysisType: fullAnalysisData?.analysis_type
+  });
 
   // Merge summary data with full data, prioritizing full data
   const mergedAnalysis = React.useMemo(() => {
     if (!analysis) return null;
     
     // If we have full data, merge it with summary data
-    if (fullAnalysisData && fullAnalysisData.analysis_type === 'sentence') {
+    if (fullAnalysisData) {
       // Transform full data to match SentenceAnalysis interface
       const fullSentenceAnalysis = {
         ...analysis,
@@ -64,7 +75,12 @@ export const SentenceDialogContent: React.FC<SentenceDialogContentProps> = ({
         rewriteSuggestions: fullAnalysisData.sentence_rewrite_suggestions || [],
       };
       
-      
+      analysisLogger.debug('Sentence dialog merged data', {
+        originalData: Object.keys(analysis),
+        fullDataKeys: Object.keys(fullAnalysisData),
+        mergedKeys: Object.keys(fullSentenceAnalysis),
+        analysisType: fullAnalysisData.analysis_type
+      });
       
       return fullSentenceAnalysis;
     }
@@ -72,6 +88,18 @@ export const SentenceDialogContent: React.FC<SentenceDialogContentProps> = ({
     // Fallback to summary data if full data is not available
     return analysis;
   }, [analysis, fullAnalysisData]);
+  
+  // Debug logging for merged analysis
+  React.useEffect(() => {
+    analysisLogger.debug('Sentence dialog state', {
+      hasAnalysis: !!analysis,
+      hasFullData: !!fullAnalysisData,
+      hasMergedData: !!mergedAnalysis,
+      isLoading,
+      isFetchingFullData,
+      analysisType: fullAnalysisData?.analysis_type
+    });
+  }, [analysis, fullAnalysisData, mergedAnalysis, isLoading, isFetchingFullData, fullAnalysisData?.analysis_type]);
 
   // Update loading states
   useEffect(() => {
@@ -82,15 +110,16 @@ export const SentenceDialogContent: React.FC<SentenceDialogContentProps> = ({
         actions.setLoading(true);
       } else {
         setIsFetchingFullData(false);
-        // Clear loading when we have merged data
-        if (mergedAnalysis) {
+        // Clear loading when not fetching and we have either analysis or merged data
+        if (analysis || mergedAnalysis) {
           actions.setLoading(false);
         }
       }
     } catch (error) {
       setIsFetchingFullData(false);
+      actions.setLoading(false);
     }
-  }, [isLoading, mergedAnalysis, actions]);
+  }, [isLoading, actions, analysis, mergedAnalysis]);
 
   // Handle error state
   useEffect(() => {
@@ -170,8 +199,8 @@ export const SentenceDialogContent: React.FC<SentenceDialogContentProps> = ({
     );
   }
 
-  // Show loading state while fetching full data
-  if (isFetchingFullData && !mergedAnalysis) {
+  // Show loading state only when we don't have any data yet
+  if (isFetchingFullData && !analysis && !mergedAnalysis) {
     return (
       <div className={cn('space-y-4', className)}>
         <div className="animate-pulse space-y-4">

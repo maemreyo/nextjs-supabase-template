@@ -209,18 +209,18 @@ export const BaseAnalysisDialog = ({
   }, [open, onOpenChange]);
   
   // Render loading state - moved after all hooks to maintain Rules of Hooks
-  if (shouldShowGlobalLoading) {
-    return (
-      <div className={dialogClasses}>
-        <DialogLoadingIndicator
-          type="global"
-          message={loadingConfig?.customMessages?.global || message || undefined}
-          overlay={true}
-          size="lg"
-        />
-      </div>
-    );
-  }
+  // if (shouldShowGlobalLoading) {
+  //   return (
+  //     <div className={dialogClasses}>
+  //       <DialogLoadingIndicator
+  //         type="global"
+  //         message={loadingConfig?.customMessages?.global || message || undefined}
+  //         overlay={true}
+  //         size="lg"
+  //       />
+  //     </div>
+  //   );
+  // }
 
   return (
     <Dialog

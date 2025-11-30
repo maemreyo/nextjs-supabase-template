@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-keys';
 import { useSupabase } from '@/components/providers/supabase-provider';
+import { analysisLogger } from '@/services/logger';
 
 interface AnalysisDetailResponse {
   success: boolean;
@@ -67,6 +68,8 @@ export function useSavedAnalysisDetail(
           ? `/api/analyses/${id}?type=${analysisType}`
           : `/api/analyses/${id}`;
         
+        analysisLogger.debug('Fetching analysis detail', { id, analysisType, url });
+        
         const response = await fetch(url, {
           method: 'GET',
           headers,
@@ -81,6 +84,19 @@ export function useSavedAnalysisDetail(
 
         const result: AnalysisDetailResponse = await response.json();
         
+        // Ensure the response data has the correct analysis_type
+        if (result.data && !result.data.analysis_type && analysisType) {
+          result.data.analysis_type = analysisType;
+        }
+        
+        analysisLogger.debug('Analysis detail response', {
+          id,
+          analysisType,
+          success: result.success,
+          hasData: !!result.data,
+          dataType: result.data?.analysis_type,
+          dataKeys: result.data ? Object.keys(result.data) : []
+        });
 
         return result;
       } catch (error) {

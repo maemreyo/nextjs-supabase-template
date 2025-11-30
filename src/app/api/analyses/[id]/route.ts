@@ -370,7 +370,7 @@ export async function DELETE(
 
 // GET /api/analyses/[id] - Get analysis by ID
 export async function GET(
-request: NextRequest,
+  request: NextRequest,
 { params }: { params: Promise<{ id: string }> }
 ) {
 apiLogger.start('Handling GET /api/analyses/[id]', {
@@ -415,18 +415,121 @@ try {
     );
   }
 
-  // Find the analysis in all three tables
-  let analysisData: any = null;
-  let analysisType: 'word' | 'sentence' | 'paragraph' | 'phrase' | null = null;
+  // Parse analysis ID to extract type prefix if present (e.g., "word_abc123" -> type: "word", id: "abc123")
+  let idPrefix = '';
+  let actualId = analysisId;
+  const idParts = analysisId.split('_', 2);
   
-  // Use analysis type from URL parameter if provided
-  if (analysisTypeFromParam) {
-    analysisType = analysisTypeFromParam;
-    apiLogger.info('Using analysis type from URL parameter', {
-      analysisType: analysisTypeFromParam,
-      analysisId
+  if (idParts.length === 2 && idParts[0] && ['word', 'sentence', 'paragraph', 'phrase'].includes(idParts[0])) {
+    idPrefix = idParts[0];
+    actualId = idParts[1] || analysisId; // Fallback to original ID if second part is missing
+  }
+
+  // Determine which type to use: URL parameter takes priority, then ID prefix, then fallback to search all
+  let targetType: 'word' | 'sentence' | 'paragraph' | 'phrase' | null = analysisTypeFromParam;
+  
+  if (!targetType && idPrefix) {
+    targetType = idPrefix as 'word' | 'sentence' | 'paragraph' | 'phrase';
+    apiLogger.info('Using analysis type from ID prefix', {
+      analysisType: targetType,
+      analysisId,
+      actualId
     });
   }
+
+  let analysisData: any = null;
+  let analysisType: 'word' | 'sentence' | 'paragraph' | 'phrase' | null = null;
+
+  // If we have a specific type, query only that table
+  if (targetType) {
+    apiLogger.info('Querying specific analysis type', {
+      targetType,
+      actualId
+    });
+
+    switch (targetType) {
+      case 'word':
+        {
+          const { data: wordAnalysis, error: wordError } = await supabase
+            .from('word_analyses')
+            .select(`
+              *,
+              word_synonyms(*),
+              word_antonyms(*),
+              word_collocations(*)
+            `)
+            .eq('id', actualId)
+            .eq('user_id', user.id)
+            .single();
+
+          if (!wordError && wordAnalysis) {
+            analysisData = { ...wordAnalysis, analysis_type: 'word' };
+            analysisType = 'word';
+          }
+        }
+        break;
+
+      case 'sentence':
+        {
+          const { data: sentenceAnalysis, error: sentenceError } = await supabase
+            .from('sentence_analyses')
+            .select(`
+              *,
+              sentence_key_components(*),
+              sentence_rewrite_suggestions(*)
+            `)
+            .eq('id', actualId)
+            .eq('user_id', user.id)
+            .single();
+
+          if (!sentenceError && sentenceAnalysis) {
+            analysisData = { ...sentenceAnalysis, analysis_type: 'sentence' };
+            analysisType = 'sentence';
+          }
+        }
+        break;
+
+      case 'phrase':
+        {
+          const { data: phraseAnalysis, error: phraseError } = await supabase
+            .from('phrase_analyses')
+            .select('*')
+            .eq('id', actualId)
+            .eq('user_id', user.id)
+            .single();
+
+          if (!phraseError && phraseAnalysis) {
+            analysisData = { ...phraseAnalysis, analysis_type: 'phrase' };
+            analysisType = 'phrase';
+          }
+        }
+        break;
+
+      case 'paragraph':
+        {
+          const { data: paragraphAnalysis, error: paragraphError } = await supabase
+            .from('paragraph_analyses')
+            .select(`
+              *,
+              paragraph_structure_breakdown(*),
+              paragraph_constructive_feedback(*)
+            `)
+            .eq('id', actualId)
+            .eq('user_id', user.id)
+            .single();
+
+          if (!paragraphError && paragraphAnalysis) {
+            analysisData = { ...paragraphAnalysis, analysis_type: 'paragraph' };
+            analysisType = 'paragraph';
+          }
+        }
+        break;
+    }
+  } else {
+    // Fallback: search all tables if no type specified
+    apiLogger.info('No type specified, searching all tables', {
+      analysisId: actualId
+    });
 
     // Check word_analyses table
     const { data: wordAnalysis, error: wordError } = await supabase
@@ -437,12 +540,13 @@ try {
         word_antonyms(*),
         word_collocations(*)
       `)
-      .eq('id', analysisId)
+      .eq('id', actualId)
       .eq('user_id', user.id)
       .single();
 
     if (!wordError && wordAnalysis) {
       analysisData = { ...wordAnalysis, analysis_type: 'word' };
+      analysisType = 'word';
     } else {
       // Check sentence_analyses table
       const { data: sentenceAnalysis, error: sentenceError } = await supabase
@@ -452,23 +556,25 @@ try {
           sentence_key_components(*),
           sentence_rewrite_suggestions(*)
         `)
-        .eq('id', analysisId)
+        .eq('id', actualId)
         .eq('user_id', user.id)
         .single();
 
       if (!sentenceError && sentenceAnalysis) {
         analysisData = { ...sentenceAnalysis, analysis_type: 'sentence' };
+        analysisType = 'sentence';
       } else {
         // Check phrase_analyses table
         const { data: phraseAnalysis, error: phraseError } = await supabase
           .from('phrase_analyses')
           .select('*')
-          .eq('id', analysisId)
+          .eq('id', actualId)
           .eq('user_id', user.id)
           .single();
 
         if (!phraseError && phraseAnalysis) {
           analysisData = { ...phraseAnalysis, analysis_type: 'phrase' };
+          analysisType = 'phrase';
         } else {
           // Check paragraph_analyses table
           const { data: paragraphAnalysis, error: paragraphError } = await supabase
@@ -478,18 +584,26 @@ try {
               paragraph_structure_breakdown(*),
               paragraph_constructive_feedback(*)
             `)
-            .eq('id', analysisId)
+            .eq('id', actualId)
             .eq('user_id', user.id)
             .single();
 
           if (!paragraphError && paragraphAnalysis) {
             analysisData = { ...paragraphAnalysis, analysis_type: 'paragraph' };
+            analysisType = 'paragraph';
           }
         }
       }
     }
+  }
 
     if (!analysisData) {
+      apiLogger.warn('Analysis not found', {
+        analysisId: actualId,
+        targetType,
+        userId: user.id
+      });
+      
       return NextResponse.json(
         { error: 'Analysis not found or you do not have permission to access it' },
         { status: 404 }
@@ -500,21 +614,29 @@ try {
     const { data: sessionAnalysis } = await supabase
       .from('session_analyses')
       .select('*')
-      .eq('analysis_id', analysisId)
+      .eq('analysis_id', actualId)
       .single();
 
     if (sessionAnalysis) {
       analysisData.session_analysis = sessionAnalysis;
     }
 
+    // Create consistent response structure for all analysis types
+    const responseData = {
+      analysis: analysisData,
+      fullData: analysisData, // For backward compatibility with frontend expectations
+      ...analysisData // Spread all analysis data for direct access
+    };
+
     apiLogger.success('Analysis retrieved successfully', {
-      analysisId,
-      analysisType: analysisData?.analysis_type
+      analysisId: actualId,
+      analysisType,
+      targetType
     })
 
     return NextResponse.json({
       success: true,
-      data: analysisData
+      data: responseData
     });
 
   } catch (error) {
