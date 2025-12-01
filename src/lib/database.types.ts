@@ -406,6 +406,139 @@ export type Database = {
           },
         ]
       }
+      highlight_metadata: {
+        Row: {
+          click_count: number | null
+          created_at: string | null
+          document_context: string | null
+          highlight_id: string
+          id: string
+          metadata: Json | null
+          paragraph_index: number | null
+          selection_duration_ms: number | null
+          sentence_index: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          click_count?: number | null
+          created_at?: string | null
+          document_context?: string | null
+          highlight_id: string
+          id?: string
+          metadata?: Json | null
+          paragraph_index?: number | null
+          selection_duration_ms?: number | null
+          sentence_index?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          click_count?: number | null
+          created_at?: string | null
+          document_context?: string | null
+          highlight_id?: string
+          id?: string
+          metadata?: Json | null
+          paragraph_index?: number | null
+          selection_duration_ms?: number | null
+          sentence_index?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "highlight_metadata_highlight_id_fkey"
+            columns: ["highlight_id"]
+            isOneToOne: false
+            referencedRelation: "highlights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "highlight_metadata_highlight_id_fkey"
+            columns: ["highlight_id"]
+            isOneToOne: false
+            referencedRelation: "highlights_with_analysis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      highlights: {
+        Row: {
+          analysis_id: string | null
+          analysis_type: string | null
+          analyzed_at: string | null
+          color: string | null
+          content: string
+          created_at: string | null
+          end_position: number
+          error_message: string | null
+          highlight_type: string
+          id: string
+          selected_text: string
+          session_id: string
+          start_position: number
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          analysis_id?: string | null
+          analysis_type?: string | null
+          analyzed_at?: string | null
+          color?: string | null
+          content: string
+          created_at?: string | null
+          end_position: number
+          error_message?: string | null
+          highlight_type: string
+          id?: string
+          selected_text: string
+          session_id: string
+          start_position: number
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          analysis_id?: string | null
+          analysis_type?: string | null
+          analyzed_at?: string | null
+          color?: string | null
+          content?: string
+          created_at?: string | null
+          end_position?: number
+          error_message?: string | null
+          highlight_type?: string
+          id?: string
+          selected_text?: string
+          session_id?: string
+          start_position?: number
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "highlights_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "highlights_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "session_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "highlights_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       paragraph_analyses: {
         Row: {
           better_version: string | null
@@ -413,6 +546,7 @@ export type Database = {
           document_id: string | null
           flow_score: number | null
           gap_analysis: string | null
+          highlight_id: string | null
           id: string
           keywords: string[] | null
           logic_score: number | null
@@ -436,6 +570,7 @@ export type Database = {
           document_id?: string | null
           flow_score?: number | null
           gap_analysis?: string | null
+          highlight_id?: string | null
           id?: string
           keywords?: string[] | null
           logic_score?: number | null
@@ -459,6 +594,7 @@ export type Database = {
           document_id?: string | null
           flow_score?: number | null
           gap_analysis?: string | null
+          highlight_id?: string | null
           id?: string
           keywords?: string[] | null
           logic_score?: number | null
@@ -482,6 +618,20 @@ export type Database = {
             columns: ["document_id"]
             isOneToOne: false
             referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "paragraph_analyses_highlight_id_fkey"
+            columns: ["highlight_id"]
+            isOneToOne: false
+            referencedRelation: "highlights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "paragraph_analyses_highlight_id_fkey"
+            columns: ["highlight_id"]
+            isOneToOne: false
+            referencedRelation: "highlights_with_analysis"
             referencedColumns: ["id"]
           },
           {
@@ -578,6 +728,7 @@ export type Database = {
           example_translations: string[] | null
           frequency_level: string | null
           grammatical_pattern: string | null
+          highlight_id: string | null
           id: string
           literal_meaning: string | null
           memory_aid: string | null
@@ -610,6 +761,7 @@ export type Database = {
           example_translations?: string[] | null
           frequency_level?: string | null
           grammatical_pattern?: string | null
+          highlight_id?: string | null
           id?: string
           literal_meaning?: string | null
           memory_aid?: string | null
@@ -642,6 +794,7 @@ export type Database = {
           example_translations?: string[] | null
           frequency_level?: string | null
           grammatical_pattern?: string | null
+          highlight_id?: string | null
           id?: string
           literal_meaning?: string | null
           memory_aid?: string | null
@@ -669,6 +822,20 @@ export type Database = {
             columns: ["document_id"]
             isOneToOne: false
             referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phrase_analyses_highlight_id_fkey"
+            columns: ["highlight_id"]
+            isOneToOne: false
+            referencedRelation: "highlights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phrase_analyses_highlight_id_fkey"
+            columns: ["highlight_id"]
+            isOneToOne: false
+            referencedRelation: "highlights_with_analysis"
             referencedColumns: ["id"]
           },
           {
@@ -722,6 +889,7 @@ export type Database = {
           created_at: string | null
           document_id: string | null
           function: string | null
+          highlight_id: string | null
           id: string
           literal_translation: string | null
           main_idea: string | null
@@ -744,6 +912,7 @@ export type Database = {
           created_at?: string | null
           document_id?: string | null
           function?: string | null
+          highlight_id?: string | null
           id?: string
           literal_translation?: string | null
           main_idea?: string | null
@@ -766,6 +935,7 @@ export type Database = {
           created_at?: string | null
           document_id?: string | null
           function?: string | null
+          highlight_id?: string | null
           id?: string
           literal_translation?: string | null
           main_idea?: string | null
@@ -788,6 +958,20 @@ export type Database = {
             columns: ["document_id"]
             isOneToOne: false
             referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sentence_analyses_highlight_id_fkey"
+            columns: ["highlight_id"]
+            isOneToOne: false
+            referencedRelation: "highlights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sentence_analyses_highlight_id_fkey"
+            columns: ["highlight_id"]
+            isOneToOne: false
+            referencedRelation: "highlights_with_analysis"
             referencedColumns: ["id"]
           },
           {
@@ -1800,6 +1984,7 @@ export type Database = {
           document_id: string | null
           example_sentence: string | null
           example_translation: string | null
+          highlight_id: string | null
           id: string
           inference_clues: string | null
           inference_reasoning: string | null
@@ -1821,6 +2006,7 @@ export type Database = {
           document_id?: string | null
           example_sentence?: string | null
           example_translation?: string | null
+          highlight_id?: string | null
           id?: string
           inference_clues?: string | null
           inference_reasoning?: string | null
@@ -1842,6 +2028,7 @@ export type Database = {
           document_id?: string | null
           example_sentence?: string | null
           example_translation?: string | null
+          highlight_id?: string | null
           id?: string
           inference_clues?: string | null
           inference_reasoning?: string | null
@@ -1862,6 +2049,20 @@ export type Database = {
             columns: ["document_id"]
             isOneToOne: false
             referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "word_analyses_highlight_id_fkey"
+            columns: ["highlight_id"]
+            isOneToOne: false
+            referencedRelation: "highlights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "word_analyses_highlight_id_fkey"
+            columns: ["highlight_id"]
+            isOneToOne: false
+            referencedRelation: "highlights_with_analysis"
             referencedColumns: ["id"]
           },
           {
@@ -2085,6 +2286,56 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "ai_usage_analytics"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      highlights_with_analysis: {
+        Row: {
+          analysis_data: Json | null
+          analysis_id: string | null
+          analysis_type: string | null
+          analyzed_at: string | null
+          click_count: number | null
+          color: string | null
+          content: string | null
+          created_at: string | null
+          document_context: string | null
+          end_position: number | null
+          error_message: string | null
+          highlight_metadata: Json | null
+          highlight_type: string | null
+          id: string | null
+          paragraph_index: number | null
+          selected_text: string | null
+          selection_duration_ms: number | null
+          sentence_index: number | null
+          session_id: string | null
+          start_position: number | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "highlights_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "highlights_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "session_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "highlights_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
         ]
       }

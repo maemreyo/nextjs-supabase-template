@@ -1,3 +1,10 @@
+/*
+ * DEPRECATED: Hook này đã được thay thế bởi hệ thống highlights mới
+ * Giữ lại để tham khảo, có thể khôi phục sau này nếu cần
+ *
+ * This hook has been replaced by the new highlights system
+ * Kept for reference, can be restored later if needed
+ */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { WordAnalysis, AnalyzeWordRequest, AnalysisResponse } from '@/lib/ai/types';
 import { useSupabase } from '@/components/providers/supabase-provider';

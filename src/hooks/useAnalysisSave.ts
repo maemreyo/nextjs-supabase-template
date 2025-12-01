@@ -12,7 +12,6 @@ interface SaveAnalysisParams {
   text: string;
   analysisData: AnalysisData;
   sessionId?: string;
-  documentId?: string;
 }
 
 interface SaveAnalysisResponse {

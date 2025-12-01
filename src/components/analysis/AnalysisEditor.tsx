@@ -40,10 +40,15 @@ import EditorContent from './EditorContent';
 import EditorStatusBar from './EditorStatusBar';
 import BubbleMenu from './BubbleMenu';
 import AnalysisDynamicIslandStatusBar from './AnalysisDynamicIslandStatusBar';
+import HighlightAnalysisDialog from './HighlightAnalysisDialog';
+// import HighlightsSidebar from './HighlightsSidebar';
+// COMMENTED: Sidebar cũ đã được tạm thời vô hiệu hóa để chuyển sang hệ thống highlights mới
+// Có thể restore lại sau này nếu cần thiết
 
 // Import new hooks
 import useAnalysisLogic from '@/hooks/useAnalysisLogic';
 import useKeyboardShortcuts from '@/hooks/useKeyboardShortcuts';
+import { useHighlights, type Highlight } from '@/hooks/useHighlights';
 
 export function AnalysisEditor({
   onTextSelect,
@@ -65,14 +70,14 @@ export function AnalysisEditor({
 }) {
   // Get sessionId from URL parameters if not provided as prop
   const searchParams = useSearchParams();
-  
+
   // For Next.js 16, we need to handle searchParams carefully
   // Let's access the sessionId directly from the searchParams object
   let urlSessionId: string | null = null;
   try {
     // Try to get sessionId directly - this should work with both old and new Next.js
     urlSessionId = (searchParams as any)?.get?.('sessionId');
-    
+
     // Validate the sessionId if we got one
     if (urlSessionId && NavigationValidation.isValidSessionId(urlSessionId)) {
       // Valid sessionId
@@ -82,7 +87,7 @@ export function AnalysisEditor({
   } catch (error) {
     urlSessionId = null;
   }
-  
+
   const sessionId = propSessionId || urlSessionId || undefined;
   const { navigateToSessions, navigateToAnalysis } = useAppNavigation();
 
@@ -94,12 +99,28 @@ export function AnalysisEditor({
   const [sessionQuickActionsOpen, setSessionQuickActionsOpen] = useState(false);
   const [analysisType, setAnalysisType] = useState<'word' | 'phrase' | 'sentence' | 'paragraph'>('word');
   const [overlayVisible, setOverlayVisible] = useState(false);
-  
+
   // Dynamic Island state
   const [dynamicIslandVisible, setDynamicIslandVisible] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [analysisProgress, setAnalysisProgress] = useState(0);
-  
+
+  // Highlights state
+  const {
+    createHighlight,
+    highlights,
+    loading: highlightsLoading,
+    error: highlightsError,
+    refetch: refetchHighlights
+  } = useHighlights({
+    sessionId: sessionId || '',
+    autoRefresh: true
+  });
+
+  // Highlight analysis dialog state
+  const [highlightAnalysisDialogOpen, setHighlightAnalysisDialogOpen] = useState(false);
+  const [selectedHighlightForAnalysis, setSelectedHighlightForAnalysis] = useState<Highlight | null>(null);
+
   // Refs để tránh race conditions
   const analysisInProgressRef = useRef(false);
   const lastAnalysisRequestRef = useRef<string>('');
@@ -225,7 +246,7 @@ export function AnalysisEditor({
     onAnalysisComplete: (result) => {
       setAnalysisProgress(100);
       onAnalysisComplete?.(result);
-      
+
       // Refetch session analyses after successful analysis if autoSave is enabled
       if (sessionId && autoSaveEnabled) {
         queryClient.invalidateQueries({
@@ -256,7 +277,7 @@ export function AnalysisEditor({
       toast.success('Đã lưu phân tích thành công', {
         duration: 2000,
       });
-      
+
       // Refetch session analyses after successful save
       if (sessionId) {
         queryClient.invalidateQueries({
@@ -296,7 +317,7 @@ export function AnalysisEditor({
   // Handle analysis request function with security validation
   const handleAnalysisRequest = useMemoizedCallback(async (text: string, type: 'word' | 'phrase' | 'sentence' | 'paragraph') => {
     clientLogger.info('AnalysisEditor', { type: 'analysis_request', textLength: text.length, analysisType: type });
-    
+
     // Validate and sanitize input
     const validation = validateAnalysisText(text, {
       maxLength: 10000,
@@ -332,28 +353,105 @@ export function AnalysisEditor({
     hideBubbleMenu();
   }, [formatCommands, hideBubbleMenu]);
 
+  // Handle add highlight
+  const handleAddHighlight = useCallback(async (highlightData: {
+    sessionId?: string;
+    type: 'word' | 'phrase' | 'sentence' | 'paragraph';
+    text: string;
+    startPosition: number;
+    endPosition: number;
+    color: string;
+    content?: string;
+  }) => {
+    try {
+      clientLogger.info('AnalysisEditor', { type: 'add_highlight', highlightData });
+
+      if (!sessionId) {
+        toast.error('Không có session', {
+          description: 'Vui lòng tạo hoặc chọn session trước khi thêm highlight.',
+          duration: 3000,
+        });
+        return;
+      }
+
+      // Lấy nội dung đầy đủ từ editor - ưu tiên editor.getText() để có nội dung gốc
+      const fullContent = editor?.getText() || highlightData.content || getContent.text || '';
+
+      await createHighlight({
+        sessionId: sessionId,
+        type: highlightData.type,
+        text: highlightData.text,
+        startPosition: highlightData.startPosition,
+        endPosition: highlightData.endPosition,
+        color: highlightData.color,
+        content: fullContent
+      });
+
+      toast.success('Đã thêm highlight thành công', {
+        duration: 2000,
+      });
+
+      // Refetch highlights to update the list
+      refetchHighlights();
+    } catch (error) {
+      clientLogger.error('AnalysisEditor', { type: 'add_highlight_failed', error: error instanceof Error ? error.message : 'Unknown error' });
+      toast.error('Thêm highlight thất bại', {
+        description: error instanceof Error ? error.message : 'Đã xảy ra lỗi không xác định',
+        duration: 3000,
+      });
+    }
+  }, [sessionId, editor, getContent.text, createHighlight, refetchHighlights]);
+
+  // Handle highlight analysis
+  const handleHighlightAnalyze = useCallback(async (highlight: Highlight) => {
+    clientLogger.info('AnalysisEditor', { type: 'highlight_analyze', highlightId: highlight.id });
+    setSelectedHighlightForAnalysis(highlight);
+    setHighlightAnalysisDialogOpen(true);
+  }, []);
+
+  // Handle highlight view details
+  const handleHighlightViewDetails = useCallback(async (highlight: Highlight) => {
+    clientLogger.info('AnalysisEditor', { type: 'highlight_view_details', highlightId: highlight.id });
+    setSelectedHighlightForAnalysis(highlight);
+    setHighlightAnalysisDialogOpen(true);
+  }, []);
+
+  // Handle highlight analysis dialog close
+  const handleHighlightAnalysisDialogClose = useCallback(() => {
+    clientLogger.info('AnalysisEditor', { type: 'highlight_analysis_dialog_closed' });
+    setHighlightAnalysisDialogOpen(false);
+    setSelectedHighlightForAnalysis(null);
+  }, []);
+
+  // Handle highlight analysis complete
+  const handleHighlightAnalysisComplete = useCallback((result: any) => {
+    clientLogger.info('AnalysisEditor', { type: 'highlight_analysis_complete', highlightId: selectedHighlightForAnalysis?.id });
+    // Refetch highlights to update the list
+    refetchHighlights();
+  }, [selectedHighlightForAnalysis?.id, refetchHighlights]);
+
   // Handle analysis with security validation
   const handleAnalyze = useMemoizedCallback(async () => {
     const textToAnalyze = selection.text || getContent.text || '';
     if (!textToAnalyze.trim()) return;
 
     clientLogger.info('AnalysisEditor', { type: 'analyze_clicked', textLength: textToAnalyze.length, selectionType: selection.type });
-    
+
     // Tạo unique key cho request này để tránh duplicate
     const requestKey = `${textToAnalyze.trim()}-${selection.type}`;
-    
+
     // Kiểm tra race condition
     if (analysisInProgressRef.current) {
       clientLogger.debug('AnalysisEditor', { type: 'analysis_in_progress', requestKey });
       return;
     }
-    
+
     // Kiểm tra duplicate request
     if (lastAnalysisRequestRef.current === requestKey) {
       clientLogger.debug('AnalysisEditor', { type: 'duplicate_request_prevented', requestKey });
       return;
     }
-    
+
     // Đặt flags để theo dõi
     analysisInProgressRef.current = true;
     lastAnalysisRequestRef.current = requestKey;
@@ -388,9 +486,9 @@ export function AnalysisEditor({
       // FIX: Luôn sử dụng selection.type trực tiếp, không fallback sang analysisType state
       // selection.type luôn có giá trị hợp lệ khi có text được chọn
       const analysisTypeToUse = selection.type;
-      
+
       clientLogger.info('AnalysisEditor', { type: 'analysis_started', analysisType: analysisTypeToUse, textLength: securityResult.sanitized.length });
-      
+
       await triggerAnalysis(securityResult.sanitized, analysisTypeToUse);
       hideBubbleMenu();
     } catch (error) {
@@ -410,7 +508,7 @@ export function AnalysisEditor({
   // Handle save
   const handleSave = useCallback(() => {
     clientLogger.info('AnalysisEditor', { type: 'save_clicked', hasAnalysisResult: !!lastAnalysisResult, sessionId });
-    
+
     if (lastAnalysisResult && lastAnalysisResult.data) {
       if (sessionId) {
         clientLogger.info('AnalysisEditor', { type: 'save_to_session', sessionId });
@@ -543,7 +641,7 @@ export function AnalysisEditor({
   const handleCreateNewSession = useMemoizedCallback(async () => {
     const title = `Session mới - ${new Date().toLocaleDateString('vi-VN')}`;
     clientLogger.info('AnalysisEditor', { type: 'create_new_session', title });
-    
+
     // Validate session title
     const titleValidation = validateInput(title, 'analysisText', {
       maxLength: 100,
@@ -619,42 +717,38 @@ export function AnalysisEditor({
           </div>
         )} */}
 
-        <Card className="h-full">
-          {/* Toolbar */}
-          <EditorToolbar
-            isSaving={isSaving}
-            hasUnsavedChanges={hasUnsavedChanges}
-            lastAnalysisResult={lastAnalysisResult}
-            sessionId={sessionId}
-            onSave={handleSave}
-            onSessionActions={() => setSessionQuickActionsOpen(true)}
-            formatCommands={formatCommands}
-            activeFormats={activeFormats}
-            selection={{
-              text: selection.text,
-              type: selection.type,
-            }}
-            expandToWord={expandToWord}
-            expandToSentence={expandToSentence}
-            expandToParagraph={expandToParagraph}
-            highlightColors={highlightColors}
-            onHighlight={handleHighlight}
-          />
+        {/* Toolbar */}
+        <EditorToolbar
+          isSaving={isSaving}
+          hasUnsavedChanges={hasUnsavedChanges}
+          lastAnalysisResult={lastAnalysisResult}
+          sessionId={sessionId}
+          onSave={handleSave}
+          onSessionActions={() => setSessionQuickActionsOpen(true)}
+          formatCommands={formatCommands}
+          activeFormats={activeFormats}
+          selection={{
+            text: selection.text,
+            type: selection.type,
+          }}
+          expandToWord={expandToWord}
+          expandToSentence={expandToSentence}
+          expandToParagraph={expandToParagraph}
+          highlightColors={highlightColors}
+          onHighlight={handleHighlight}
+        />
 
-          {/* Editor */}
-          <EditorContent
-            editor={editor}
-          />
+        {/* Editor */}
+        <EditorContent
+          editor={editor}
+        />
 
-          {/* Status bar */}
-          {/* <EditorStatusBar
-            textStats={textStats}
-            hasUnsavedChanges={hasUnsavedChanges}
-            isAnalyzing={effectiveIsAnalyzing}
-            lastAnalysisResult={lastAnalysisResult as any}
-            onAnalyze={handleAnalyze}
-          /> */}
-        </Card>
+        {/* Session Quick Actions Dialog */}
+        <SessionQuickActions
+          currentSession={session}
+          isOpen={sessionQuickActionsOpen}
+          onOpenChange={setSessionQuickActionsOpen}
+        />
 
         {/* Bubble Menu */}
         <BubbleMenu
@@ -673,7 +767,16 @@ export function AnalysisEditor({
           onSave={handleSave}
           onPronounce={handlePronounce}
           onHighlight={handleHighlight}
+          onAddHighlight={handleAddHighlight}
           onDynamicIslandTrigger={handleDynamicIslandTrigger}
+        />
+
+        {/* Highlight Analysis Dialog */}
+        <HighlightAnalysisDialog
+          highlight={selectedHighlightForAnalysis}
+          isOpen={highlightAnalysisDialogOpen}
+          onClose={handleHighlightAnalysisDialogClose}
+          onAnalyzeComplete={handleHighlightAnalysisComplete}
         />
 
         {/* Dynamic Island Status Bar */}

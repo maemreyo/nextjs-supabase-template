@@ -81,7 +81,7 @@ export function createErrorResponse(error: string, status: number = 500) {
 
 // Wrapper for API handlers with authentication
 export function withAuth<T extends any[]>(
-  handler: (request: any, context: { user: User; supabase: Awaited<ReturnType<typeof createClient>> } & Record<string, any>, ...args: T) => Promise<Response>
+  handler: (request: any, context: { user: User; supabase: Awaited<ReturnType<typeof createClient>>; params?: Promise<{ id: string }> | { id: string } | undefined } & Record<string, any>, ...args: T) => Promise<Response>
 ) {
   return async (request: any, context: Record<string, any>, ...args: T): Promise<Response> => {
     try {
@@ -90,7 +90,8 @@ export function withAuth<T extends any[]>(
       // Handle Next.js 15+ async params
       let resolvedContext = { ...context };
       if (context.params && typeof context.params.then === 'function') {
-        resolvedContext.params = await context.params;
+        const resolvedParams = await context.params;
+        resolvedContext.params = resolvedParams;
       }
       
       return await handler(request, { user, supabase, ...resolvedContext }, ...args);

@@ -1,3 +1,10 @@
+/*
+ * DEPRECATED: Các component này đã được thay thế bởi hệ thống highlights mới
+ * Giữ lại để tham khảo, có thể khôi phục sau này nếu cần
+ *
+ * These components have been replaced by the new highlights system
+ * Kept for reference, can be restored later if needed
+ */
 export { WordAnalysisDialog } from './word-analysis-dialog';
 export { WordDialogContent } from './word-dialog-content';
 export { WordDialogActions } from './word-dialog-actions';

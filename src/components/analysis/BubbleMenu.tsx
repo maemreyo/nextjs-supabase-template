@@ -9,6 +9,7 @@ import {
   Highlighter,
   ChevronLeft,
   ChevronRight,
+  Plus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
@@ -62,6 +63,7 @@ const MemoizedBubbleMenu = React.memo(function BubbleMenu({
   onSave,
   onPronounce,
   onHighlight,
+  onAddHighlight, // New callback for adding highlights
   onDynamicIslandTrigger, // New callback to trigger Dynamic Island
   className
 }: BubbleMenuProps) {
@@ -71,6 +73,27 @@ const MemoizedBubbleMenu = React.memo(function BubbleMenu({
   // Ref để theo dõi việc gọi onAnalyze để tránh multiple calls
   const analyzeCallRef = useRef(false);
   const lastAnalysisTimeRef = useRef<number>(0);
+
+  // Handle add to highlights button click
+  const handleAddToHighlightsClick = useCallback(() => {
+    clientLogger.info('BubbleMenu', { type: 'add_to_highlights_clicked', selectionText: selection.text, selectionType: selection.type });
+    
+    const colorIndex = TYPE_TO_COLOR_INDEX[selection.type];
+    const autoColor = HIGHLIGHT_COLORS[colorIndex] as any;
+    
+    onAddHighlight?.({
+      sessionId,
+      type: selection.type,
+      text: selection.text,
+      startPosition: 0, // Will be updated by parent component
+      endPosition: selection.text.length, // Will be updated by parent component
+      color: autoColor.value,
+      content: '' // Provide empty string instead of undefined to satisfy NOT NULL constraint
+    });
+    
+    // Apply visual highlight
+    onHighlight(autoColor.value);
+  }, [onAddHighlight, sessionId, selection, onHighlight]);
 
   // Handle analyze button click - trigger Dynamic Island
   const handleAnalyzeClick = useCallback(() => {
@@ -173,18 +196,36 @@ const MemoizedBubbleMenu = React.memo(function BubbleMenu({
           transform: 'translate(-50%, -100%)'
         }}
       >
-        {/* Analyze Button */}
+        {/* Add to Highlights Button - Primary action */}
         <Button
           size="sm"
+          variant="default"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={handleAddToHighlightsClick}
+          className="h-7 px-2 text-xs bg-primary text-primary-foreground hover:bg-primary/90"
+          title="Thêm vào highlights"
+        >
+          <Plus size={12} className="mr-1" />
+          Add to Highlights
+        </Button>
+
+        {/*
+        COMMENTED: Nút Analyze đã được tạm thời vô hiệu hóa để chuyển sang hệ thống highlights mới
+        Có thể restore lại sau này nếu cần thiết
+        */}
+        {/* Analyze Button - Secondary action */}
+        {/* <Button
+          size="sm"
+          variant="outline"
           onMouseDown={(e) => e.preventDefault()}
           onClick={handleAnalyzeClick}
           disabled={isAnalyzing || analyzeCallRef.current}
           className="h-7 px-2 text-xs"
-          title={isAnalyzing ? 'Đang phân tích...' : analyzeCallRef.current ? 'Vui lòng đợi...' : 'Phân tích'}
+          title={isAnalyzing ? 'Đang phân tích...' : analyzeCallRef.current ? 'Vui lòng đợi...' : 'Phân tích ngay'}
         >
           <BookMarked size={12} className="mr-1" />
           {isAnalyzing ? 'Analyzing...' : analyzeCallRef.current ? 'Đang xử lý...' : 'Analyze'}
-        </Button>
+        </Button> */}
 
         {/* Save Button - Only show if there's a last analysis result and auto-save is disabled */}
         {lastAnalysisResult && !autoSaveEnabled && (
@@ -319,6 +360,15 @@ interface BubbleMenuProps {
   onSave: () => void;
   onPronounce?: (text: string) => void;
   onHighlight: (color: string) => void;
+  onAddHighlight?: (highlight: {
+    sessionId?: string;
+    type: 'word' | 'phrase' | 'sentence' | 'paragraph';
+    text: string;
+    startPosition: number;
+    endPosition: number;
+    color: string;
+    content?: string;
+  }) => void; // New callback for adding highlights
   onDynamicIslandTrigger?: () => void; // New callback to trigger Dynamic Island
   className?: string;
 }

@@ -15,7 +15,6 @@ interface SaveAnalysisRequest {
   text: string;
   analysisData: WordAnalysis | SentenceAnalysis | ParagraphAnalysis | PhraseAnalysis;
   sessionId?: string;
-  documentId?: string;
 }
 
 interface SaveAnalysisResponse {
@@ -30,7 +29,7 @@ interface SaveAnalysisResponse {
 
 // Helper function to generate content hash for deduplication
 function generateContentHash(type: string, text: string, context?: string, documentId?: string): string {
-  const hashInput = `${type}:${text}:${context || ''}:${documentId || ''}`;
+  const hashInput = `${type}:${text}:${context || ''}`;
   return crypto.createHash('sha256').update(hashInput).digest('hex');
 }
 
@@ -46,7 +45,6 @@ async function checkExistingAnalysis(supabase: any, type: string, userId: string
         .eq('user_id', userId)
         .eq('word', text)
         .eq('sentence_context', context || null)
-        .eq('document_id', documentId || null)
         .single();
       break;
     case 'sentence':
@@ -55,7 +53,6 @@ async function checkExistingAnalysis(supabase: any, type: string, userId: string
         .select('*')
         .eq('user_id', userId)
         .eq('sentence', text)
-        .eq('document_id', documentId || null)
         .single();
       break;
     case 'paragraph':
@@ -64,7 +61,6 @@ async function checkExistingAnalysis(supabase: any, type: string, userId: string
         .select('*')
         .eq('user_id', userId)
         .eq('paragraph', text)
-        .eq('document_id', documentId || null)
         .single();
       break;
     case 'phrase':
@@ -74,7 +70,6 @@ async function checkExistingAnalysis(supabase: any, type: string, userId: string
         .eq('user_id', userId)
         .eq('phrase', text)
         .eq('sentence_context', context || null)
-        .eq('document_id', documentId || null)
         .single();
       break;
     default:
@@ -105,7 +100,6 @@ function transformWordAnalysis(analysis: WordAnalysis, text: string, userId: str
     sentence_context: analysis.usage.example_sentence,
     example_translation: analysis.usage.example_translation,
     user_id: userId,
-    document_id: documentId || null,
   };
 }
 
@@ -128,7 +122,6 @@ function transformSentenceAnalysis(analysis: SentenceAnalysis, text: string, use
     natural_translation: analysis.translation.natural,
     paragraph_context: null, // Will be set if available
     user_id: userId,
-    document_id: documentId || null,
   };
 }
 
@@ -152,7 +145,6 @@ function transformParagraphAnalysis(analysis: ParagraphAnalysis, text: string, u
     sentence_variety: analysis.stylistic_evaluation.sentence_variety,
     better_version: analysis.constructive_feedback.better_version,
     user_id: userId,
-    document_id: documentId || null,
   };
 }
 
@@ -191,7 +183,6 @@ function transformPhraseAnalysis(analysis: PhraseAnalysis, text: string, userId:
       variations: analysis.grammar_and_structure.variations
     },
     user_id: userId,
-    document_id: documentId || null,
   };
 }
 

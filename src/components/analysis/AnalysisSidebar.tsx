@@ -3,8 +3,12 @@
 import React from 'react';
 import { CompactResultCard } from './CompactResultCard';
 import { RecentHistoryCard } from './RecentHistoryCard';
-import { SessionAnalysesList } from './SessionAnalysesList';
+// import { SessionAnalysesList } from './SessionAnalysesList';
+// COMMENTED: SessionAnalysesList đã được thay thế bằng HighlightsList để chuyển sang hệ thống highlights mới
+// Có thể restore lại sau này nếu cần thiết
+import { HighlightsList } from './HighlightsList';
 import type { WordAnalysis, SentenceAnalysis, ParagraphAnalysis, PhraseAnalysis } from '@/lib/ai/types';
+import { useHighlights, type Highlight } from '@/hooks/useHighlights';
 
 interface AnalysisSidebarProps {
   selectedText: string;
@@ -86,13 +90,32 @@ export function AnalysisSidebar({
 
       {/* Session Word List */}
       {sessionId && (
-        <SessionAnalysesList
+        <HighlightsList
           sessionId={sessionId}
-          onAnalysisClick={onAnalysisClick}
-          onAnalysisAnalyze={onAnalysisAnalyze || onWordAnalyze}
-          onAnalysisRemove={onAnalysisRemove || onWordRemove}
+          onHighlightAnalyze={(highlight) => {
+            // Chuyển đổi từ highlight sang analysis để tương thích với existing handlers
+            if (onAnalysisAnalyze) {
+              onAnalysisAnalyze(highlight);
+            } else if (onWordAnalyze) {
+              onWordAnalyze(highlight);
+            }
+          }}
+          onHighlightViewDetails={(highlight) => {
+            // Chuyển đổi từ highlight sang analysis để tương thích với existing handlers
+            if (onAnalysisClick) {
+              onAnalysisClick(highlight);
+            }
+          }}
+          onHighlightRemove={(highlightId) => {
+            // Chuyển đổi từ highlight sang analysis để tương thích với existing handlers
+            if (onAnalysisRemove) {
+              onAnalysisRemove(highlightId, 'highlight');
+            } else if (onWordRemove) {
+              onWordRemove(highlightId);
+            }
+          }}
           className="mb-4"
-          enableDialogSystem={true}
+          compact={true}
         />
       )}
     </div>
