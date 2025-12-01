@@ -7,6 +7,7 @@ import { CompactView } from './CompactView';
 import { ExpandedView } from './ExpandedView';
 import type { DynamicIslandAnalysisProps, AnalysisItem } from './types';
 import type { UseAnalysisDynamicIslandReturn } from './useAnalysisDynamicIsland.types';
+import { analysisLogger } from '@/services/logger';
 
 // Check for reduced motion preference
 const prefersReducedMotion = () => {
@@ -226,6 +227,33 @@ const DynamicIslandAnalysis: React.FC<DynamicIslandAnalysisProps> = ({
       }
     };
   }, []);
+
+  // Reset local states when island is not visible or current is null
+  useEffect(() => {
+    if (!props.isVisible || current === null) {
+      analysisLogger.debug('DynamicIsland state reset triggered', {
+        isVisible: props.isVisible,
+        hasCurrent: !!current,
+        isExpanded,
+        isCollapsed,
+        showPopover,
+        isDragging
+      });
+      
+      // Reset all local states to prevent stuck states
+      setIsCollapsed(false);
+      setShowPopover(false);
+      setIsDragging(false);
+      setIsExpanded(false);
+      
+      analysisLogger.debug('DynamicIsland local states reset', {
+        isCollapsed: false,
+        showPopover: false,
+        isDragging: false,
+        isExpanded: false
+      });
+    }
+  }, [props.isVisible, current, isExpanded, isCollapsed, showPopover, isDragging]);
   
   // Memoize drag calculations for performance - MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   const dragCalculations = React.useMemo(() => {
@@ -239,6 +267,19 @@ const DynamicIslandAnalysis: React.FC<DynamicIslandAnalysisProps> = ({
   
   const positionClass = position === 'top' ? 'top-6' : 'bottom-6';
   const variantClass = current ? variantStyles[current.variant || 'default'] : variantStyles['default'];
+
+  // Log state changes for debugging
+  useEffect(() => {
+    analysisLogger.debug('DynamicIsland state', {
+      isVisible: props.isVisible,
+      hasCurrent: !!current,
+      isExpanded,
+      isCollapsed,
+      showPopover,
+      isDragging,
+      queueLength: 0 // Will be implemented later
+    });
+  }, [props.isVisible, current, isExpanded, isCollapsed, showPopover, isDragging]);
 
   // SINGLE RETURN WITH CONDITIONAL RENDERING - NO EARLY RETURNS
   return (

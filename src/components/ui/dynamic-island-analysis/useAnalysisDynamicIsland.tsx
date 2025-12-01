@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Loader2, AlertCircle, BookOpen, Sparkles, FileText, Hash } from 'lucide-react';
 import type { DynamicIslandAnalysisProps, AnalysisItem, StatusState } from './types';
 import type { UseAnalysisDynamicIslandReturn } from './useAnalysisDynamicIsland.types';
+import { analysisLogger } from '@/services/logger';
 
 export const useAnalysisDynamicIsland = (props: DynamicIslandAnalysisProps): UseAnalysisDynamicIslandReturn => {
   const [queue, setQueue] = useState<AnalysisItem[]>([]);
@@ -9,9 +10,28 @@ export const useAnalysisDynamicIsland = (props: DynamicIslandAnalysisProps): Use
   const [isExpanded, setIsExpanded] = useState(false);
 
   const dismissCurrent = useCallback(() => {
+    analysisLogger.info('DynamicIsland dismiss called', {
+      type: 'dismiss_called',
+      isExpanded,
+      hasCurrent: !!current
+    });
+    
     setIsExpanded(false);
-    setTimeout(() => setCurrent(null), 300);
-  }, []);
+    setTimeout(() => {
+      setCurrent(null);
+      setQueue([]);
+      
+      analysisLogger.info('DynamicIsland dismiss completed', {
+        type: 'dismiss_completed',
+        queueCleared: true
+      });
+      
+      // Call onDismissComplete callback if provided
+      if (props.onDismissComplete) {
+        props.onDismissComplete();
+      }
+    }, 300);
+  }, [current, isExpanded, props.onDismissComplete]);
 
   // Helper function to get the appropriate icon based on analysis type
   const getIconForType = (type: 'word' | 'phrase' | 'sentence' | 'paragraph') => {

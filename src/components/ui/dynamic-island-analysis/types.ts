@@ -43,4 +43,6 @@ export interface DynamicIslandAnalysisProps {
   autoExpand?: boolean;
   defaultDuration?: number;
   expandOnHover?: boolean;
+  // Callback for when dismiss completes
+  onDismissComplete?: () => void;
 }

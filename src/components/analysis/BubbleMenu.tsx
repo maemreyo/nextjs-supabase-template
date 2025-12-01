@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
-import { clientLogger } from '@/services/logger';
+import { clientLogger, analysisLogger } from '@/services/logger';
 
 // Highlight colors
 const HIGHLIGHT_COLORS = [
@@ -23,6 +23,14 @@ const HIGHLIGHT_COLORS = [
   { value: '#e9d5ff', label: 'Purple', className: 'bg-purple-200' },
   { value: '#fed7aa', label: 'Orange', className: 'bg-orange-200' },
 ];
+
+// Type-safe mapping for analysis type to color index
+const TYPE_TO_COLOR_INDEX: Record<'word' | 'phrase' | 'sentence' | 'paragraph', number> = {
+  word: 3,      // Red #fecaca - boldest
+  phrase: 5,    // Orange #fed7aa
+  sentence: 4,  // Purple #e9d5ff
+  paragraph: 0, // Yellow #fef08a - lightest
+};
 
 // Text-to-Speech function
 const speakText = (text: string, lang: string = 'en-US') => {
@@ -81,6 +89,19 @@ const MemoizedBubbleMenu = React.memo(function BubbleMenu({
     
     onDynamicIslandTrigger?.();
     onAnalyze();
+    
+    // Apply automatic highlighting based on analysis type
+    const colorIndex = TYPE_TO_COLOR_INDEX[analysisType];
+    const autoColor = HIGHLIGHT_COLORS[colorIndex] as any;
+    setCurrentColorIndex(colorIndex);
+    onHighlight(autoColor.value);
+    
+    analysisLogger.info('Auto-highlight applied on Analyze click', {
+      analysisType,
+      color: autoColor.value,
+      colorLabel: autoColor.label,
+      selectionText: selection.text
+    });
     
     // Reset flag sau 3 giây
     setTimeout(() => {

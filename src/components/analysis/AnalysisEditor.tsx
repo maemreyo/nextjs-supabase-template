@@ -23,7 +23,7 @@ import SessionQuickActions from './SessionQuickActions';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-keys';
-import { clientLogger } from '@/services/logger';
+import { clientLogger, analysisLogger } from '@/services/logger';
 
 // Security imports
 import { validateInput, validateAnalysisText, securityCheck } from '@/lib/security/input-validator';
@@ -685,6 +685,13 @@ export function AnalysisEditor({
           onClose={handleDynamicIslandClose}
           onViewDetails={handleDynamicIslandViewDetails}
           progress={analysisProgress}
+          onDismissComplete={() => {
+            analysisLogger.info('DynamicIsland dismissed from parent', {
+              wasVisible: dynamicIslandVisible,
+              trigger: 'onDismissComplete'
+            });
+            setDynamicIslandVisible(false);
+          }}
         />
 
         {/* Session Quick Actions Dialog */}
