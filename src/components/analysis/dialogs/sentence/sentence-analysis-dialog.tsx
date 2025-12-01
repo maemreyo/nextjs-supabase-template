@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { cn } from '@/lib/utils';
 import { clientLogger } from '@/services/logger';
+import { sanitizeAnalysisForHandlers } from '@/lib/analysis-utils';
 
 /**
  * Sentence Analysis Dialog Component
@@ -78,8 +79,10 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
 
   // Default export implementation
   const exportSentenceAnalysis = useCallback(async (analysis: SentenceAnalysis, format: ExportFormat): Promise<void> => {
+    const sanitized = sanitizeAnalysisForHandlers(analysis);
     const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-    const filename = `sentence-analysis-${analysis.sentence.replace(/[^a-zA-Z0-9]/g, '-')}-${timestamp}`;
+    const sentence = sanitized.analysis_type === 'sentence' ? sanitized.sentence : analysis.sentence;
+    const filename = `sentence-analysis-${sentence.replace(/[^a-zA-Z0-9]/g, '-')}-${timestamp}`;
     
     switch (format) {
       case 'txt':
@@ -103,9 +106,11 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
 
   // Format sentence analysis as text
   const formatSentenceAsText = useCallback((analysis: SentenceAnalysis): string => {
+    const sanitized = sanitizeAnalysisForHandlers(analysis);
+    const sentence = sanitized.analysis_type === 'sentence' ? sanitized.sentence : analysis.sentence;
     let content = `SENTENCE ANALYSIS REPORT\n`;
     content += `===========================\n\n`;
-    content += `Sentence: ${analysis.sentence}\n`;
+    content += `Sentence: ${sentence}\n`;
     content += `Generated: ${new Date().toLocaleString()}\n\n`;
     
     if (analysis.naturalTranslation) {
@@ -186,14 +191,16 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
 
   // Default share implementation
   const shareSentenceAnalysis = useCallback(async (analysis: SentenceAnalysis) => {
-    const shareText = `Sentence: "${analysis.sentence}"\nTranslation: ${analysis.naturalTranslation || 'N/A'}\nMain Idea: ${analysis.mainIdea || 'N/A'}`;
+    const sanitized = sanitizeAnalysisForHandlers(analysis);
+    const sentence = sanitized.analysis_type === 'sentence' ? sanitized.sentence : analysis.sentence;
+    const shareText = `Sentence: "${sentence}"\nTranslation: ${analysis.naturalTranslation || 'N/A'}\nMain Idea: ${analysis.mainIdea || 'N/A'}`;
     const shareUrl = window.location.href;
     
     if (navigator.share) {
       // Use Web Share API if available
       try {
         await navigator.share({
-          title: `Sentence Analysis: ${analysis.sentence.substring(0, 30)}...`,
+          title: `Sentence Analysis: ${sentence.substring(0, 30)}...`,
           text: shareText,
           url: shareUrl
         });
@@ -228,6 +235,8 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
 
   // Default print implementation
   const printSentenceAnalysis = useCallback((analysis: SentenceAnalysis) => {
+    const sanitized = sanitizeAnalysisForHandlers(analysis);
+    const sentence = sanitized.analysis_type === 'sentence' ? sanitized.sentence : analysis.sentence;
     const printContent = formatSentenceAsText(analysis);
     const printWindow = window.open('', '_blank');
     
@@ -235,7 +244,7 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
       printWindow.document.write(`
         <html>
           <head>
-            <title>Sentence Analysis: ${analysis.sentence.substring(0, 30)}...</title>
+            <title>Sentence Analysis: ${sentence.substring(0, 30)}...</title>
             <style>
               body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
               h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; }
@@ -339,12 +348,14 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
   const dialogTitle = useMemo(() => {
     if (!analysis) return 'Phân tích câu';
     
+    const sanitized = sanitizeAnalysisForHandlers(analysis);
+    const sentence = sanitized.analysis_type === 'sentence' ? sanitized.sentence : analysis.sentence;
     return (
       <div className="flex items-center gap-2">
-        <span>Phân tích câu: {analysis.sentence.substring(0, 30)}{analysis.sentence.length > 30 ? '...' : ''}</span>
+        <span>Phân tích câu: {sentence.substring(0, 30)}{sentence.length > 30 ? '...' : ''}</span>
         {onPronounce && (
           <SentencePronunciationAudioPlayer
-            sentence={analysis.sentence}
+            sentence={sentence}
             onPronounce={handlePronounce}
             className="scale-75"
           />
@@ -424,7 +435,11 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
       fullscreen={fullscreen}
       type="sentence"
       title="Sentence"
-      subtitle={analysis ? `${analysis.sentence.substring(0, 50)}${analysis.sentence.length > 50 ? '...' : ''}` : "Loading..."}
+      subtitle={analysis ? `${(() => {
+        const sanitized = sanitizeAnalysisForHandlers(analysis);
+        const sentence = sanitized.analysis_type === 'sentence' ? sanitized.sentence : analysis.sentence;
+        return `${sentence.substring(0, 50)}${sentence.length > 50 ? '...' : ''}`;
+      })()}` : "Loading..."}
       icon={
         <div className="flex items-center justify-center w-full h-full">
           <FileText className="h-5 w-5 text-primary" />
@@ -437,45 +452,48 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
       )}
       onExport={(analysisData, format) => {
         if (analysisData && format) {
-          // Ensure we're passing a valid analysis object
-          const validAnalysisData = {
-            id: analysisData.id,
-            analysis_type: analysisData.analysis_type,
-            // Extract specific properties based on analysis type
-            ...(analysisData.word && { word: analysisData.word }),
-            ...(analysisData.sentence && { sentence: analysisData.sentence }),
-            ...(analysisData.phrase && { phrase: analysisData.phrase }),
-            ...(analysisData.paragraph && { paragraph: analysisData.paragraph }),
+          // Use sanitizeAnalysisForHandlers to ensure we have valid data
+          const sanitized = sanitizeAnalysisForHandlers(analysisData);
+          // Create a valid SentenceAnalysis object by merging sanitized data with original
+          const validAnalysisData: SentenceAnalysis = {
+            ...analysisData as SentenceAnalysis,
+            id: sanitized.id,
+            ...(sanitized.analysis_type === 'sentence' && {
+              analysisType: sanitized.analysis_type,
+              sentence: sanitized.sentence
+            }),
           };
           handleExport(validAnalysisData, format);
         }
       }}
       onShare={(analysisData) => {
         if (analysisData) {
-          // Ensure we're passing a valid analysis object
-          const validAnalysisData = {
-            id: analysisData.id,
-            analysis_type: analysisData.analysis_type,
-            // Extract specific properties based on analysis type
-            ...(analysisData.word && { word: analysisData.word }),
-            ...(analysisData.sentence && { sentence: analysisData.sentence }),
-            ...(analysisData.phrase && { phrase: analysisData.phrase }),
-            ...(analysisData.paragraph && { paragraph: analysisData.paragraph }),
+          // Use sanitizeAnalysisForHandlers to ensure we have valid data
+          const sanitized = sanitizeAnalysisForHandlers(analysisData);
+          // Create a valid SentenceAnalysis object by merging sanitized data with original
+          const validAnalysisData: SentenceAnalysis = {
+            ...analysisData as SentenceAnalysis,
+            id: sanitized.id,
+            ...(sanitized.analysis_type === 'sentence' && {
+              analysisType: sanitized.analysis_type,
+              sentence: sanitized.sentence
+            }),
           };
           handleShare(validAnalysisData);
         }
       }}
       onPrint={(analysisData) => {
         if (analysisData) {
-          // Ensure we're passing a valid analysis object
-          const validAnalysisData = {
-            id: analysisData.id,
-            analysis_type: analysisData.analysis_type,
-            // Extract specific properties based on analysis type
-            ...(analysisData.word && { word: analysisData.word }),
-            ...(analysisData.sentence && { sentence: analysisData.sentence }),
-            ...(analysisData.phrase && { phrase: analysisData.phrase }),
-            ...(analysisData.paragraph && { paragraph: analysisData.paragraph }),
+          // Use sanitizeAnalysisForHandlers to ensure we have valid data
+          const sanitized = sanitizeAnalysisForHandlers(analysisData);
+          // Create a valid SentenceAnalysis object by merging sanitized data with original
+          const validAnalysisData: SentenceAnalysis = {
+            ...analysisData as SentenceAnalysis,
+            id: sanitized.id,
+            ...(sanitized.analysis_type === 'sentence' && {
+              analysisType: sanitized.analysis_type,
+              sentence: sanitized.sentence
+            }),
           };
           handlePrint(validAnalysisData);
         }

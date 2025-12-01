@@ -46,6 +46,8 @@ export interface WordAnalysis extends BaseAnalysis {
   inferenceReasoning?: string;
   paragraphContext?: string;
   sentenceContext?: string;
+  synonyms?: string[];
+  antonyms?: string[];
 }
 
 // Phrase analysis interface

@@ -47,6 +47,7 @@ import { cn } from '@/lib/utils';
 import { useDialogState } from '../hooks/use-dialog-state';
 import { useSavedAnalysisDetail } from '@/hooks/useSavedAnalysisDetail';
 import { analysisLogger } from '@/services/logger';
+import { sanitizeAnalysisForHandlers } from '@/lib/analysis-utils';
 
 // Import new modular components
 import { ParagraphPrimaryInformationDisplayCard } from './paragraph-primary-information-display-card';
@@ -203,11 +204,11 @@ export const ParagraphDialogContent: React.FC<ParagraphDialogContentProps> = ({
   }, []);
 
   const hasContent = useMemo(() => ({
-    hasContext: !!(analysis.paragraph),
-    hasStructure: !!(analysis.tone || analysis.targetAudience || analysis.type || analysis.vocabularyLevel),
-    hasKeyPoints: !!(analysis.keywords && analysis.keywords.length > 0),
-    hasSummary: !!(analysis.betterVersion || analysis.gapAnalysis),
-    hasSentiment: !!(analysis.sentimentLabel || analysis.sentimentIntensity),
+    hasContext: !!(analysis?.paragraph),
+    hasStructure: !!(analysis?.tone || analysis?.targetAudience || analysis?.type || analysis?.vocabularyLevel),
+    hasKeyPoints: !!(analysis?.keywords && analysis.keywords.length > 0),
+    hasSummary: !!(analysis?.betterVersion || analysis?.gapAnalysis),
+    hasSentiment: !!(analysis?.sentimentLabel || analysis?.sentimentIntensity),
   }), [analysis]);
 
   // Show error state if fetch failed

@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { useDialogState } from '../hooks/use-dialog-state';
 import { useSavedAnalysisDetail } from '@/hooks/useSavedAnalysisDetail';
 import { analysisLogger } from '@/services/logger';
+import { sanitizeAnalysisForHandlers } from '@/lib/analysis-utils';
 
 /**
  * Main Sentence Dialog Content Component
@@ -156,12 +157,15 @@ export const SentenceDialogContent: React.FC<SentenceDialogContentProps> = ({
     }
   }, []);
 
-  const hasContent = useMemo(() => ({
-    hasContext: !!(analysis.paragraphContext || analysis.relationToPrevious),
-    hasStructure: !!(analysis.subject || analysis.mainVerb || analysis.object || analysis.clauses),
-    hasGrammar: !!(analysis.function || analysis.complexityLevel || analysis.sentiment || analysis.subtext),
-    hasExamples: !!(analysis.clauses && Object.keys(analysis.clauses).length > 0),
-  }), [analysis]);
+  const hasContent = useMemo(() => {
+    const sanitized = sanitizeAnalysisForHandlers(analysis);
+    return {
+      hasContext: !!(analysis?.paragraphContext || analysis?.relationToPrevious),
+      hasStructure: !!(analysis?.subject || analysis?.mainVerb || analysis?.object || analysis?.clauses),
+      hasGrammar: !!(analysis?.function || analysis?.complexityLevel || analysis?.sentiment || analysis?.subtext),
+      hasExamples: !!(analysis?.clauses && Object.keys(analysis.clauses).length > 0),
+    };
+  }, [analysis]);
 
   // Show error state if fetch failed
   if (fetchError && !mergedAnalysis) {
@@ -275,7 +279,10 @@ export const SentenceDialogContent: React.FC<SentenceDialogContentProps> = ({
         {showPronunciation && (
           <div className="flex justify-end">
             <SentencePronunciationAudioPlayer
-              sentence={mergedAnalysis?.sentence || analysis?.sentence}
+              sentence={mergedAnalysis?.sentence || (() => {
+                const sanitized = sanitizeAnalysisForHandlers(analysis);
+                return sanitized.analysis_type === 'sentence' ? sanitized.sentence : analysis?.sentence || '';
+              })()}
               onPronounce={onPronounce}
             />
           </div>
@@ -319,8 +326,14 @@ export const SentenceDialogContent: React.FC<SentenceDialogContentProps> = ({
             complexityLevel={mergedAnalysis?.complexityLevel || analysis?.complexityLevel}
             sentiment={mergedAnalysis?.sentiment || analysis?.sentiment}
             subtext={mergedAnalysis?.subtext || analysis?.subtext}
-            sentence={mergedAnalysis?.sentence || analysis?.sentence}
-            onAnalyzeGrammar={() => onAnalyzeRelatedSentence?.(mergedAnalysis?.sentence || analysis?.sentence)}
+            sentence={mergedAnalysis?.sentence || (() => {
+              const sanitized = sanitizeAnalysisForHandlers(analysis);
+              return sanitized.analysis_type === 'sentence' ? sanitized.sentence : analysis?.sentence || '';
+            })()}
+            onAnalyzeGrammar={() => onAnalyzeRelatedSentence?.(mergedAnalysis?.sentence || (() => {
+              const sanitized = sanitizeAnalysisForHandlers(analysis);
+              return sanitized.analysis_type === 'sentence' ? sanitized.sentence : analysis?.sentence || '';
+            })())}
           />
         </TabsContent>
 

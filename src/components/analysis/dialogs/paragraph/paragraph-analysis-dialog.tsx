@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { cn } from '@/lib/utils';
 import { clientLogger } from '@/services/logger';
+import { sanitizeAnalysisForHandlers } from '@/lib/analysis-utils';
 
 /**
  * Paragraph Analysis Dialog Component
@@ -103,9 +104,11 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
 
   // Format paragraph analysis as text
   const formatParagraphAsText = useCallback((analysis: ParagraphAnalysis): string => {
+    const sanitized = sanitizeAnalysisForHandlers(analysis);
+    const paragraph = sanitized.analysis_type === 'paragraph' ? sanitized.paragraph : analysis.paragraph;
     let content = `PARAGRAPH ANALYSIS REPORT\n`;
     content += `============================\n\n`;
-    content += `Paragraph: ${analysis.paragraph}\n`;
+    content += `Paragraph: ${paragraph}\n`;
     content += `Generated: ${new Date().toLocaleString()}\n\n`;
     
     if (analysis.mainTopic) {
@@ -193,7 +196,9 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
 
   // Default share implementation
   const shareParagraphAnalysis = useCallback(async (analysis: ParagraphAnalysis) => {
-    const shareText = `Paragraph: "${analysis.paragraph.substring(0, 100)}..."\nMain Topic: ${analysis.mainTopic || 'N/A'}\nSentiment: ${analysis.sentimentLabel || 'N/A'}`;
+    const sanitized = sanitizeAnalysisForHandlers(analysis);
+    const paragraph = sanitized.analysis_type === 'paragraph' ? sanitized.paragraph : analysis.paragraph;
+    const shareText = `Paragraph: "${paragraph.substring(0, 100)}..."\nMain Topic: ${analysis.mainTopic || 'N/A'}\nSentiment: ${analysis.sentimentLabel || 'N/A'}`;
     const shareUrl = window.location.href;
     
     if (navigator.share) {
@@ -235,6 +240,8 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
 
   // Default print implementation
   const printParagraphAnalysis = useCallback((analysis: ParagraphAnalysis) => {
+    const sanitized = sanitizeAnalysisForHandlers(analysis);
+    const paragraph = sanitized.analysis_type === 'paragraph' ? sanitized.paragraph : analysis.paragraph;
     const printContent = formatParagraphAsText(analysis);
     const printWindow = window.open('', '_blank');
     
@@ -348,15 +355,17 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
   const dialogTitle = useMemo(() => {
     if (!analysis) return 'Phân tích đoạn văn';
     
+    const sanitized = sanitizeAnalysisForHandlers(analysis);
+    const paragraph = sanitized.analysis_type === 'paragraph' ? sanitized.paragraph : analysis.paragraph;
     return (
       <div className="flex items-center gap-2">
-        <span>Phân tích đoạn văn: {analysis.paragraph.substring(0, 30)}{analysis.paragraph.length > 30 ? '...' : ''}</span>
+        <span>Phân tích đoạn văn: {paragraph.substring(0, 30)}{paragraph.length > 30 ? '...' : ''}</span>
         {onPronounce && (
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => handlePronounce(analysis.paragraph)}
-            aria-label={`Phát âm ${analysis.paragraph}`}
+            onClick={() => handlePronounce(paragraph)}
+            aria-label={`Phát âm ${paragraph}`}
           >
             <Volume2 className="h-4 w-4" />
           </Button>
@@ -438,7 +447,11 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
       fullscreen={fullscreen}
       type="paragraph"
       title="Paragraph"
-      subtitle={analysis ? `${analysis.paragraph.substring(0, 50)}${analysis.paragraph.length > 50 ? '...' : ''}` : "Loading..."}
+      subtitle={analysis ? `${(() => {
+        const sanitized = sanitizeAnalysisForHandlers(analysis);
+        const paragraph = sanitized.analysis_type === 'paragraph' ? sanitized.paragraph : analysis.paragraph;
+        return `${paragraph.substring(0, 50)}${paragraph.length > 50 ? '...' : ''}`;
+      })()}` : "Loading..."}
       icon={
         <div className="flex items-center justify-center w-full h-full">
           <FileText className="h-5 w-5 text-primary" />
@@ -451,45 +464,48 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
       )}
       onExport={(analysisData, format) => {
         if (analysisData && format) {
-          // Ensure we're passing a valid analysis object
-          const validAnalysisData = {
-            id: analysisData.id,
-            analysis_type: analysisData.analysis_type,
-            // Extract specific properties based on analysis type
-            ...(analysisData.word && { word: analysisData.word }),
-            ...(analysisData.sentence && { sentence: analysisData.sentence }),
-            ...(analysisData.phrase && { phrase: analysisData.phrase }),
-            ...(analysisData.paragraph && { paragraph: analysisData.paragraph }),
+          // Use sanitizeAnalysisForHandlers to ensure we have valid data
+          const sanitized = sanitizeAnalysisForHandlers(analysisData);
+          // Create a valid ParagraphAnalysis object by merging sanitized data with original
+          const validAnalysisData: ParagraphAnalysis = {
+            ...analysisData as ParagraphAnalysis,
+            id: sanitized.id,
+            ...(sanitized.analysis_type === 'paragraph' && {
+              analysisType: sanitized.analysis_type,
+              paragraph: sanitized.paragraph
+            }),
           };
           handleExport(validAnalysisData, format);
         }
       }}
       onShare={(analysisData) => {
         if (analysisData) {
-          // Ensure we're passing a valid analysis object
-          const validAnalysisData = {
-            id: analysisData.id,
-            analysis_type: analysisData.analysis_type,
-            // Extract specific properties based on analysis type
-            ...(analysisData.word && { word: analysisData.word }),
-            ...(analysisData.sentence && { sentence: analysisData.sentence }),
-            ...(analysisData.phrase && { phrase: analysisData.phrase }),
-            ...(analysisData.paragraph && { paragraph: analysisData.paragraph }),
+          // Use sanitizeAnalysisForHandlers to ensure we have valid data
+          const sanitized = sanitizeAnalysisForHandlers(analysisData);
+          // Create a valid ParagraphAnalysis object by merging sanitized data with original
+          const validAnalysisData: ParagraphAnalysis = {
+            ...analysisData as ParagraphAnalysis,
+            id: sanitized.id,
+            ...(sanitized.analysis_type === 'paragraph' && {
+              analysisType: sanitized.analysis_type,
+              paragraph: sanitized.paragraph
+            }),
           };
           handleShare(validAnalysisData);
         }
       }}
       onPrint={(analysisData) => {
         if (analysisData) {
-          // Ensure we're passing a valid analysis object
-          const validAnalysisData = {
-            id: analysisData.id,
-            analysis_type: analysisData.analysis_type,
-            // Extract specific properties based on analysis type
-            ...(analysisData.word && { word: analysisData.word }),
-            ...(analysisData.sentence && { sentence: analysisData.sentence }),
-            ...(analysisData.phrase && { phrase: analysisData.phrase }),
-            ...(analysisData.paragraph && { paragraph: analysisData.paragraph }),
+          // Use sanitizeAnalysisForHandlers to ensure we have valid data
+          const sanitized = sanitizeAnalysisForHandlers(analysisData);
+          // Create a valid ParagraphAnalysis object by merging sanitized data with original
+          const validAnalysisData: ParagraphAnalysis = {
+            ...analysisData as ParagraphAnalysis,
+            id: sanitized.id,
+            ...(sanitized.analysis_type === 'paragraph' && {
+              analysisType: sanitized.analysis_type,
+              paragraph: sanitized.paragraph
+            }),
           };
           handlePrint(validAnalysisData);
         }

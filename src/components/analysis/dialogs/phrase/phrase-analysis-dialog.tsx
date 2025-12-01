@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { cn } from '@/lib/utils';
 import { clientLogger } from '@/services/logger';
+import { sanitizeAnalysisForHandlers } from '@/lib/analysis-utils';
 
 /**
  * Phrase Analysis Dialog Component
@@ -76,8 +77,10 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
 
   // Default export implementation
   const exportPhraseAnalysis = useCallback(async (analysis: PhraseAnalysis, format: ExportFormat) => {
+    const sanitized = sanitizeAnalysisForHandlers(analysis);
     const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-    const filename = `phrase-analysis-${analysis.phrase.replace(/[^a-zA-Z0-9]/g, '-')}-${timestamp}`;
+    const phrase = sanitized.analysis_type === 'phrase' ? sanitized.phrase : analysis.phrase;
+    const filename = `phrase-analysis-${phrase.replace(/[^a-zA-Z0-9]/g, '-')}-${timestamp}`;
     
     switch (format) {
       case 'txt':
@@ -101,9 +104,11 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
 
   // Format phrase analysis as text
   const formatPhraseAsText = useCallback((analysis: PhraseAnalysis): string => {
+    const sanitized = sanitizeAnalysisForHandlers(analysis);
+    const phrase = sanitized.analysis_type === 'phrase' ? sanitized.phrase : analysis.phrase;
     let content = `PHRASE ANALYSIS REPORT\n`;
     content += `========================\n\n`;
-    content += `Phrase: ${analysis.phrase}\n`;
+    content += `Phrase: ${phrase}\n`;
     content += `Generated: ${new Date().toLocaleString()}\n\n`;
     
     if (analysis.literalMeaning) {
@@ -192,14 +197,16 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
 
   // Default share implementation
   const sharePhraseAnalysis = useCallback(async (analysis: PhraseAnalysis) => {
-    const shareText = `Phrase: "${analysis.phrase}"\nLiteral Meaning: ${analysis.literalMeaning || 'N/A'}\nNatural Translation: ${analysis.naturalTranslation || 'N/A'}`;
+    const sanitized = sanitizeAnalysisForHandlers(analysis);
+    const phrase = sanitized.analysis_type === 'phrase' ? sanitized.phrase : analysis.phrase;
+    const shareText = `Phrase: "${phrase}"\nLiteral Meaning: ${analysis.literalMeaning || 'N/A'}\nNatural Translation: ${analysis.naturalTranslation || 'N/A'}`;
     const shareUrl = window.location.href;
     
     if (navigator.share) {
       // Use Web Share API if available
       try {
         await navigator.share({
-          title: `Phrase Analysis: ${analysis.phrase}`,
+          title: `Phrase Analysis: ${phrase}`,
           text: shareText,
           url: shareUrl
         });
@@ -234,6 +241,8 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
 
   // Default print implementation
   const printPhraseAnalysis = useCallback((analysis: PhraseAnalysis) => {
+    const sanitized = sanitizeAnalysisForHandlers(analysis);
+    const phrase = sanitized.analysis_type === 'phrase' ? sanitized.phrase : analysis.phrase;
     const printContent = formatPhraseAsText(analysis);
     const printWindow = window.open('', '_blank');
     
@@ -241,7 +250,7 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
       printWindow.document.write(`
         <html>
           <head>
-            <title>Phrase Analysis: ${analysis.phrase}</title>
+            <title>Phrase Analysis: ${phrase}</title>
             <style>
               body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
               h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; }
@@ -335,12 +344,14 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
   const dialogTitle = useMemo(() => {
     if (!analysis) return 'Phân tích cụm từ';
     
+    const sanitized = sanitizeAnalysisForHandlers(analysis);
+    const phrase = sanitized.analysis_type === 'phrase' ? sanitized.phrase : analysis.phrase;
     return (
       <div className="flex items-center gap-2">
-        <span>Phân tích cụm từ: {analysis.phrase}</span>
+        <span>Phân tích cụm từ: {phrase}</span>
         {onPronounce && (
           <PhrasePronunciationAudioPlayer
-            phrase={analysis.phrase}
+            phrase={phrase}
             onPronounce={handlePronounce}
             compact={true}
             className="p-1 hover:bg-accent rounded-md transition-colors"
@@ -420,7 +431,10 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
       fullscreen={fullscreen}
       type="phrase"
       title="Phrase"
-      subtitle={analysis ? `Analyzing: ${analysis.phrase}` : "Loading..."}
+      subtitle={analysis ? (() => {
+        const sanitized = sanitizeAnalysisForHandlers(analysis);
+        return sanitized.analysis_type === 'phrase' ? `Analyzing: ${sanitized.phrase}` : "Loading...";
+      })() : "Loading..."}
       icon={
         <div className="flex items-center justify-center w-full h-full">
           <Languages className="h-5 w-5 text-primary" />
@@ -433,47 +447,32 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
       )}
       onExport={(analysisData, format) => {
         if (analysisData && format) {
-          // Ensure we're passing a valid analysis object
-          const validAnalysisData = {
-            id: analysisData.id,
-            analysis_type: analysisData.analysis_type,
-            // Extract specific properties based on analysis type
-            ...(analysisData.word && { word: analysisData.word }),
-            ...(analysisData.sentence && { sentence: analysisData.sentence }),
-            ...(analysisData.phrase && { phrase: analysisData.phrase }),
-            ...(analysisData.paragraph && { paragraph: analysisData.paragraph }),
-          };
-          handleExport(validAnalysisData, format);
+          // Use sanitizeAnalysisForHandlers to ensure we have valid data
+          const sanitized = sanitizeAnalysisForHandlers(analysisData);
+          // Only proceed if it's a phrase analysis
+          if (sanitized.analysis_type === 'phrase') {
+            handleExport(analysisData as PhraseAnalysis, format);
+          }
         }
       }}
       onShare={(analysisData) => {
         if (analysisData) {
-          // Ensure we're passing a valid analysis object
-          const validAnalysisData = {
-            id: analysisData.id,
-            analysis_type: analysisData.analysis_type,
-            // Extract specific properties based on analysis type
-            ...(analysisData.word && { word: analysisData.word }),
-            ...(analysisData.sentence && { sentence: analysisData.sentence }),
-            ...(analysisData.phrase && { phrase: analysisData.phrase }),
-            ...(analysisData.paragraph && { paragraph: analysisData.paragraph }),
-          };
-          handleShare(validAnalysisData);
+          // Use sanitizeAnalysisForHandlers to ensure we have valid data
+          const sanitized = sanitizeAnalysisForHandlers(analysisData);
+          // Only proceed if it's a phrase analysis
+          if (sanitized.analysis_type === 'phrase') {
+            handleShare(analysisData as PhraseAnalysis);
+          }
         }
       }}
       onPrint={(analysisData) => {
         if (analysisData) {
-          // Ensure we're passing a valid analysis object
-          const validAnalysisData = {
-            id: analysisData.id,
-            analysis_type: analysisData.analysis_type,
-            // Extract specific properties based on analysis type
-            ...(analysisData.word && { word: analysisData.word }),
-            ...(analysisData.sentence && { sentence: analysisData.sentence }),
-            ...(analysisData.phrase && { phrase: analysisData.phrase }),
-            ...(analysisData.paragraph && { paragraph: analysisData.paragraph }),
-          };
-          handlePrint(validAnalysisData);
+          // Use sanitizeAnalysisForHandlers to ensure we have valid data
+          const sanitized = sanitizeAnalysisForHandlers(analysisData);
+          // Only proceed if it's a phrase analysis
+          if (sanitized.analysis_type === 'phrase') {
+            handlePrint(analysisData as PhraseAnalysis);
+          }
         }
       }}
       onCopy={handleCopy}

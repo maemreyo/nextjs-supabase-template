@@ -12,6 +12,7 @@ import { useDialogLoading } from '../hooks/use-dialog-loading';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { cn } from '@/lib/utils';
+import { sanitizeAnalysisForHandlers } from '@/lib/analysis-utils';
 
 /**
  * Word Analysis Dialog Component
@@ -74,8 +75,10 @@ export const WordAnalysisDialog: React.FC<WordAnalysisDialogProps> = ({
 
   // Default export implementation
   const exportWordAnalysis = useCallback(async (analysis: WordAnalysis, format: ExportFormat) => {
+    const sanitized = sanitizeAnalysisForHandlers(analysis);
     const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-    const filename = `word-analysis-${analysis.word.replace(/[^a-zA-Z0-9]/g, '-')}-${timestamp}`;
+    const word = sanitized.analysis_type === 'word' ? sanitized.word : analysis.word;
+    const filename = `word-analysis-${word.replace(/[^a-zA-Z0-9]/g, '-')}-${timestamp}`;
     
     switch (format) {
       case 'txt':
@@ -99,9 +102,11 @@ export const WordAnalysisDialog: React.FC<WordAnalysisDialogProps> = ({
 
   // Format word analysis as text
   const formatWordAsText = useCallback((analysis: WordAnalysis): string => {
+    const sanitized = sanitizeAnalysisForHandlers(analysis);
+    const word = sanitized.analysis_type === 'word' ? sanitized.word : analysis.word;
     let content = `WORD ANALYSIS REPORT\n`;
     content += `========================\n\n`;
-    content += `Word: ${analysis.word}\n`;
+    content += `Word: ${word}\n`;
     content += `Generated: ${new Date().toLocaleString()}\n\n`;
     
     if (analysis.definition) {
@@ -178,14 +183,16 @@ export const WordAnalysisDialog: React.FC<WordAnalysisDialogProps> = ({
 
   // Default share implementation
   const shareWordAnalysis = useCallback(async (analysis: WordAnalysis) => {
-    const shareText = `Word: "${analysis.word}"\nDefinition: ${analysis.definition || 'N/A'}\nTranslation: ${analysis.translation || 'N/A'}`;
+    const sanitized = sanitizeAnalysisForHandlers(analysis);
+    const word = sanitized.analysis_type === 'word' ? sanitized.word : analysis.word;
+    const shareText = `Word: "${word}"\nDefinition: ${analysis.definition || 'N/A'}\nTranslation: ${analysis.translation || 'N/A'}`;
     const shareUrl = window.location.href;
     
     if (navigator.share) {
       // Use Web Share API if available
       try {
         await navigator.share({
-          title: `Word Analysis: ${analysis.word}`,
+          title: `Word Analysis: ${word}`,
           text: shareText,
           url: shareUrl
         });
@@ -220,6 +227,8 @@ export const WordAnalysisDialog: React.FC<WordAnalysisDialogProps> = ({
 
   // Default print implementation
   const printWordAnalysis = useCallback((analysis: WordAnalysis) => {
+    const sanitized = sanitizeAnalysisForHandlers(analysis);
+    const word = sanitized.analysis_type === 'word' ? sanitized.word : analysis.word;
     const printContent = formatWordAsText(analysis);
     const printWindow = window.open('', '_blank');
     
@@ -227,7 +236,7 @@ export const WordAnalysisDialog: React.FC<WordAnalysisDialogProps> = ({
       printWindow.document.write(`
         <html>
           <head>
-            <title>Word Analysis: ${analysis.word}</title>
+            <title>Word Analysis: ${word}</title>
             <style>
               body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
               h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; }
@@ -321,15 +330,17 @@ export const WordAnalysisDialog: React.FC<WordAnalysisDialogProps> = ({
   const dialogTitle = useMemo(() => {
     if (!analysis) return 'Phân tích từ';
     
+    const sanitized = sanitizeAnalysisForHandlers(analysis);
+    const word = sanitized.analysis_type === 'word' ? sanitized.word : analysis.word;
     return (
       <div className="flex items-center gap-2">
-        <span>Phân tích từ: {analysis.word}</span>
+        <span>Phân tích từ: {word}</span>
         {onPronounce && (
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => handlePronounce(analysis.word)}
-            aria-label={`Phát âm ${analysis.word}`}
+            onClick={() => handlePronounce(word)}
+            aria-label={`Phát âm ${word}`}
           >
             <Volume2 className="h-4 w-4" />
           </Button>
@@ -408,7 +419,10 @@ export const WordAnalysisDialog: React.FC<WordAnalysisDialogProps> = ({
       fullscreen={fullscreen}
       type="word"
       title="Word"
-      subtitle={analysis ? `Analyzing: ${analysis.word}` : "Loading..."}
+      subtitle={analysis ? `Analyzing: ${(() => {
+        const sanitized = sanitizeAnalysisForHandlers(analysis);
+        return sanitized.analysis_type === 'word' ? sanitized.word : analysis.word;
+      })()}` : "Loading..."}
       icon={
         <div className="flex items-center justify-center w-full h-full">
           <BookOpen className="h-5 w-5 text-primary" />
@@ -421,11 +435,52 @@ export const WordAnalysisDialog: React.FC<WordAnalysisDialogProps> = ({
       )}
       onExport={(analysisData, format) => {
         if (analysisData && format) {
-          handleExport(analysisData, format);
+          // Use sanitizeAnalysisForHandlers to ensure we have valid data
+          const sanitized = sanitizeAnalysisForHandlers(analysisData);
+          // Create a valid WordAnalysis object by merging sanitized data with original
+          const validAnalysisData: WordAnalysis = {
+            ...analysisData as WordAnalysis,
+            id: sanitized.id,
+            ...(sanitized.analysis_type === 'word' && {
+              analysisType: sanitized.analysis_type,
+              word: sanitized.word
+            }),
+          };
+          handleExport(validAnalysisData, format);
         }
       }}
-      onShare={handleShare}
-      onPrint={handlePrint}
+      onShare={(analysisData) => {
+        if (analysisData) {
+          // Use sanitizeAnalysisForHandlers to ensure we have valid data
+          const sanitized = sanitizeAnalysisForHandlers(analysisData);
+          // Create a valid WordAnalysis object by merging sanitized data with original
+          const validAnalysisData: WordAnalysis = {
+            ...analysisData as WordAnalysis,
+            id: sanitized.id,
+            ...(sanitized.analysis_type === 'word' && {
+              analysisType: sanitized.analysis_type,
+              word: sanitized.word
+            }),
+          };
+          handleShare(validAnalysisData);
+        }
+      }}
+      onPrint={(analysisData) => {
+        if (analysisData) {
+          // Use sanitizeAnalysisForHandlers to ensure we have valid data
+          const sanitized = sanitizeAnalysisForHandlers(analysisData);
+          // Create a valid WordAnalysis object by merging sanitized data with original
+          const validAnalysisData: WordAnalysis = {
+            ...analysisData as WordAnalysis,
+            id: sanitized.id,
+            ...(sanitized.analysis_type === 'word' && {
+              analysisType: sanitized.analysis_type,
+              word: sanitized.word
+            }),
+          };
+          handlePrint(validAnalysisData);
+        }
+      }}
       onCopy={handleCopy}
       analysis={analysis}
     >

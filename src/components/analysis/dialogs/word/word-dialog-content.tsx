@@ -13,6 +13,7 @@ import { useDialogLoading } from '../hooks/use-dialog-loading';
 import { DialogLoadingIndicator } from '../common/dialog-loading-indicator';
 import { DialogErrorHandler } from '../common/dialog-error-handler';
 import { useSavedAnalysisDetail } from '@/hooks/useSavedAnalysisDetail';
+import { sanitizeAnalysisForHandlers } from '@/lib/analysis-utils';
 
 /**
  * Main Word Dialog Content Component
@@ -249,8 +250,8 @@ export const WordDialogContent: React.FC<WordDialogContentProps> = ({
 
         <TabsContent value="related" className="mt-4">
           <WordSynonymsAntonymsRelatedTermsSection
-            synonyms={mergedAnalysis?.synonyms || []}
-            antonyms={mergedAnalysis?.antonyms || []}
+            synonyms={mergedAnalysis?.synonyms || analysis?.synonyms || []}
+            antonyms={mergedAnalysis?.antonyms || analysis?.antonyms || []}
             onWordClick={onAnalyzeRelatedWord}
             compact={compact}
           />

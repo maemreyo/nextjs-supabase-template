@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils';
 import { useDialogState } from '../hooks/use-dialog-state';
 import { useSavedAnalysisDetail } from '@/hooks/useSavedAnalysisDetail';
 import { analysisLogger } from '@/services/logger';
+import { sanitizeAnalysisForHandlers } from '@/lib/analysis-utils';
 
 // Import new modular components
 import { PhrasePrimaryInformationDisplayCard } from './phrase-primary-information-display-card';
@@ -159,9 +160,9 @@ export const PhraseDialogContent: React.FC<PhraseDialogContentProps> = ({
   }, []);
 
   const hasContent = useMemo(() => ({
-    hasContext: !!(analysis.sentenceContext || analysis.paragraphContext),
-    hasExamples: !!(analysis.usageExamples && analysis.usageExamples.length > 0),
-    hasRelated: !!(analysis.synonyms || analysis.antonyms || analysis.variations),
+    hasContext: !!(analysis?.sentenceContext || analysis?.paragraphContext),
+    hasExamples: !!(analysis?.usageExamples && analysis.usageExamples.length > 0),
+    hasRelated: !!(analysis?.synonyms || analysis?.antonyms || analysis?.variations),
   }), [analysis]);
 
   // Show error state if fetch failed
