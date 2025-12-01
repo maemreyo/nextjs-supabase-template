@@ -281,7 +281,14 @@ export const SentenceDialogContent: React.FC<SentenceDialogContentProps> = ({
             <SentencePronunciationAudioPlayer
               sentence={mergedAnalysis?.sentence || (() => {
                 const sanitized = sanitizeAnalysisForHandlers(analysis);
-                return sanitized.analysis_type === 'sentence' ? sanitized.sentence : analysis?.sentence || '';
+                const result = sanitized.analysis_type === 'sentence' ? sanitized.sentence : analysis?.sentence || '';
+                analysisLogger.debug('SentenceDialogContent: sentence value', {
+                  mergedAnalysisSentence: mergedAnalysis?.sentence,
+                  sanitized,
+                  result,
+                  resultType: typeof result
+                });
+                return result;
               })()}
               onPronounce={onPronounce}
             />
@@ -328,11 +335,25 @@ export const SentenceDialogContent: React.FC<SentenceDialogContentProps> = ({
             subtext={mergedAnalysis?.subtext || analysis?.subtext}
             sentence={mergedAnalysis?.sentence || (() => {
               const sanitized = sanitizeAnalysisForHandlers(analysis);
-              return sanitized.analysis_type === 'sentence' ? sanitized.sentence : analysis?.sentence || '';
+              const result = sanitized.analysis_type === 'sentence' ? sanitized.sentence : analysis?.sentence || '';
+              analysisLogger.debug('SentenceDialogContent: grammar section sentence', {
+                mergedAnalysisSentence: mergedAnalysis?.sentence,
+                sanitized,
+                result,
+                resultType: typeof result
+              });
+              return result;
             })()}
             onAnalyzeGrammar={() => onAnalyzeRelatedSentence?.(mergedAnalysis?.sentence || (() => {
               const sanitized = sanitizeAnalysisForHandlers(analysis);
-              return sanitized.analysis_type === 'sentence' ? sanitized.sentence : analysis?.sentence || '';
+              const result = sanitized.analysis_type === 'sentence' ? sanitized.sentence : analysis?.sentence || '';
+              analysisLogger.debug('SentenceDialogContent: onAnalyzeGrammar sentence', {
+                mergedAnalysisSentence: mergedAnalysis?.sentence,
+                sanitized,
+                result,
+                resultType: typeof result
+              });
+              return result;
             })())}
           />
         </TabsContent>
@@ -348,7 +369,42 @@ export const SentenceDialogContent: React.FC<SentenceDialogContentProps> = ({
 
         <TabsContent value="examples" className="mt-4 animate-fadeIn">
           <SentenceUsageExamplesSection
-            examples={mergedAnalysis?.keyComponents?.length > 0 ? mergedAnalysis.keyComponents : (analysis?.clauses ? Object.values(analysis.clauses) : [])}
+            examples={(() => {
+              const examples = mergedAnalysis?.keyComponents?.length > 0 ? mergedAnalysis.keyComponents : (analysis?.clauses ? Object.values(analysis.clauses) : []);
+              
+              // Debug logging to identify the issue
+              analysisLogger.debug('SentenceDialogContent: examples data', {
+                hasKeyComponents: !!(mergedAnalysis?.keyComponents?.length > 0),
+                keyComponentsLength: mergedAnalysis?.keyComponents?.length,
+                hasClauses: !!(analysis?.clauses),
+                clausesType: typeof analysis?.clauses,
+                clausesKeys: analysis?.clauses ? Object.keys(analysis.clauses) : [],
+                examplesType: typeof examples,
+                examplesLength: examples?.length,
+                firstExample: examples?.[0],
+                firstExampleType: typeof examples?.[0]
+              });
+              
+              // Extract phrase from objects if needed
+              if (examples && examples.length > 0 && typeof examples[0] === 'object') {
+                const extractedExamples = examples.map((item: any) => {
+                  if (item && typeof item === 'object' && 'phrase' in item) {
+                    return item.phrase;
+                  }
+                  return item; // fallback to original
+                });
+                
+                analysisLogger.debug('SentenceDialogContent: extracted examples', {
+                  originalCount: examples.length,
+                  extractedCount: extractedExamples.length,
+                  samples: extractedExamples.slice(0, 2)
+                });
+                
+                return extractedExamples;
+              }
+              
+              return examples;
+            })()}
             onAnalyzeExample={onAnalyzeRelatedSentence}
           />
         </TabsContent>

@@ -65,9 +65,18 @@ export const sanitizeAnalysisForHandlers = (analysis: unknown): SanitizedAnalysi
   analysisLogger.debug('sanitizeAnalysisForHandlers: Success', { id, analysis_type: analysisType });
 
   // Safe cast: validated type and content match
-  return { 
-    id, 
-    analysis_type: analysisType as AnalysisType, 
-    [analysisType]: content 
+  const result = {
+    id,
+    analysis_type: analysisType as AnalysisType,
+    [analysisType]: content
   } as SanitizedAnalysisData;
+  
+  analysisLogger.debug('sanitizeAnalysisForHandlers: Result', {
+    result,
+    resultType: typeof result,
+    analysisType,
+    contentType: typeof content
+  });
+
+  return result;
 };

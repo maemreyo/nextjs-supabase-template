@@ -13,7 +13,7 @@ import { useDialogLoading } from '../hooks/use-dialog-loading';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { cn } from '@/lib/utils';
-import { clientLogger } from '@/services/logger';
+import { analysisLogger, clientLogger } from '@/services/logger';
 import { sanitizeAnalysisForHandlers } from '@/lib/analysis-utils';
 import {
   exportAnalysis,
@@ -219,9 +219,17 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
     
     const sanitized = sanitizeAnalysisForHandlers(analysis);
     const sentence = sanitized.analysis_type === 'sentence' ? sanitized.sentence : analysis.sentence;
+    
+    analysisLogger.debug('SentenceAnalysisDialog: dialogTitle creation', {
+      analysisKeys: Object.keys(analysis),
+      sanitized,
+      sentence,
+      sentenceType: typeof sentence
+    });
+    
     return (
       <div className="flex items-center gap-2">
-        <span>Phân tích câu: {sentence.substring(0, 30)}{sentence.length > 30 ? '...' : ''}</span>
+        {/* <span>Phân tích câu: {sentence.substring(0, 30)}{sentence.length > 30 ? '...' : ''}</span> */}
         {onPronounce && (
           <SentencePronunciationAudioPlayer
             sentence={sentence}
@@ -304,11 +312,11 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
       fullscreen={fullscreen}
       type="sentence"
       title="Sentence"
-      subtitle={analysis ? `${(() => {
-        const sanitized = sanitizeAnalysisForHandlers(analysis);
-        const sentence = sanitized.analysis_type === 'sentence' ? sanitized.sentence : analysis.sentence;
-        return `${sentence.substring(0, 50)}${sentence.length > 50 ? '...' : ''}`;
-      })()}` : "Loading..."}
+      // subtitle={analysis ? `${(() => {
+      //   const sanitized = sanitizeAnalysisForHandlers(analysis);
+      //   const sentence = sanitized.analysis_type === 'sentence' ? sanitized.sentence : analysis.sentence;
+      //   return `${sentence.substring(0, 50)}${sentence.length > 50 ? '...' : ''}`;
+      // })()}` : "Loading..."}
       icon={
         <div className="flex items-center justify-center w-full h-full">
           <FileText className="h-5 w-5 text-primary" />
