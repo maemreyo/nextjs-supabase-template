@@ -8,7 +8,7 @@ export const AnalysisDialogContentOverflowWrapperComponent: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
   return (
-    <div className="pt-4 overflow-y-auto max-h-[calc(100vh-6rem)]">
+    <div className="pb-4 overflow-y-auto max-h-[calc(100vh-18rem)]">
       {children}
     </div>
   );

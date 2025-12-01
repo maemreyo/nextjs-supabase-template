@@ -15,6 +15,15 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { cn } from '@/lib/utils';
 import { clientLogger } from '@/services/logger';
 import { sanitizeAnalysisForHandlers } from '@/lib/analysis-utils';
+import {
+  exportAnalysis,
+  shareAnalysis,
+  printAnalysis,
+  createShareText,
+  createShareTitle,
+  createPrintTitle,
+  getFormatAsTextFunction
+} from '../common/export-utils';
 
 /**
  * Phrase Analysis Dialog Component
@@ -65,8 +74,8 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
       if (onExport) {
         await onExport(analysis, format);
       } else {
-        // Default export implementation
-        await exportPhraseAnalysis(analysis, format);
+        // Default export implementation using shared utils
+        await exportAnalysis(analysis as any, format, getFormatAsTextFunction(analysis));
       }
     } catch (error) {
       actions.setError('Không thể xuất dữ liệu. Vui lòng thử lại.');
@@ -74,107 +83,6 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
       setActionLoading('export', false);
     }
   }, [onExport, actions, setActionLoading]);
-
-  // Default export implementation
-  const exportPhraseAnalysis = useCallback(async (analysis: PhraseAnalysis, format: ExportFormat) => {
-    const sanitized = sanitizeAnalysisForHandlers(analysis);
-    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-    const phrase = sanitized.analysis_type === 'phrase' ? sanitized.phrase : analysis.phrase;
-    const filename = `phrase-analysis-${phrase.replace(/[^a-zA-Z0-9]/g, '-')}-${timestamp}`;
-    
-    switch (format) {
-      case 'txt':
-        const textContent = formatPhraseAsText(analysis);
-        downloadFile(textContent, `${filename}.txt`, 'text/plain');
-        break;
-      case 'json':
-        const jsonContent = JSON.stringify(analysis, null, 2);
-        downloadFile(jsonContent, `${filename}.json`, 'application/json');
-        break;
-      case 'pdf':
-        // For PDF, we'll use a simple text fallback for now
-        // In a real implementation, you would use a library like jsPDF
-        const pdfContent = formatPhraseAsText(analysis);
-        downloadFile(pdfContent, `${filename}.pdf`, 'application/pdf');
-        break;
-      default:
-        throw new Error(`Unsupported export format: ${format}`);
-    }
-  }, []);
-
-  // Format phrase analysis as text
-  const formatPhraseAsText = useCallback((analysis: PhraseAnalysis): string => {
-    const sanitized = sanitizeAnalysisForHandlers(analysis);
-    const phrase = sanitized.analysis_type === 'phrase' ? sanitized.phrase : analysis.phrase;
-    let content = `PHRASE ANALYSIS REPORT\n`;
-    content += `========================\n\n`;
-    content += `Phrase: ${phrase}\n`;
-    content += `Generated: ${new Date().toLocaleString()}\n\n`;
-    
-    if (analysis.literalMeaning) {
-      content += `LITERAL MEANING:\n${analysis.literalMeaning}\n\n`;
-    }
-    
-    if (analysis.naturalTranslation) {
-      content += `NATURAL TRANSLATION:\n${analysis.naturalTranslation}\n\n`;
-    }
-    
-    if (analysis.vietnameseTranslation) {
-      content += `VIETNAMESE TRANSLATION:\n${analysis.vietnameseTranslation}\n\n`;
-    }
-    
-    if (analysis.partOfSpeech) {
-      content += `PART OF SPEECH:\n${analysis.partOfSpeech}\n\n`;
-    }
-    
-    if (analysis.usageExamples && analysis.usageExamples.length > 0) {
-      content += `USAGE EXAMPLES:\n`;
-      analysis.usageExamples.forEach((example, index) => {
-        content += `${index + 1}. ${example}\n`;
-      });
-      content += '\n';
-    }
-    
-    if (analysis.synonyms && analysis.synonyms.length > 0) {
-      content += `SYNONYMS:\n`;
-      analysis.synonyms.forEach((synonym, index) => {
-        content += `${index + 1}. ${synonym}\n`;
-      });
-      content += '\n';
-    }
-    
-    if (analysis.antonyms && analysis.antonyms.length > 0) {
-      content += `ANTONYMS:\n`;
-      analysis.antonyms.forEach((antonym, index) => {
-        content += `${index + 1}. ${antonym}\n`;
-      });
-      content += '\n';
-    }
-    
-    if (analysis.variations && analysis.variations.length > 0) {
-      content += `VARIATIONS:\n`;
-      analysis.variations.forEach((variation, index) => {
-        content += `${index + 1}. ${variation}\n`;
-      });
-      content += '\n';
-    }
-    
-    content += `\n--- End of Report ---`;
-    return content;
-  }, []);
-
-  // Download file helper
-  const downloadFile = useCallback((content: string, filename: string, mimeType: string) => {
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  }, []);
 
   // Handle share with loading state
   const handleShare = useCallback(async (analysis: PhraseAnalysis) => {
@@ -185,8 +93,10 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
       if (onShare) {
         await onShare(analysis);
       } else {
-        // Default share implementation
-        await sharePhraseAnalysis(analysis);
+        // Default share implementation using shared utils
+        const shareText = createShareText(analysis);
+        const shareTitle = createShareTitle(analysis);
+        await shareAnalysis(analysis as any, shareText, shareTitle);
       }
     } catch (error) {
       actions.setError('Không thể chia sẻ. Vui lòng thử lại.');
@@ -194,31 +104,6 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
       setActionLoading('share', false);
     }
   }, [onShare, actions, setActionLoading]);
-
-  // Default share implementation
-  const sharePhraseAnalysis = useCallback(async (analysis: PhraseAnalysis) => {
-    const sanitized = sanitizeAnalysisForHandlers(analysis);
-    const phrase = sanitized.analysis_type === 'phrase' ? sanitized.phrase : analysis.phrase;
-    const shareText = `Phrase: "${phrase}"\nLiteral Meaning: ${analysis.literalMeaning || 'N/A'}\nNatural Translation: ${analysis.naturalTranslation || 'N/A'}`;
-    const shareUrl = window.location.href;
-    
-    if (navigator.share) {
-      // Use Web Share API if available
-      try {
-        await navigator.share({
-          title: `Phrase Analysis: ${phrase}`,
-          text: shareText,
-          url: shareUrl
-        });
-      } catch (error) {
-        // If user cancels or Web Share API fails, fallback to clipboard
-        await navigator.clipboard.writeText(`${shareText}\n\nRead more: ${shareUrl}`);
-      }
-    } else {
-      // Fallback to clipboard
-      await navigator.clipboard.writeText(`${shareText}\n\nRead more: ${shareUrl}`);
-    }
-  }, []);
 
   // Handle print with loading state
   const handlePrint = useCallback(async (analysis: PhraseAnalysis) => {
@@ -229,8 +114,10 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
       if (onPrint) {
         await onPrint(analysis);
       } else {
-        // Default print implementation
-        printPhraseAnalysis(analysis);
+        // Default print implementation using shared utils
+        const printContent = getFormatAsTextFunction(analysis)(analysis);
+        const printTitle = createPrintTitle(analysis);
+        await printAnalysis(analysis as any, printContent, printTitle);
       }
     } catch (error) {
       actions.setError('Không thể in. Vui lòng thử lại.');
@@ -238,37 +125,6 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
       setActionLoading('print', false);
     }
   }, [onPrint, actions, setActionLoading]);
-
-  // Default print implementation
-  const printPhraseAnalysis = useCallback((analysis: PhraseAnalysis) => {
-    const sanitized = sanitizeAnalysisForHandlers(analysis);
-    const phrase = sanitized.analysis_type === 'phrase' ? sanitized.phrase : analysis.phrase;
-    const printContent = formatPhraseAsText(analysis);
-    const printWindow = window.open('', '_blank');
-    
-    if (printWindow) {
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Phrase Analysis: ${phrase}</title>
-            <style>
-              body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
-              h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; }
-              h2 { color: #555; margin-top: 20px; }
-              pre { white-space: pre-wrap; background-color: #f5f5f5; padding: 10px; border-radius: 5px; }
-            </style>
-          </head>
-          <body>
-            <pre>${printContent}</pre>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.print();
-    } else {
-      throw new Error('Không thể mở cửa sổ in. Vui lòng kiểm tra cài đặt trình duyệt.');
-    }
-  }, [formatPhraseAsText]);
 
   // Handle add to vocabulary with loading state
   const handleAddToVocabulary = useCallback(async (analysis: PhraseAnalysis) => {
@@ -561,7 +417,7 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
       </div>
 
       {/* Dialog Actions */}
-      <div className="px-6 pb-6">
+      {/* <div className="px-6 pb-6">
         <PhraseDialogActions
           analysis={analysis}
           onAddToVocabulary={handleAddToVocabulary}
@@ -577,7 +433,7 @@ export const PhraseAnalysisDialog: React.FC<PhraseAnalysisDialogProps> = ({
           compact={false}
           className="mt-4"
         />
-      </div>
+      </div> */}
 
       {/* Keyboard Shortcuts Help */}
       {/* <div className="px-6 pb-4 border-t">

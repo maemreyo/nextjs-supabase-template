@@ -15,6 +15,15 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { cn } from '@/lib/utils';
 import { clientLogger } from '@/services/logger';
 import { sanitizeAnalysisForHandlers } from '@/lib/analysis-utils';
+import {
+  exportAnalysis,
+  shareAnalysis,
+  printAnalysis,
+  createShareText,
+  createShareTitle,
+  createPrintTitle,
+  getFormatAsTextFunction
+} from '../common/export-utils';
 
 /**
  * Sentence Analysis Dialog Component
@@ -67,8 +76,8 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
       if (onExport) {
         await onExport(analysis, format);
       } else {
-        // Default export implementation
-        await exportSentenceAnalysis(analysis, format);
+        // Default export implementation using shared utils
+        await exportAnalysis(analysis as any, format, getFormatAsTextFunction(analysis));
       }
     } catch (error) {
       actions.setError('Không thể xuất dữ liệu. Vui lòng thử lại.');
@@ -77,98 +86,8 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
     }
   }, [onExport, actions, setActionLoading]);
 
-  // Default export implementation
-  const exportSentenceAnalysis = useCallback(async (analysis: SentenceAnalysis, format: ExportFormat): Promise<void> => {
-    const sanitized = sanitizeAnalysisForHandlers(analysis);
-    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-    const sentence = sanitized.analysis_type === 'sentence' ? sanitized.sentence : analysis.sentence;
-    const filename = `sentence-analysis-${sentence.replace(/[^a-zA-Z0-9]/g, '-')}-${timestamp}`;
-    
-    switch (format) {
-      case 'txt':
-        const textContent = formatSentenceAsText(analysis);
-        downloadFile(textContent, `${filename}.txt`, 'text/plain');
-        return;
-      case 'json':
-        const jsonContent = JSON.stringify(analysis, null, 2);
-        downloadFile(jsonContent, `${filename}.json`, 'application/json');
-        return;
-      case 'pdf':
-        // For PDF, we'll use a simple text fallback for now
-        // In a real implementation, you would use a library like jsPDF
-        const pdfContent = formatSentenceAsText(analysis);
-        downloadFile(pdfContent, `${filename}.pdf`, 'application/pdf');
-        return;
-      default:
-        throw new Error(`Unsupported export format: ${format}`);
-    }
-  }, []);
 
-  // Format sentence analysis as text
-  const formatSentenceAsText = useCallback((analysis: SentenceAnalysis): string => {
-    const sanitized = sanitizeAnalysisForHandlers(analysis);
-    const sentence = sanitized.analysis_type === 'sentence' ? sanitized.sentence : analysis.sentence;
-    let content = `SENTENCE ANALYSIS REPORT\n`;
-    content += `===========================\n\n`;
-    content += `Sentence: ${sentence}\n`;
-    content += `Generated: ${new Date().toLocaleString()}\n\n`;
-    
-    if (analysis.naturalTranslation) {
-      content += `NATURAL TRANSLATION:\n${analysis.naturalTranslation}\n\n`;
-    }
-    
-    if (analysis.literalTranslation) {
-      content += `LITERAL TRANSLATION:\n${analysis.literalTranslation}\n\n`;
-    }
-    
-    if (analysis.mainIdea) {
-      content += `MAIN IDEA:\n${analysis.mainIdea}\n\n`;
-    }
-    
-    if (analysis.subject) {
-      content += `SUBJECT:\n${analysis.subject}\n\n`;
-    }
-    
-    if (analysis.mainVerb) {
-      content += `MAIN VERB:\n${analysis.mainVerb}\n\n`;
-    }
-    
-    if (analysis.object) {
-      content += `OBJECT:\n${analysis.object}\n\n`;
-    }
-    
-    if (analysis.function) {
-      content += `FUNCTION:\n${analysis.function}\n\n`;
-    }
-    
-    if (analysis.sentenceType) {
-      content += `SENTENCE TYPE:\n${analysis.sentenceType}\n\n`;
-    }
-    
-    if (analysis.complexityLevel) {
-      content += `COMPLEXITY LEVEL:\n${analysis.complexityLevel}\n\n`;
-    }
-    
-    if (analysis.sentiment) {
-      content += `SENTIMENT:\n${analysis.sentiment}\n\n`;
-    }
-    
-    content += `\n--- End of Report ---`;
-    return content;
-  }, []);
 
-  // Download file helper
-  const downloadFile = useCallback((content: string, filename: string, mimeType: string) => {
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  }, []);
 
   // Handle share with loading state
   const handleShare = useCallback(async (analysis: SentenceAnalysis) => {
@@ -179,8 +98,10 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
       if (onShare) {
         await onShare(analysis);
       } else {
-        // Default share implementation
-        await shareSentenceAnalysis(analysis);
+        // Default share implementation using shared utils
+        const shareText = createShareText(analysis);
+        const shareTitle = createShareTitle(analysis);
+        await shareAnalysis(analysis as any, shareText, shareTitle);
       }
     } catch (error) {
       actions.setError('Không thể chia sẻ. Vui lòng thử lại.');
@@ -189,30 +110,6 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
     }
   }, [onShare, actions, setActionLoading]);
 
-  // Default share implementation
-  const shareSentenceAnalysis = useCallback(async (analysis: SentenceAnalysis) => {
-    const sanitized = sanitizeAnalysisForHandlers(analysis);
-    const sentence = sanitized.analysis_type === 'sentence' ? sanitized.sentence : analysis.sentence;
-    const shareText = `Sentence: "${sentence}"\nTranslation: ${analysis.naturalTranslation || 'N/A'}\nMain Idea: ${analysis.mainIdea || 'N/A'}`;
-    const shareUrl = window.location.href;
-    
-    if (navigator.share) {
-      // Use Web Share API if available
-      try {
-        await navigator.share({
-          title: `Sentence Analysis: ${sentence.substring(0, 30)}...`,
-          text: shareText,
-          url: shareUrl
-        });
-      } catch (error) {
-        // If user cancels or Web Share API fails, fallback to clipboard
-        await navigator.clipboard.writeText(`${shareText}\n\nRead more: ${shareUrl}`);
-      }
-    } else {
-      // Fallback to clipboard
-      await navigator.clipboard.writeText(`${shareText}\n\nRead more: ${shareUrl}`);
-    }
-  }, []);
 
   // Handle print with loading state
   const handlePrint = useCallback(async (analysis: SentenceAnalysis) => {
@@ -223,8 +120,10 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
       if (onPrint) {
         await onPrint(analysis);
       } else {
-        // Default print implementation
-        printSentenceAnalysis(analysis);
+        // Default print implementation using shared utils
+        const printContent = getFormatAsTextFunction(analysis)(analysis);
+        const printTitle = createPrintTitle(analysis);
+        await printAnalysis(analysis as any, printContent, printTitle);
       }
     } catch (error) {
       actions.setError('Không thể in. Vui lòng thử lại.');
@@ -233,36 +132,6 @@ export const SentenceAnalysisDialog: React.FC<SentenceAnalysisDialogProps> = ({
     }
   }, [onPrint, actions, setActionLoading]);
 
-  // Default print implementation
-  const printSentenceAnalysis = useCallback((analysis: SentenceAnalysis) => {
-    const sanitized = sanitizeAnalysisForHandlers(analysis);
-    const sentence = sanitized.analysis_type === 'sentence' ? sanitized.sentence : analysis.sentence;
-    const printContent = formatSentenceAsText(analysis);
-    const printWindow = window.open('', '_blank');
-    
-    if (printWindow) {
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Sentence Analysis: ${sentence.substring(0, 30)}...</title>
-            <style>
-              body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
-              h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; }
-              h2 { color: #555; margin-top: 20px; }
-              pre { white-space: pre-wrap; background-color: #f5f5f5; padding: 10px; border-radius: 5px; }
-            </style>
-          </head>
-          <body>
-            <pre>${printContent}</pre>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.print();
-    } else {
-      throw new Error('Không thể mở cửa sổ in. Vui lòng kiểm tra cài đặt trình duyệt.');
-    }
-  }, [formatSentenceAsText]);
 
   // Handle add to vocabulary with loading state
   const handleAddToVocabulary = useCallback(async (analysis: SentenceAnalysis) => {

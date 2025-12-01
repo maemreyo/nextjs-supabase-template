@@ -14,6 +14,15 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { cn } from '@/lib/utils';
 import { clientLogger } from '@/services/logger';
 import { sanitizeAnalysisForHandlers } from '@/lib/analysis-utils';
+import {
+  exportAnalysis,
+  shareAnalysis,
+  printAnalysis,
+  createShareText,
+  createShareTitle,
+  createPrintTitle,
+  getFormatAsTextFunction
+} from '../common/export-utils';
 
 /**
  * Paragraph Analysis Dialog Component
@@ -67,8 +76,8 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
       if (onExport) {
         await onExport(analysisData, format);
       } else {
-        // Default export implementation
-        await exportParagraphAnalysis(analysisData, format);
+        // Default export implementation using shared utils
+        await exportAnalysis(analysisData as any, format, getFormatAsTextFunction(analysisData));
       }
     } catch (error) {
       actions.setError('Không thể xuất dữ liệu. Vui lòng thử lại.');
@@ -77,103 +86,8 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
     }
   }, [onExport, actions, setActionLoading]);
 
-  // Default export implementation
-  const exportParagraphAnalysis = useCallback(async (analysis: ParagraphAnalysis, format: ExportFormat): Promise<void> => {
-    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-    const filename = `paragraph-analysis-${analysis.paragraph.replace(/[^a-zA-Z0-9]/g, '-')}-${timestamp}`;
-    
-    switch (format) {
-      case 'txt':
-        const textContent = formatParagraphAsText(analysis);
-        downloadFile(textContent, `${filename}.txt`, 'text/plain');
-        return;
-      case 'json':
-        const jsonContent = JSON.stringify(analysis, null, 2);
-        downloadFile(jsonContent, `${filename}.json`, 'application/json');
-        return;
-      case 'pdf':
-        // For PDF, we'll use a simple text fallback for now
-        // In a real implementation, you would use a library like jsPDF
-        const pdfContent = formatParagraphAsText(analysis);
-        downloadFile(pdfContent, `${filename}.pdf`, 'application/pdf');
-        return;
-      default:
-        throw new Error(`Unsupported export format: ${format}`);
-    }
-  }, []);
 
-  // Format paragraph analysis as text
-  const formatParagraphAsText = useCallback((analysis: ParagraphAnalysis): string => {
-    const sanitized = sanitizeAnalysisForHandlers(analysis);
-    const paragraph = sanitized.analysis_type === 'paragraph' ? sanitized.paragraph : analysis.paragraph;
-    let content = `PARAGRAPH ANALYSIS REPORT\n`;
-    content += `============================\n\n`;
-    content += `Paragraph: ${paragraph}\n`;
-    content += `Generated: ${new Date().toLocaleString()}\n\n`;
-    
-    if (analysis.mainTopic) {
-      content += `MAIN TOPIC:\n${analysis.mainTopic}\n\n`;
-    }
-    
-    if (analysis.tone) {
-      content += `TONE:\n${analysis.tone}\n\n`;
-    }
-    
-    if (analysis.targetAudience) {
-      content += `TARGET AUDIENCE:\n${analysis.targetAudience}\n\n`;
-    }
-    
-    if (analysis.type) {
-      content += `TYPE:\n${analysis.type}\n\n`;
-    }
-    
-    if (analysis.vocabularyLevel) {
-      content += `VOCABULARY LEVEL:\n${analysis.vocabularyLevel}\n\n`;
-    }
-    
-    if (analysis.sentimentLabel) {
-      content += `SENTIMENT:\n${analysis.sentimentLabel}\n`;
-      if (analysis.sentimentIntensity) {
-        content += `Intensity: ${analysis.sentimentIntensity}\n`;
-      }
-      if (analysis.sentimentJustification) {
-        content += `Justification: ${analysis.sentimentJustification}\n`;
-      }
-      content += '\n';
-    }
-    
-    if (analysis.keywords && analysis.keywords.length > 0) {
-      content += `KEYWORDS:\n`;
-      analysis.keywords.forEach((keyword, index) => {
-        content += `${index + 1}. ${keyword}\n`;
-      });
-      content += '\n';
-    }
-    
-    if (analysis.betterVersion) {
-      content += `BETTER VERSION:\n${analysis.betterVersion}\n\n`;
-    }
-    
-    if (analysis.gapAnalysis) {
-      content += `GAP ANALYSIS:\n${analysis.gapAnalysis}\n\n`;
-    }
-    
-    content += `\n--- End of Report ---`;
-    return content;
-  }, []);
 
-  // Download file helper
-  const downloadFile = useCallback((content: string, filename: string, mimeType: string) => {
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  }, []);
 
   // Handle share with loading state
   const handleShare = useCallback(async (analysisData: ParagraphAnalysis) => {
@@ -184,8 +98,10 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
       if (onShare) {
         await onShare(analysisData);
       } else {
-        // Default share implementation
-        await shareParagraphAnalysis(analysisData);
+        // Default share implementation using shared utils
+        const shareText = createShareText(analysisData);
+        const shareTitle = createShareTitle(analysisData);
+        await shareAnalysis(analysisData as any, shareText, shareTitle);
       }
     } catch (error) {
       actions.setError('Không thể chia sẻ. Vui lòng thử lại.');
@@ -194,30 +110,6 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
     }
   }, [onShare, actions, setActionLoading]);
 
-  // Default share implementation
-  const shareParagraphAnalysis = useCallback(async (analysis: ParagraphAnalysis) => {
-    const sanitized = sanitizeAnalysisForHandlers(analysis);
-    const paragraph = sanitized.analysis_type === 'paragraph' ? sanitized.paragraph : analysis.paragraph;
-    const shareText = `Paragraph: "${paragraph.substring(0, 100)}..."\nMain Topic: ${analysis.mainTopic || 'N/A'}\nSentiment: ${analysis.sentimentLabel || 'N/A'}`;
-    const shareUrl = window.location.href;
-    
-    if (navigator.share) {
-      // Use Web Share API if available
-      try {
-        await navigator.share({
-          title: `Paragraph Analysis: ${analysis.mainTopic || 'Analysis'}`,
-          text: shareText,
-          url: shareUrl
-        });
-      } catch (error) {
-        // If user cancels or Web Share API fails, fallback to clipboard
-        await navigator.clipboard.writeText(`${shareText}\n\nRead more: ${shareUrl}`);
-      }
-    } else {
-      // Fallback to clipboard
-      await navigator.clipboard.writeText(`${shareText}\n\nRead more: ${shareUrl}`);
-    }
-  }, []);
 
   // Handle print with loading state
   const handlePrint = useCallback(async (analysisData: ParagraphAnalysis) => {
@@ -228,8 +120,10 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
       if (onPrint) {
         await onPrint(analysisData);
       } else {
-        // Default print implementation
-        printParagraphAnalysis(analysisData);
+        // Default print implementation using shared utils
+        const printContent = getFormatAsTextFunction(analysisData)(analysisData);
+        const printTitle = createPrintTitle(analysisData);
+        await printAnalysis(analysisData as any, printContent, printTitle);
       }
     } catch (error) {
       actions.setError('Không thể in. Vui lòng thử lại.');
@@ -238,36 +132,6 @@ export const ParagraphAnalysisDialog: React.FC<ParagraphAnalysisDialogProps> = (
     }
   }, [onPrint, actions, setActionLoading]);
 
-  // Default print implementation
-  const printParagraphAnalysis = useCallback((analysis: ParagraphAnalysis) => {
-    const sanitized = sanitizeAnalysisForHandlers(analysis);
-    const paragraph = sanitized.analysis_type === 'paragraph' ? sanitized.paragraph : analysis.paragraph;
-    const printContent = formatParagraphAsText(analysis);
-    const printWindow = window.open('', '_blank');
-    
-    if (printWindow) {
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Paragraph Analysis: ${analysis.mainTopic || 'Analysis'}</title>
-            <style>
-              body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
-              h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; }
-              h2 { color: #555; margin-top: 20px; }
-              pre { white-space: pre-wrap; background-color: #f5f5f5; padding: 10px; border-radius: 5px; }
-            </style>
-          </head>
-          <body>
-            <pre>${printContent}</pre>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.print();
-    } else {
-      throw new Error('Không thể mở cửa sổ in. Vui lòng kiểm tra cài đặt trình duyệt.');
-    }
-  }, [formatParagraphAsText]);
 
   // Handle add to vocabulary with loading state
   const handleAddToVocabulary = useCallback(async (analysisData: ParagraphAnalysis) => {
