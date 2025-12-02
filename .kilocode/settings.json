@@ -1,0 +1,72 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git:*)",
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Bash(pnpm:*)",
+      "Bash(yarn:*)",
+      "Bash(pip:*)",
+      "Bash(poetry:*)",
+      "Bash(python:*)",
+      "Bash(node:*)",
+      "Bash(pytest:*)",
+      "Bash(ruff:*)",
+      "Bash(eslint:*)",
+      "Bash(prettier:*)",
+      "Bash(tsc:*)",
+      "Bash(docker:*)",
+      "Bash(gh:*)",
+      "Read(*)",
+      "Write(*)",
+      "Edit(*)"
+    ],
+    "deny": []
+  },
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@context7/mcp-server"]
+    },
+    "sequential": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    },
+    "puppeteer": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-puppeteer"]
+    },
+    "magic": {
+      "command": "npx",
+      "args": ["-y", "@anthropic/magic-mcp-server"]
+    }
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": {
+          "tool": "Write",
+          "files": ["*.py"]
+        },
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ruff check --fix $FILE 2>/dev/null || true"
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "tool": "Write",
+          "files": ["*.ts", "*.tsx"]
+        },
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx eslint --fix $FILE 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}
