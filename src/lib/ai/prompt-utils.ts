@@ -296,7 +296,7 @@ JSON SCHEMA:
         {
           "type": "Loại mệnh đề (independent/dependent/relative)",
           "content": "Nội dung mệnh đề",
-          "function": "Chức năng trong câu"
+          "role": "Chức năng trong câu"
         }
       ],
       "modifiers": [
@@ -392,7 +392,7 @@ JSON SCHEMA:
           "index": 1,
           "text": "3-5 từ đầu của câu",
           "role": "Vai trò (topic sentence/supporting detail/evidence/example/transition/conclusion)",
-          "function": "Chức năng trong đoạn",
+          "sentence_role": "Chức năng trong đoạn",
           "analysis": "Phân tích ngắn gọn về đóng góp của câu"
         }
       ],
@@ -840,7 +840,7 @@ SENTENCE:
         {
           "type": "Loại mệnh đề (independent/dependent/relative)",
           "content": "Nội dung mệnh đề",
-          "function": "Chức năng trong câu"
+          "role": "Chức năng trong câu"
         }
       ],
       "modifiers": [
@@ -922,7 +922,7 @@ PARAGRAPH:
           "index": 1,
           "text": "3-5 từ đầu của câu",
           "role": "Vai trò (topic sentence/supporting detail/evidence/example/transition/conclusion)",
-          "function": "Chức năng trong đoạn",
+          "sentence_role": "Chức năng trong đoạn",
           "analysis": "Phân tích ngắn gọn về đóng góp của câu"
         }
       ],
@@ -1658,7 +1658,7 @@ JSON SCHEMA:
       ]
     },
     "contextual_role": {
-      "function": "Chức năng trong đoạn văn",
+      "sentence_role": "Chức năng trong đoạn văn",
       "relation_to_previous": "Mối liên hệ với câu trước đó"
     },
     "key_components": [
@@ -1931,7 +1931,7 @@ JSON SCHEMA:
     ]
   },
   "contextual_role": {
-    "function": "Chức năng trong đoạn (Mở bài/Giải thích/Kết luận...)",
+    "sentence_role": "Chức năng trong đoạn (Mở bài/Giải thích/Kết luận...)",
     "relation_to_previous": "Mối liên hệ với câu trước đó"
   },
   "key_components": [

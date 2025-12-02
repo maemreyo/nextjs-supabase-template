@@ -621,17 +621,19 @@ try {
       analysisData.session_analysis = sessionAnalysis;
     }
 
-    // Create consistent response structure for all analysis types
+    // Create response structure as specified in task requirements
     const responseData = {
-      analysis: analysisData,
-      fullData: analysisData, // For backward compatibility with frontend expectations
-      ...analysisData // Spread all analysis data for direct access
+      id: analysisData.id,
+      content: analysisData.content,
+      analysis_type: analysisData.analysis_type || analysisType,
+      highlight_id: analysisData.highlight_id || null
     };
 
     apiLogger.success('Analysis retrieved successfully', {
       analysisId: actualId,
       analysisType,
-      targetType
+      targetType,
+      responseData
     })
 
     return NextResponse.json({

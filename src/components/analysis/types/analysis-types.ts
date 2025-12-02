@@ -91,7 +91,7 @@ export interface SentenceAnalysis extends BaseAnalysis {
   subject?: string;
   mainVerb?: string;
   object?: string;
-  function?: string;
+  role?: string;
   sentenceType?: string;
   complexityLevel?: string;
   sentiment?: string;
@@ -311,7 +311,7 @@ export interface HighlightSentenceAnalysis {
     clauses: Array<{
       type: string;
       content: string;
-      function: string;
+      role: string;
     }>;
     modifiers: Array<{
       type: string;

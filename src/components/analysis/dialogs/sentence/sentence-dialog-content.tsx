@@ -94,7 +94,7 @@ export const SentenceDialogContent: React.FC<SentenceDialogContentProps> = ({
       const subject = highlightData?.structure?.subject || analysisAny.subject;
       const mainVerb = highlightData?.structure?.predicate || analysisAny.mainVerb;
       const object = highlightData?.structure?.object || analysisAny.object;
-      const sentenceFunction = highlightData?.meta?.function || analysisAny.function;
+      const sentenceFunction = highlightData?.meta?.role || analysisAny.role || highlightData?.meta?.function || analysisAny.function;
       const sentenceType = highlightData?.meta?.type || analysisAny.sentenceType;
       const complexityLevel = highlightData?.meta?.complexity || analysisAny.complexityLevel;
       const sentiment = highlightData?.meaning?.sentiment || analysisAny.sentiment;
@@ -107,7 +107,7 @@ export const SentenceDialogContent: React.FC<SentenceDialogContentProps> = ({
                       phrase: c.phrase,
                       meaning: c.meaning,
                       type: c.type,
-                      function: c.function
+                      role: c.role || c.function
                     })) ||
                     analysisAny.clauses || [];
       
@@ -130,7 +130,7 @@ export const SentenceDialogContent: React.FC<SentenceDialogContentProps> = ({
         subject,
         mainVerb,
         object,
-        function,
+        role: sentenceFunction,
         sentenceType,
         complexityLevel,
         sentiment,
@@ -253,7 +253,7 @@ export const SentenceDialogContent: React.FC<SentenceDialogContentProps> = ({
     return {
       hasContext: !!(analysis?.paragraphContext || analysis?.relationToPrevious),
       hasStructure: !!(analysis?.subject || analysis?.mainVerb || analysis?.object || analysis?.clauses),
-      hasGrammar: !!(analysis?.function || analysis?.complexityLevel || analysis?.sentiment || analysis?.subtext),
+      hasGrammar: !!(analysis?.role || analysis?.complexityLevel || analysis?.sentiment || analysis?.subtext),
       hasExamples: !!(analysis?.clauses && Object.keys(analysis.clauses).length > 0),
     };
   }, [analysis]);
@@ -420,7 +420,7 @@ export const SentenceDialogContent: React.FC<SentenceDialogContentProps> = ({
 
         <TabsContent value="grammar" className="mt-4 animate-fadeIn">
           <SentenceGrammarAnalysisSection
-            function={mergedAnalysis?.function || analysis?.function}
+            function={mergedAnalysis?.role || analysis?.role}
             complexityLevel={mergedAnalysis?.complexityLevel || analysis?.complexityLevel}
             sentiment={mergedAnalysis?.sentiment || analysis?.sentiment}
             subtext={mergedAnalysis?.subtext || analysis?.subtext}

@@ -331,8 +331,8 @@ export const POST = withAuth(
 
       // Perform universal AI analysis with auto-detection
       let analysisResult;
-      let category: string;
-      let confidence: number;
+      let category: string = 'unknown';
+      let confidence: number = 0;
       try {
         // Build universal auto-detection prompt
         const prompt = buildUniversalAutoDetectionPrompt(
@@ -443,6 +443,36 @@ export const POST = withAuth(
         );
       }
 
+      // Log successful analysis data storage
+      analysisLogger.info('Analysis result stored', {
+        highlightId: id,
+        analysisId: insertedAnalysis.id,
+        analysisTable,
+        category,
+        confidence,
+        userId: user.id
+      });
+      
+      // Log analysis data details for debugging
+      analysisLogger.debug('Analysis data details', {
+        highlightId: id,
+        analysisId: insertedAnalysis.id,
+        analysisTable,
+        category,
+        confidence,
+        analysisData: {
+          word: analysisData.word || 'N/A',
+          phrase: analysisData.phrase || 'N/A',
+          sentence: analysisData.sentence || 'N/A',
+          paragraph: analysisData.paragraph || 'N/A',
+          ipa: analysisData.ipa || 'N/A',
+          pos: analysisData.pos || 'N/A',
+          cefr: analysisData.cefr || 'N/A',
+          tone: analysisData.tone || 'N/A',
+          vietnamese_translation: analysisData.vietnamese_translation || 'N/A'
+        }
+      });
+
       // Update highlight with analysis ID and status
       dbLogger.debug('Updating highlight with analysis ID', {
         userId: user.id,
@@ -474,6 +504,30 @@ export const POST = withAuth(
 
         // Don't fail the operation if analysis was saved but highlight update failed
         // Just log the error for monitoring
+      } else {
+        // Log successful highlight update
+        dbLogger.info('Highlight updated with analysis ID', {
+          userId: user.id,
+          highlightId: id,
+          analysisId: insertedAnalysis.id,
+          category,
+          confidence,
+          analysisType: analysisData.analysis_type,
+          analysisTable
+        });
+        
+        // Log highlight record details for debugging
+        dbLogger.debug('Highlight record details after update', {
+          userId: user.id,
+          highlightId: id,
+          analysisId: insertedAnalysis.id,
+          category,
+          confidence,
+          analysisType: analysisData.analysis_type,
+          analysisTable,
+          status: 'analyzed',
+          analyzedAt: new Date().toISOString()
+        });
       }
 
       const response = {
@@ -500,7 +554,7 @@ export const POST = withAuth(
         error: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined
       });
-
+      
       return createErrorResponse(
         error instanceof Error ? error.message : 'Internal server error',
         500
