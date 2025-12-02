@@ -13,7 +13,8 @@ import {
   Eye,
   Clock,
   AlertCircle,
-  MoreHorizontal
+  MoreHorizontal,
+  RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useHighlights, type Highlight } from '@/hooks/useHighlights';
@@ -25,6 +26,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
+import { toast } from 'sonner';
 
 interface HighlightsListProps {
   sessionId: string;
@@ -98,9 +100,19 @@ const HighlightItem = memo(function HighlightItem({
   }, [highlight.id, highlight.selected_text, onAnalyze, isAnalyzing]);
 
   const handleViewDetails = useCallback(() => {
+    // Only allow viewing details if status is 'analyzed'
+    if (highlight.status !== 'analyzed') {
+      analysisLogger.warn('Attempted to view details for unanalyzed highlight', {
+        highlightId: highlight.id,
+        status: highlight.status,
+        text: highlight.selected_text
+      });
+      return;
+    }
+    
     clientLogger.info('HighlightsList', { type: 'view_details_clicked', highlightId: highlight.id, text: highlight.selected_text });
     onViewDetails?.(highlight);
-  }, [highlight.id, highlight.selected_text, onViewDetails]);
+  }, [highlight.id, highlight.selected_text, highlight.status, onViewDetails]);
 
   const handleRemove = useCallback(() => {
     clientLogger.info('HighlightsList', { type: 'remove_clicked', highlightId: highlight.id, text: highlight.selected_text });
@@ -170,6 +182,20 @@ const HighlightItem = memo(function HighlightItem({
             </Button>
           )}
           
+          {highlight.status === 'error' && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleAnalyze}
+              disabled={isAnalyzing}
+              className="h-7 w-7 p-0 text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:text-orange-400 dark:hover:text-orange-300 dark:hover:bg-orange-950/20"
+              title="Thử lại phân tích"
+              aria-label="Thử lại phân tích"
+            >
+              {isAnalyzing ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+            </Button>
+          )}
+          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -193,6 +219,12 @@ const HighlightItem = memo(function HighlightItem({
                 <DropdownMenuItem onClick={handleViewDetails}>
                   <Eye className="mr-2 h-4 w-4" />
                   Xem chi tiết
+                </DropdownMenuItem>
+              )}
+              {highlight.status === 'error' && (
+                <DropdownMenuItem onClick={handleAnalyze} disabled={isAnalyzing} className="text-orange-600 focus:text-orange-700 dark:text-orange-400 dark:focus:text-orange-300">
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Thử lại phân tích
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
@@ -323,6 +355,29 @@ const HighlightItem = memo(function HighlightItem({
               </Button>
             )}
             
+            {highlight.status === 'error' && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleAnalyze}
+                disabled={isAnalyzing}
+                className="flex items-center gap-2 text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:text-orange-400 dark:hover:text-orange-300 dark:hover:bg-orange-950/20 border-orange-200 dark:border-orange-800"
+                aria-label="Thử lại phân tích"
+              >
+                {isAnalyzing ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    Đang thử lại...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw size={14} />
+                    Thử lại phân tích
+                  </>
+                )}
+              </Button>
+            )}
+            
             <Button
               size="sm"
               variant="outline"
@@ -389,8 +444,75 @@ export const HighlightsList = memo(function HighlightsList({
   }, [analyzeHighlight, updateHighlight, onHighlightAnalyze]);
 
   const handleViewDetails = useCallback((highlight: Highlight) => {
+    // Add detailed logging to diagnose the issue
+    analysisLogger.info('HighlightsList: handleViewDetails called', {
+      highlightId: highlight.id,
+      status: highlight.status,
+      selectedText: highlight.selected_text,
+      highlightType: highlight.highlight_type,
+      analysisId: highlight.analysis_id,
+      analysisType: highlight.analysis_type
+    });
+    
+    // Only allow viewing details if status is 'analyzed'
+    if (highlight.status !== 'analyzed') {
+      analysisLogger.warn('Attempted to view details for unanalyzed highlight', {
+        highlightId: highlight.id,
+        status: highlight.status,
+        text: highlight.selected_text
+      });
+      return;
+    }
+
+    // Derive analysisType and analysisId from highlight
+    const analysisType = highlight.analysis_type || highlight.highlight_type;
+    const analysisId = highlight.analysis_id;
+
+    // Check if we have the required data
+    if (!analysisId) {
+      analysisLogger.warn('No analysis_id available for highlight', {
+        highlightId: highlight.id,
+        status: highlight.status,
+        text: highlight.selected_text,
+        analysisType
+      });
+      // Show toast notification to user
+      toast.error('Phân tích trước', {
+        description: 'Highlight này chưa được phân tích. Vui lòng phân tích trước khi xem chi tiết.',
+      });
+      return;
+    }
+
+    if (!analysisType) {
+      analysisLogger.warn('No analysis_type available for highlight', {
+        highlightId: highlight.id,
+        status: highlight.status,
+        text: highlight.selected_text,
+        analysisId
+      });
+      // Show toast notification to user
+      toast.error('Thiếu thông tin phân tích', {
+        description: 'Không xác định được loại phân tích cho highlight này.',
+      });
+      return;
+    }
+    
+    analysisLogger.info('Opening analysis detail with derived values', {
+      highlightId: highlight.id,
+      derivedAnalysisType: analysisType,
+      derivedAnalysisId: analysisId
+    });
+    
     clientLogger.info('HighlightsList', { type: 'view_details', highlightId: highlight.id });
-    onHighlightViewDetails?.(highlight);
+    
+    // Create a new object with the correct analysisType and analysisId
+    const analysisItem = {
+      ...highlight,
+      analysisType: analysisType,
+      analysisId: analysisId
+    };
+    
+    onHighlightViewDetails?.(analysisItem);
   }, [onHighlightViewDetails]);
 
   const handleRemoveHighlight = useCallback(async (highlightId: string) => {
@@ -404,7 +526,38 @@ export const HighlightsList = memo(function HighlightsList({
     }
   }, [deleteHighlight]);
 
+  // // CRITICAL FIX: Check error first, then loading, then empty, then data
+  // if (error) {
+  //   // Add debug logging to track when error is displayed
+  //   analysisLogger.debug('HighlightsList: Rendering error state', {
+  //     error: error,
+  //     errorMessage: (error as any)?.message,
+  //     highlightsLength: highlights?.length || 0,
+  //     loading: loading,
+  //     hasData: !!highlights && highlights.length > 0
+  //   });
+    
+  //   return (
+  //     <div className={className}>
+  //       <Card className="p-8 text-center">
+  //         <BookOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+  //         <h3 className="text-lg font-medium mb-2">Lỗi tải highlights</h3>
+  //         <p className="text-muted-foreground">
+  //           {(error as any)?.message || 'Đã xảy ra lỗi khi tải danh sách highlights.'}
+  //         </p>
+  //       </Card>
+  //     </div>
+  //   );
+  // }
+
   if (loading) {
+    // Add debug logging for loading state
+    analysisLogger.debug('HighlightsList: Rendering loading state', {
+      loading: loading,
+      error: error,
+      highlightsLength: highlights?.length || 0
+    });
+    
     return (
       <div className={className}>
         <Card className="p-4">
@@ -418,26 +571,13 @@ export const HighlightsList = memo(function HighlightsList({
     );
   }
 
-  if (error) {
-    return (
-      <div className={className}>
-        <Card className="p-8 text-center">
-          <BookOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-lg font-medium mb-2">Lỗi tải highlights</h3>
-          <p className="text-muted-foreground">
-            {(error as any)?.message || 'Đã xảy ra lỗi khi tải danh sách highlights.'}
-          </p>
-        </Card>
-      </div>
-    );
-  }
-
+  // CRITICAL FIX: Only show empty state if not loading and no error and no highlights
   if (!highlights || highlights.length === 0) {
     return (
       <div className={className}>
         <Card className="p-8 text-center">
           <Highlighter className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-lg font-medium mb-2">Chưa có highlight</h3>
+          <h3 className="text-lg font-medium mb-2">No highlights yet</h3>
           <p className="text-muted-foreground">
             Chưa có highlight nào trong session này. Chọn văn bản và thêm vào highlights để bắt đầu phân tích.
           </p>

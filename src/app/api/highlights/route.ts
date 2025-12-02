@@ -310,7 +310,7 @@ export const GET = withAuth(
 
       // Add filters if provided
       if (type) {
-        query = query.eq('type', type);
+        query = query.eq('highlight_type', type);
       }
       if (status) {
         query = query.eq('status', status);

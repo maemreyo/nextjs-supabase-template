@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
-import { 
+import {
   Search,
   Filter,
   Plus,
@@ -20,13 +20,14 @@ import {
 import { cn } from '@/lib/utils';
 import { useHighlights, type Highlight } from '@/hooks/useHighlights';
 import { clientLogger, analysisLogger } from '@/services/logger';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
+import { toast } from 'sonner';
 
 interface HighlightsSidebarProps {
   sessionId: string;
@@ -170,8 +171,65 @@ export function HighlightsSidebar({
   }, [analyzeHighlight, updateHighlight, onHighlightAnalyze]);
 
   const handleViewDetails = useCallback((highlight: Highlight) => {
+    // Add detailed logging to diagnose the issue
+    analysisLogger.info('HighlightsSidebar: handleViewDetails called', {
+      highlightId: highlight.id,
+      status: highlight.status,
+      selectedText: highlight.selected_text,
+      highlightType: highlight.highlight_type,
+      analysisId: highlight.analysis_id,
+      analysisType: highlight.analysis_type
+    });
+    
+    // Derive analysisType and analysisId from highlight
+    const analysisType = highlight.analysis_type || highlight.highlight_type;
+    const analysisId = highlight.analysis_id;
+
+    // Check if we have the required data
+    if (!analysisId) {
+      analysisLogger.warn('No analysis_id available for highlight', {
+        highlightId: highlight.id,
+        status: highlight.status,
+        text: highlight.selected_text,
+        analysisType
+      });
+      // Show toast notification to user
+      toast.error('Phân tích trước', {
+        description: 'Highlight này chưa được phân tích. Vui lòng phân tích trước khi xem chi tiết.',
+      });
+      return;
+    }
+
+    if (!analysisType) {
+      analysisLogger.warn('No analysis_type available for highlight', {
+        highlightId: highlight.id,
+        status: highlight.status,
+        text: highlight.selected_text,
+        analysisId
+      });
+      // Show toast notification to user
+      toast.error('Thiếu thông tin phân tích', {
+        description: 'Không xác định được loại phân tích cho highlight này.',
+      });
+      return;
+    }
+    
+    analysisLogger.info('Opening analysis detail with derived values', {
+      highlightId: highlight.id,
+      derivedAnalysisType: analysisType,
+      derivedAnalysisId: analysisId
+    });
+    
     clientLogger.info('HighlightsSidebar', { type: 'view_details_clicked', highlightId: highlight.id });
-    onHighlightViewDetails?.(highlight);
+    
+    // Create a new object with the correct analysisType and analysisId
+    const analysisItem = {
+      ...highlight,
+      analysisType: analysisType,
+      analysisId: analysisId
+    };
+    
+    onHighlightViewDetails?.(analysisItem);
   }, [onHighlightViewDetails]);
 
   const handleRemove = useCallback(async (highlightId: string) => {
@@ -194,18 +252,17 @@ export function HighlightsSidebar({
     setSelectedStatus('all');
   }, []);
 
-  if (loading) {
-    return (
-      <div className={cn("p-4 space-y-4", className)}>
-        <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          <p className="mt-4 text-sm text-muted-foreground">Đang tải highlights...</p>
-        </div>
-      </div>
-    );
-  }
-
+  // CRITICAL FIX: Check error first, then loading, then empty, then data
   if (error) {
+    // Add debug logging to track when error is displayed
+    analysisLogger.debug('HighlightsSidebar: Rendering error state', {
+      error: error,
+      errorMessage: (error as any)?.message,
+      highlightsLength: highlights?.length || 0,
+      loading: loading,
+      hasData: !!highlights && highlights.length > 0
+    });
+    
     return (
       <div className={cn("p-4 space-y-4", className)}>
         <Card className="p-6 text-center">
@@ -218,6 +275,41 @@ export function HighlightsSidebar({
             Thử lại
           </Button>
         </Card>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className={cn("p-4 space-y-4", className)}>
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <p className="mt-4 text-sm text-muted-foreground">Đang tải highlights...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // CRITICAL FIX: Only show empty state if not loading and no error and no highlights
+  if (!highlights || highlights.length === 0) {
+    return (
+      <div className={cn("h-full flex flex-col", className)}>
+        <div className="p-4 border-b">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Highlights</h2>
+          </div>
+        </div>
+        <div className="flex-1 p-4">
+          <div className="text-center py-8">
+            <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+              <Search className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-medium mb-2">Chưa có highlights nào</h3>
+            <p className="text-muted-foreground">
+              Chưa có highlights nào trong session này.
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -326,15 +418,21 @@ export function HighlightsSidebar({
             <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
               <Search className="h-8 w-8 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-medium mb-2">Không tìm thấy highlights</h3>
+            <h3 className="text-lg font-medium mb-2">
+              {searchTerm || selectedType !== 'all' || selectedStatus !== 'all'
+                ? 'Không tìm thấy highlights'
+                : 'Chưa có highlights nào'}
+            </h3>
             <p className="text-muted-foreground mb-4">
               {searchTerm || selectedType !== 'all' || selectedStatus !== 'all'
                 ? 'Không có highlights nào khớp với bộ lọc của bạn.'
                 : 'Chưa có highlights nào trong session này.'}
             </p>
-            <Button onClick={handleClearFilters} variant="outline">
-              Xóa bộ lọc
-            </Button>
+            {searchTerm || selectedType !== 'all' || selectedStatus !== 'all' ? (
+              <Button onClick={handleClearFilters} variant="outline">
+                Xóa bộ lọc
+              </Button>
+            ) : null}
           </div>
         ) : (
           <div className="space-y-3">

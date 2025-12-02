@@ -15,6 +15,8 @@ export interface Highlight {
   created_at: string;
   updated_at: string;
   user_id: string;
+  analysis_id?: string | null;
+  analysis_type?: string | null;
 }
 
 export interface CreateHighlightData {
@@ -125,6 +127,9 @@ export function useHighlights({
 
       const data = await res.json();
       setResponse(data);
+      // CRITICAL FIX: Explicitly reset error and loading states after successful response
+      setError(null);
+      setLoading(false);
       
       clientLogger.success('Highlights fetched successfully', {
         sessionId,
@@ -151,6 +156,20 @@ export function useHighlights({
 
   // Update local state when data changes
   useEffect(() => {
+    // Add debug logging to verify response structure
+    clientLogger.debug('useHighlights response', {
+      keys: response ? Object.keys(response) : null,
+      hasHighlights: !!response?.data?.highlights,
+      highlightsCount: response?.data?.highlights?.length || 0,
+      loading: loading,
+      error: error
+    });
+    
+    // CRITICAL FIX: Skip processing if no valid response
+    if (!response) {
+      return;
+    }
+    
     if (response?.data?.highlights) {
       setLocalHighlights(response.data.highlights);
       setTotalCount(response.data.pagination?.total || 0);

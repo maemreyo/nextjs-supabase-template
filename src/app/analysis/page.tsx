@@ -291,6 +291,100 @@ function ImprovedAnalysisPageContent() {
       return;
     }
     
+    // Handle highlight objects (from HighlightsList/HighlightsSidebar)
+    if (analysisItem.analysis_type || analysisItem.highlight_type) {
+      const analysisType = analysisItem.analysis_type || analysisItem.highlight_type;
+      const analysisId = analysisItem.analysis_id;
+      
+      if (!analysisId) {
+        analysisLogger.warn('No analysis_id available for highlight', {
+          highlightId: analysisItem.id,
+          status: analysisItem.status,
+          text: analysisItem.selected_text,
+          analysisType
+        });
+        // TODO: Show toast notification when toast system is available
+        return;
+      }
+
+      if (!analysisType) {
+        analysisLogger.warn('No analysis_type available for highlight', {
+          highlightId: analysisItem.id,
+          status: analysisItem.status,
+          text: analysisItem.selected_text,
+          analysisId
+        });
+        // TODO: Show toast notification when toast system is available
+        return;
+      }
+      
+      // Create proper analysis item for dialog dispatcher based on type
+      let dialogItem: any;
+      
+      switch (analysisType) {
+        case 'word':
+          dialogItem = {
+            ...analysisItem,
+            word: analysisItem.selected_text,
+          };
+          break;
+          
+        case 'phrase':
+          dialogItem = {
+            ...analysisItem,
+            phrase: analysisItem.selected_text,
+          };
+          break;
+          
+        case 'sentence':
+          dialogItem = {
+            ...analysisItem,
+            sentence: analysisItem.selected_text,
+          };
+          break;
+          
+        case 'paragraph':
+          dialogItem = {
+            ...analysisItem,
+            paragraph: analysisItem.selected_text,
+          };
+          break;
+          
+        default:
+          analysisLogger.warn('Unknown analysis type', { analysisType });
+          return;
+      }
+      
+      // Use dialogDispatcher to open view details dialog
+      DialogDispatcher.openViewDetails(dialogItem);
+      
+      // For non-word types, fetch detailed data in the background
+      if (analysisType !== 'word') {
+        fetchDetailedAnalysisData(analysisType, analysisId)
+          .then((detailedData: PhraseAnalysis | SentenceAnalysis | ParagraphAnalysis) => {
+            // Update dialog with complete data
+            const completeDialogItem = {
+              ...dialogItem,
+              [analysisType]: detailedData
+            };
+            DialogDispatcher.openViewDetails(completeDialogItem);
+            analysisLogger.success('Successfully fetched detailed analysis data', {
+              analysisType,
+              analysisId
+            });
+          })
+          .catch((error: any) => {
+            analysisLogger.error('Failed to fetch detailed analysis data', {
+              analysisType,
+              analysisId,
+              error
+            });
+          });
+      }
+      
+      return;
+    }
+    
     // Invalid data structure - neither direct nor legacy format
     analysisLogger.warn('handleAnalysisClick - Expected direct structure (word/phrase/sentence/paragraph)', {
       analysisItem: JSON.stringify(analysisItem)
@@ -306,6 +400,10 @@ function ImprovedAnalysisPageContent() {
 
   // Handle word analyze from session
   const handleWordAnalyze = (wordItem: any) => {
+    if (!wordItem || !wordItem.word) {
+      analysisLogger.warn('Invalid wordItem provided to handleWordAnalyze', { wordItem });
+      return;
+    }
     handleWordFromSessionAnalyze(wordItem.word, wordItem);
   };
 

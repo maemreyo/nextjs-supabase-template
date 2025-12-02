@@ -1,0 +1,19 @@
+Uncaught (in promise) TypeError: can't access property "trim", word is undefined
+    handleWordFromSessionAnalyze useAnalysisPageLogic.ts:372
+    handleWordAnalyze page.tsx:309
+    onHighlightAnalyze AnalysisSidebar.tsx:98
+    handleAnalyzeHighlight HighlightsList.tsx:422
+    handleAnalyze HighlightsList.tsx:95
+useAnalysisPageLogic.ts:372:9
+Client:info HighlightsList 
+Object { type: "view_details_clicked", highlightId: "b0c98f91-fd76-4412-982f-b1739eab276d", text: "wall" }
+Client:info HighlightsList 
+Object { type: "view_details", highlightId: "b0c98f91-fd76-4412-982f-b1739eab276d" }
+Analysis:info Opening analysis detail 
+Object { analysisType: undefined, analysisId: undefined, isDirect: false }
+Client:info HighlightsList 
+Object { type: "view_details_clicked", highlightId: "b0c98f91-fd76-4412-982f-b1739eab276d", text: "wall" }
+Client:info HighlightsList 
+Object { type: "view_details", highlightId: "b0c98f91-fd76-4412-982f-b1739eab276d" }
+Analysis:info Opening analysis detail 
+Object { analysisType: undefined, analysisId: undefined, isDirect: false }

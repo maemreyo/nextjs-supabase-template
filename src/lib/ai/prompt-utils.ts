@@ -691,7 +691,7 @@ JSON SCHEMA:
 }`
 }
 
-function buildUniversalAutoDetectionPrompt(text: string, context?: string, maxItems: number = 5): string {
+export function buildUniversalAutoDetectionPrompt(text: string, context?: string, maxItems: number = 5): string {
   return `Bạn là một chuyên gia ngôn ngữ học. Phân tích "${text}" trong ngữ cảnh được cung cấp.
 
 INPUT:

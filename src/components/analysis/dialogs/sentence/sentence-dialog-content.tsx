@@ -64,29 +64,120 @@ export const SentenceDialogContent: React.FC<SentenceDialogContentProps> = ({
   const mergedAnalysis = React.useMemo(() => {
     if (!analysis) return null;
     
+    // Check if we have highlight_analysis data (type any to bypass TypeScript checking)
+    const analysisAny = analysis as any;
+    const fullAnalysisDataAny = fullAnalysisData as any;
+    const hasHighlightAnalysis = analysisAny.highlight_analysis || fullAnalysisDataAny?.highlight_analysis;
+    
+    // Log dialog data for debugging
+    analysisLogger.debug('Sentence dialog data', {
+      hasAnalysis: !!analysis,
+      hasFullData: !!fullAnalysisData,
+      hasHighlightAnalysis: !!hasHighlightAnalysis,
+      analysisType: fullAnalysisDataAny?.analysis_type || analysisAny.analysis_type
+    });
+    
+    // If we have highlight_analysis, use it as the primary source
+    if (hasHighlightAnalysis) {
+      const highlightData = analysisAny.highlight_analysis || fullAnalysisDataAny?.highlight_analysis;
+      
+      analysisLogger.debug('Sentence dialog using highlight_analysis', {
+        hasHighlightData: !!highlightData,
+        keys: highlightData ? Object.keys(highlightData) : []
+      });
+      
+      // Extract data from highlight_analysis structure
+      const sentenceFromHighlight = highlightData?.sentence || analysisAny.sentence || analysisAny.selected_text;
+      const naturalTranslation = highlightData?.meaning?.main_idea || analysisAny.naturalTranslation || analysisAny.translation;
+      const literalTranslation = highlightData?.meaning?.main_idea || analysisAny.literalTranslation || analysisAny.translation;
+      const mainIdea = highlightData?.meaning?.main_idea || analysisAny.mainIdea;
+      const subject = highlightData?.structure?.subject || analysisAny.subject;
+      const mainVerb = highlightData?.structure?.predicate || analysisAny.mainVerb;
+      const object = highlightData?.structure?.object || analysisAny.object;
+      const sentenceFunction = highlightData?.meta?.function || analysisAny.function;
+      const sentenceType = highlightData?.meta?.type || analysisAny.sentenceType;
+      const complexityLevel = highlightData?.meta?.complexity || analysisAny.complexityLevel;
+      const sentiment = highlightData?.meaning?.sentiment || analysisAny.sentiment;
+      const subtext = highlightData?.meaning?.subtext || analysisAny.subtext;
+      
+      // Extract clauses
+      const clauses = highlightData?.structure?.clauses ||
+                    highlightData?.clauses ||
+                    fullAnalysisDataAny?.sentence_key_components?.map((c: any) => ({
+                      phrase: c.phrase,
+                      meaning: c.meaning,
+                      type: c.type,
+                      function: c.function
+                    })) ||
+                    analysisAny.clauses || [];
+      
+      // Extract rewrite suggestions
+      const rewriteSuggestions = highlightData?.variations ||
+                              highlightData?.style_analysis?.variations ||
+                              fullAnalysisDataAny?.sentence_rewrite_suggestions?.map((r: any) => ({
+                                style: r.style,
+                                text: r.text
+                              })) ||
+                              analysisAny.rewriteSuggestions || [];
+      
+      const sentenceAnalysisFromHighlight = {
+        ...analysis,
+        // Override with highlight_analysis data
+        sentence: sentenceFromHighlight,
+        naturalTranslation,
+        literalTranslation,
+        mainIdea,
+        subject,
+        mainVerb,
+        object,
+        function,
+        sentenceType,
+        complexityLevel,
+        sentiment,
+        subtext,
+        clauses,
+        rewriteSuggestions,
+        // Store the original highlight_analysis for reference
+        highlight_analysis: highlightData
+      };
+      
+      analysisLogger.debug('Sentence dialog merged from highlight_analysis', {
+        originalData: Object.keys(analysis),
+        highlightDataKeys: highlightData ? Object.keys(highlightData) : [],
+        mergedKeys: Object.keys(sentenceAnalysisFromHighlight)
+      });
+      
+      return sentenceAnalysisFromHighlight;
+    }
+    
     // If we have full data, merge it with summary data
-    if (fullAnalysisData) {
+    if (fullAnalysisDataAny) {
       // Transform full data to match SentenceAnalysis interface
       const fullSentenceAnalysis = {
         ...analysis,
         // Override with full data fields
-        ...fullAnalysisData,
+        ...fullAnalysisDataAny,
         // Map related data from nested structure
-        keyComponents: fullAnalysisData.sentence_key_components || [],
-        rewriteSuggestions: fullAnalysisData.sentence_rewrite_suggestions || [],
+        keyComponents: fullAnalysisDataAny.sentence_key_components || [],
+        rewriteSuggestions: fullAnalysisDataAny.sentence_rewrite_suggestions || [],
       };
       
       analysisLogger.debug('Sentence dialog merged data', {
         originalData: Object.keys(analysis),
-        fullDataKeys: Object.keys(fullAnalysisData),
+        fullDataKeys: Object.keys(fullAnalysisDataAny),
         mergedKeys: Object.keys(fullSentenceAnalysis),
-        analysisType: fullAnalysisData.analysis_type
+        analysisType: fullAnalysisDataAny.analysis_type
       });
       
       return fullSentenceAnalysis;
     }
     
     // Fallback to summary data if full data is not available
+    analysisLogger.debug('Sentence dialog using fallback data', {
+      hasAnalysis: !!analysis,
+      keys: analysis ? Object.keys(analysis) : []
+    });
+    
     return analysis;
   }, [analysis, fullAnalysisData]);
   

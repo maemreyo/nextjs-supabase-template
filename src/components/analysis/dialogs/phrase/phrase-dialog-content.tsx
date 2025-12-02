@@ -68,28 +68,131 @@ export const PhraseDialogContent: React.FC<PhraseDialogContentProps> = ({
   const mergedAnalysis = React.useMemo(() => {
     if (!analysis) return null;
     
+    // Check if we have highlight_analysis data (type any to bypass TypeScript checking)
+    const analysisAny = analysis as any;
+    const fullAnalysisDataAny = fullAnalysisData as any;
+    const hasHighlightAnalysis = analysisAny.highlight_analysis || fullAnalysisDataAny?.highlight_analysis;
+    
+    // Log dialog data for debugging
+    analysisLogger.debug('Phrase dialog data', {
+      hasAnalysis: !!analysis,
+      hasFullData: !!fullAnalysisData,
+      hasHighlightAnalysis: !!hasHighlightAnalysis,
+      analysisType: fullAnalysisDataAny?.analysis_type || analysisAny.analysis_type
+    });
+    
+    // If we have highlight_analysis, use it as the primary source
+    if (hasHighlightAnalysis) {
+      const highlightData = analysisAny.highlight_analysis || fullAnalysisDataAny?.highlight_analysis;
+      
+      analysisLogger.debug('Phrase dialog using highlight_analysis', {
+        hasHighlightData: !!highlightData,
+        keys: highlightData ? Object.keys(highlightData) : []
+      });
+      
+      // Extract data from highlight_analysis structure
+      const phraseFromHighlight = highlightData?.phrase || analysisAny.phrase || analysisAny.selected_text;
+      const naturalTranslation = highlightData?.vietnamese_translation || analysisAny.naturalTranslation || analysisAny.translation;
+      const literalMeaning = highlightData?.definitions?.literal_meaning || analysisAny.literalMeaning;
+      const contextualMeaning = highlightData?.definitions?.contextual_meaning || analysisAny.contextualMeaning;
+      const vietnameseTranslation = highlightData?.vietnamese_translation || analysisAny.vietnameseTranslation;
+      const partOfSpeech = highlightData?.meta?.part_of_speech || analysisAny.partOfSpeech;
+      const phraseType = highlightData?.meta?.type || analysisAny.phraseType;
+      const grammaticalPattern = highlightData?.meta?.structure || analysisAny.grammaticalPattern;
+      const registerLevel = highlightData?.meta?.register || analysisAny.registerLevel;
+      const complexityLevel = highlightData?.meta?.cefr || analysisAny.complexityLevel;
+      const frequencyLevel = highlightData?.meta?.frequency || analysisAny.frequencyLevel;
+      const culturalNotes = highlightData?.definitions?.cultural_context || analysisAny.culturalNotes;
+      const stylisticNotes = highlightData?.definitions?.usage_notes || analysisAny.stylisticNotes;
+      const memoryAid = highlightData?.definitions?.memory_techniques || analysisAny.memoryAid;
+      
+      // Extract usage examples
+      const usageExamples = highlightData?.usage?.examples ||
+                         highlightData?.examples ||
+                         analysisAny.usageExamples || [];
+      
+      // Extract usage tips
+      const usageTips = highlightData?.usage?.common_mistakes ||
+                     highlightData?.usage_tips ||
+                     analysisAny.usageTips || [];
+      
+      // Extract synonyms
+      const synonyms = highlightData?.relations?.synonyms ||
+                     highlightData?.synonyms ||
+                     analysisAny.synonyms || [];
+      
+      // Extract antonyms
+      const antonyms = highlightData?.relations?.antonyms ||
+                     highlightData?.antonyms ||
+                     analysisAny.antonyms || [];
+      
+      // Extract variations
+      const variations = highlightData?.variations ||
+                        highlightData?.related_phrases ||
+                        analysisAny.variations || [];
+      
+      const phraseAnalysisFromHighlight = {
+        ...analysis,
+        // Override with highlight_analysis data
+        phrase: phraseFromHighlight,
+        naturalTranslation,
+        literalMeaning,
+        contextualMeaning,
+        vietnameseTranslation,
+        partOfSpeech,
+        phraseType,
+        grammaticalPattern,
+        registerLevel,
+        complexityLevel,
+        frequencyLevel,
+        culturalNotes,
+        stylisticNotes,
+        memoryAid,
+        usageExamples,
+        usageTips,
+        synonyms,
+        antonyms,
+        variations,
+        // Store the original highlight_analysis for reference
+        highlight_analysis: highlightData
+      };
+      
+      analysisLogger.debug('Phrase dialog merged from highlight_analysis', {
+        originalData: Object.keys(analysis),
+        highlightDataKeys: highlightData ? Object.keys(highlightData) : [],
+        mergedKeys: Object.keys(phraseAnalysisFromHighlight)
+      });
+      
+      return phraseAnalysisFromHighlight;
+    }
+    
     // If we have full data, merge it with summary data
-    if (fullAnalysisData) {
+    if (fullAnalysisDataAny) {
       // Transform full data to match PhraseAnalysis interface
       const fullPhraseAnalysis = {
         ...analysis,
         // Override with full data fields
-        ...fullAnalysisData,
+        ...fullAnalysisDataAny,
         // Note: Phrase analysis doesn't have complex nested structures like word/sentence
         // So we can use the full data directly
       };
       
       analysisLogger.debug('Phrase dialog merged data', {
         originalData: Object.keys(analysis),
-        fullDataKeys: Object.keys(fullAnalysisData),
+        fullDataKeys: Object.keys(fullAnalysisDataAny),
         mergedKeys: Object.keys(fullPhraseAnalysis),
-        analysisType: fullAnalysisData.analysis_type
+        analysisType: fullAnalysisDataAny.analysis_type
       });
       
       return fullPhraseAnalysis;
     }
     
     // Fallback to summary data if full data is not available
+    analysisLogger.debug('Phrase dialog using fallback data', {
+      hasAnalysis: !!analysis,
+      keys: analysis ? Object.keys(analysis) : []
+    });
+    
     return analysis;
   }, [analysis, fullAnalysisData]);
   

@@ -369,7 +369,10 @@ export function useAnalysisPageLogic({ sessionId, editor }: UseAnalysisPageLogic
 
   // Handler for analyzing word from session
   const handleWordFromSessionAnalyze = useCallback(async (word: string, wordItem: any) => {
-    if (!word.trim()) return;
+    if (!word || !word.trim()) {
+      analysisLogger.warn('Invalid word provided to handleWordFromSessionAnalyze', { word });
+      return;
+    }
     
     // Set analysis type to word
     setAnalysisTypeState('word');

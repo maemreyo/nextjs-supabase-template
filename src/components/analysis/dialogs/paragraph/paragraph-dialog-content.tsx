@@ -99,29 +99,125 @@ export const ParagraphDialogContent: React.FC<ParagraphDialogContentProps> = ({
   const mergedAnalysis = React.useMemo(() => {
     if (!analysis) return null;
     
+    // Check if we have highlight_analysis data (type any to bypass TypeScript checking)
+    const analysisAny = analysis as any;
+    const fullAnalysisDataAny = fullAnalysisData as any;
+    const hasHighlightAnalysis = analysisAny.highlight_analysis || fullAnalysisDataAny?.highlight_analysis;
+    
+    // Log dialog data for debugging
+    analysisLogger.debug('Paragraph dialog data', {
+      hasAnalysis: !!analysis,
+      hasFullData: !!fullAnalysisData,
+      hasHighlightAnalysis: !!hasHighlightAnalysis,
+      analysisType: fullAnalysisDataAny?.analysis_type || analysisAny.analysis_type
+    });
+    
+    // If we have highlight_analysis, use it as the primary source
+    if (hasHighlightAnalysis) {
+      const highlightData = analysisAny.highlight_analysis || fullAnalysisDataAny?.highlight_analysis;
+      
+      analysisLogger.debug('Paragraph dialog using highlight_analysis', {
+        hasHighlightData: !!highlightData,
+        keys: highlightData ? Object.keys(highlightData) : []
+      });
+      
+      // Extract data from highlight_analysis structure
+      const paragraphFromHighlight = highlightData?.paragraph || analysisAny.paragraph || analysisAny.selected_text;
+      const mainTopic = highlightData?.content?.main_topic || analysisAny.mainTopic;
+      const tone = highlightData?.meta?.tone || analysisAny.tone;
+      const targetAudience = highlightData?.meta?.audience || analysisAny.targetAudience;
+      const type = highlightData?.meta?.type || analysisAny.type;
+      const vocabularyLevel = highlightData?.meta?.vocabulary_level || analysisAny.vocabularyLevel;
+      const sentimentLabel = highlightData?.content?.sentiment?.label || analysisAny.sentimentLabel;
+      const sentimentIntensity = highlightData?.content?.sentiment?.intensity || analysisAny.sentimentIntensity;
+      const sentimentJustification = highlightData?.content?.sentiment?.justification || analysisAny.sentimentJustification;
+      const flowScore = highlightData?.content?.cohesion?.flow_score || analysisAny.flowScore;
+      const logicScore = highlightData?.content?.cohesion?.logic_score || analysisAny.logicScore;
+      const sentenceVariety = highlightData?.content?.sentence_structure?.variety || analysisAny.sentenceVariety;
+      const betterVersion = highlightData?.evaluation?.improvement_suggestions?.[0]?.suggestion || analysisAny.betterVersion;
+      const gapAnalysis = highlightData?.evaluation?.improvement_suggestions?.[0]?.suggestion || analysisAny.gapAnalysis;
+      const keywords = highlightData?.content?.keywords || analysisAny.keywords;
+      const transitionWords = highlightData?.content?.transitions?.map((t: any) => t.words) || analysisAny.transitionWords;
+      
+      // Extract structure breakdown
+      const structureBreakdown = highlightData?.structure?.sentences?.map((s: any) => ({
+        analysis: s.analysis,
+        role: s.role,
+        sentence_index: s.sentence_index,
+        snippet: s.snippet
+      })) || highlightData?.structure_breakdown ||
+                     fullAnalysisDataAny?.paragraph_structure_breakdown || [];
+      
+      // Extract constructive feedback
+      const constructiveFeedback = highlightData?.evaluation?.improvement_suggestions?.slice(1).map((s: any) => ({
+        issue_type: s.issue_type,
+        description: s.description,
+        suggestion: s.suggestion
+      })) || highlightData?.constructive_feedback ||
+                         fullAnalysisDataAny?.paragraph_constructive_feedback || [];
+      
+      const paragraphAnalysisFromHighlight = {
+        ...analysis,
+        // Override with highlight_analysis data
+        paragraph: paragraphFromHighlight,
+        mainTopic,
+        tone,
+        targetAudience,
+        type,
+        vocabularyLevel,
+        sentimentLabel,
+        sentimentIntensity,
+        sentimentJustification,
+        flowScore,
+        logicScore,
+        sentenceVariety,
+        betterVersion,
+        gapAnalysis,
+        keywords,
+        transitionWords,
+        structureBreakdown,
+        constructiveFeedback,
+        // Store the original highlight_analysis for reference
+        highlight_analysis: highlightData
+      };
+      
+      analysisLogger.debug('Paragraph dialog merged from highlight_analysis', {
+        originalData: Object.keys(analysis),
+        highlightDataKeys: highlightData ? Object.keys(highlightData) : [],
+        mergedKeys: Object.keys(paragraphAnalysisFromHighlight)
+      });
+      
+      return paragraphAnalysisFromHighlight;
+    }
+    
     // If we have full data, merge it with summary data
-    if (fullAnalysisData) {
+    if (fullAnalysisDataAny) {
       // Transform full data to match ParagraphAnalysis interface
       const fullParagraphAnalysis = {
         ...analysis,
         // Override with full data fields
-        ...fullAnalysisData,
+        ...fullAnalysisDataAny,
         // Map related data from nested structure
-        structureBreakdown: fullAnalysisData.paragraph_structure_breakdown || [],
-        constructiveFeedback: fullAnalysisData.paragraph_constructive_feedback || [],
+        structureBreakdown: fullAnalysisDataAny.paragraph_structure_breakdown || [],
+        constructiveFeedback: fullAnalysisDataAny.paragraph_constructive_feedback || [],
       };
       
       analysisLogger.debug('Paragraph dialog merged data', {
         originalData: Object.keys(analysis),
-        fullDataKeys: Object.keys(fullAnalysisData),
+        fullDataKeys: Object.keys(fullAnalysisDataAny),
         mergedKeys: Object.keys(fullParagraphAnalysis),
-        analysisType: fullAnalysisData.analysis_type
+        analysisType: fullAnalysisDataAny.analysis_type
       });
       
       return fullParagraphAnalysis;
     }
     
     // Fallback to summary data if full data is not available
+    analysisLogger.debug('Paragraph dialog using fallback data', {
+      hasAnalysis: !!analysis,
+      keys: analysis ? Object.keys(analysis) : []
+    });
+    
     return analysis;
   }, [analysis, fullAnalysisData]);
   
