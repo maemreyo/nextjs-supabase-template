@@ -699,16 +699,6 @@ export function AnalysisEditor({
       }}
     >
       <div className={`h-full flex flex-col ${className}`}>
-        {/* Error Display */}
-        {sessionError && (
-          <Alert className="m-4 border-destructive/50 bg-destructive/10 text-destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              Không thể tải session: {sessionError.message}
-            </AlertDescription>
-          </Alert>
-        )}
-
         {/* Loading State */}
         {/* {isSessionLoading && (
           <div className="flex items-center justify-center p-8">
